@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Attendance Page</title>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>Attendance</h2>
+
+<!-- DATE SELECTOR -->
+<h3>Attendance Date</h3>
+
+<input type="date"
+       id="selectedDate"
+       onchange="loadEmployees()">
+
+<br><br>
+
+<!-- SHOW SELECTED DATE -->
+<h3 id="todayDate"></h3>
+<h3 id="todayDate"></h3>
+
+<div id="summaryBox">
+  <b>Total Present:</b> <span id="presentCount">0</span>
+  &nbsp;&nbsp;&nbsp;
+  <b>Total Absent:</b> <span id="absentCount">0</span>
+</div>
+
+<br>
+
+<div id="employeeList"></div>
+<!-- EMPLOYEE LIST -->
+<div id="employeeList"></div>
+
+<p id="attMsg"></p>
+
+<br>
+<button onclick="goSupervisor()">Back</button>
+
+</div>
+
+<script src="script.js"></script>
+
+<script>
+loadEmployees();
+</script>
+
+</body>
+</html>
