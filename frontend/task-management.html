@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Task Management</title>
+<link rel="stylesheet" href="style.css">
+<style>
+.task-form, .task-list { margin-top: 20px; text-align: left;}
+.task-form input, .task-form select { width: 100%; padding: 10px; margin-top: 10px; margin-bottom: 10px; box-sizing: border-box;}
+.employee-checkbox { margin-bottom: 10px; font-size: 16px;}
+.employee-checkbox input { width: auto; display: inline-block;}
+</style>
+</head>
+<body onload="loadTasks()">
+<div class="page">
+<div class="card" style="width: 80%; max-width: 800px;">
+<h2>Task Management</h2>
+<div class="task-form">
+  <h3 style="border-bottom: 1px solid #ccc; padding-bottom: 5px;">Create New Task</h3>
+  <input type="text" id="taskName" placeholder="Task Name">
+  
+  <select id="taskSection">
+    <option value="Development">Development</option>
+    <option value="Testing">Testing</option>
+    <option value="Deployment">Deployment</option>
+    <option value="Marketing">Marketing</option>
+  </select>
+
+  <select id="taskPriority">
+    <option value="High">High Priority</option>
+    <option value="Medium">Medium Priority</option>
+    <option value="Low">Low Priority</option>
+  </select>
+
+  <select id="taskSkill" onchange="loadSuggestedEmployees()">
+    <option value="">Select Required Skill to Suggest Employees...</option>
+    <option value="Java">Java</option>
+    <option value="Python">Python</option>
+    <option value="React">React</option>
+    <option value="Data Analysis">Data Analysis</option>
+    <option value="Testing">Testing</option>
+  </select>
+
+  <h4>Suggested Employees</h4>
+  <div id="suggestedEmployees" style="padding: 10px; background: #f9f9f9; border-radius: 5px; min-height: 40px;">Select a skill to see suggestions...</div>
+  
+  <button onclick="createTask()" style="margin-top: 20px;">Assign Task</button>
+</div>
+
+<div class="task-list">
+  <h3 style="border-bottom: 1px solid #ccc; padding-bottom: 5px; margin-top: 30px;">Today's Tasks</h3>
+  <div id="taskList"></div>
+</div>
+
+<button onclick="goSupervisor()" style="margin-top: 20px;">Back</button>
+
+</div>
+</div>
+<script src="script.js"></script>
+</body>
+</html>

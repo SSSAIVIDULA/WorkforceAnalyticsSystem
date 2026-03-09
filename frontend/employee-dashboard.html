@@ -23,6 +23,13 @@
 
 <p><b>Days Absent:</b> <span id="absentDays"></span></p>
 
+<p><b>Productivity Score:</b> <span id="productivity"></span></p>
+
+<div class="employee-tasks" style="margin-top: 20px; text-align: left; background: #fff; padding: 15px; border-radius: 5px; box-shadow: 0 0 5px rgba(0,0,0,0.1);">
+  <h3>My Assigned Tasks</h3>
+  <div id="employeeTaskList">Loading tasks...</div>
+</div>
+
 </div>
 
 <button onclick="logout()">Logout</button>
@@ -40,6 +47,7 @@
 
 <script>
 loadEmployeeStats();
+loadEmployeeTasks();
 </script>
 
 </body>

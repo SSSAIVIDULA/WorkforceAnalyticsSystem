@@ -13,4 +13,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     // GET ALL EMPLOYEES (for attendance list)
     List<User> findByRole(String role);
+
+    // GET EMPLOYEES BY SKILL (for task assignment)
+    List<User> findByRoleAndSkill(String role, String skill);
 }

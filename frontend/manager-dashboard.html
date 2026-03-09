@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Manager Dashboard</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+.dashboard-stats {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 20px;
+}
+.stat-box {
+    background-color: #f1f1f1;
+    padding: 10px 20px;
+    border-radius: 5px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.charts {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 20px;
+}
+</style>
+</head>
+
+<body onload="loadManagerAnalytics()">
+
+<div class="page">
+    <div class="card" style="width: 80%; max-width: 1000px;">
+        <h2>Manager Analytics Dashboard</h2>
+
+        <div class="dashboard-stats">
+            <div class="stat-box"><h3>Total Tasks</h3><p id="totalTasks">0</p></div>
+            <div class="stat-box"><h3>Completed Tasks</h3><p id="totalCompleted">0</p></div>
+            <div class="stat-box"><h3>Pending Tasks</h3><p id="totalPending">0</p></div>
+            <div class="stat-box"><h3>Total Present</h3><p id="totalPresent">0</p></div>
+            <div class="stat-box"><h3>Total Absent</h3><p id="totalAbsent">0</p></div>
+        </div>
+
+        <div class="charts">
+            <div style="width: 45%;"><canvas id="taskChart"></canvas></div>
+            <div style="width: 45%;"><canvas id="attendanceChart"></canvas></div>
+        </div>
+
+        <br>
+        <button onclick="window.location='index.html'" style="margin-top: 20px;">Logout / Back</button>
+    </div>
+</div>
+
+<script src="script.js"></script>
+
+</body>
+</html>

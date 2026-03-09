@@ -1,184 +1,300 @@
-body{
-font-family: Arial, Helvetica, sans-serif;
-background:#f2f2f2;
-margin:0;
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+body {
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background-attachment: fixed;
+    margin: 0;
+    color: #333;
+    min-height: 100vh;
 }
 
 /* Center page */
-.page{
-display:flex;
-justify-content:center;
-align-items:flex-start;
-padding:40px;
+.page {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 60px 20px;
+    min-height: 100vh;
+    box-sizing: border-box;
 }
 
-/* Standard card */
-.card{
-background:white;
-padding:40px;
-border-radius:10px;
-width:420px;
-box-shadow:0 4px 15px rgba(0,0,0,0.15);
-text-align:center;
+/* Standard card with Glassmorphism */
+.card {
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    padding: 45px 40px;
+    border-radius: 20px;
+    width: 420px;
+    max-width: 100%;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    text-align: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
 }
 
 /* Attendance card */
-.attendance-card{
-background:white;
-padding:30px;
-width:750px;
-border-radius:10px;
-box-shadow:0 5px 15px rgba(0,0,0,0.15);
+.attendance-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    padding: 40px;
+    width: 750px;
+    max-width: 100%;
+    border-radius: 20px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.5);
 }
 
 /* Titles */
-h1,h2{
-text-align:center;
-margin-bottom:20px;
+h1, h2 {
+    text-align: center;
+    margin-bottom: 25px;
+    color: #1a1a1a;
+    font-weight: 700;
+    letter-spacing: -0.5px;
 }
 
 /* Subtitle */
-.subtitle{
-color:#666;
-text-align:center;
-margin-bottom:20px;
+.subtitle {
+    color: #666;
+    text-align: center;
+    margin-bottom: 25px;
+    font-size: 15px;
+    font-weight: 400;
 }
 
 /* Labels */
-label{
-font-size:14px;
-font-weight:bold;
+label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #444;
+    display: block;
+    text-align: left;
+    margin-bottom: 5px;
 }
 
 /* Inputs */
-input,select{
-width:100%;
-padding:10px;
-margin-top:8px;
-margin-bottom:15px;
-border:1px solid #ccc;
-border-radius:6px;
+input, select {
+    width: 100%;
+    padding: 12px 15px;
+    margin-top: 5px;
+    margin-bottom: 20px;
+    border: 2px solid #e1e1e1;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 15px;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+    background: #fff;
+}
+
+input:focus, select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
 }
 
 /* Buttons */
-button{
-padding:10px 15px;
-border:none;
-border-radius:6px;
-background:#333;
-color:white;
-cursor:pointer;
-margin-top:10px;
+button {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+    margin-top: 10px;
+    width: 100%;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
 }
 
-button:hover{
-background:black;
+button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+}
+
+button:active {
+    transform: translateY(1px);
 }
 
 /* Role selection */
-.role-container{
-display:flex;
-justify-content:space-around;
-margin-top:20px;
+.role-container {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+    margin-top: 30px;
 }
 
-.role-card{
-width:110px;
-height:110px;
-border:2px solid #333;
-border-radius:8px;
-display:flex;
-flex-direction:column;
-justify-content:center;
-align-items:center;
-cursor:pointer;
-transition:0.2s;
+.role-card {
+    flex: 1;
+    padding: 20px 10px;
+    border: 2px solid transparent;
+    border-radius: 15px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    background: #f8f9fa;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
 }
 
-.role-card:hover{
-background:#f4f4f4;
-transform:scale(1.05);
+.role-card:hover {
+    background: #fff;
+    border-color: #667eea;
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.2);
 }
 
-.icon{
-font-size:30px;
-margin-bottom:8px;
+.role-card p {
+    margin: 5px 0 0 0;
+    font-weight: 600;
+    color: #444;
+}
+
+.icon {
+    font-size: 36px;
+    margin-bottom: 10px;
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
 }
 
 /* Dashboard buttons */
-.dashboard-buttons{
-display:flex;
-justify-content:center;
-gap:10px;
-margin-top:20px;
+.dashboard-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 30px;
 }
 
 /* Attendance summary */
-.summary-box{
-background:#f7f7f7;
-padding:12px;
-border-radius:6px;
-margin:15px 0;
-text-align:center;
+.summary-box {
+    background: rgba(102, 126, 234, 0.1);
+    padding: 20px;
+    border-radius: 15px;
+    margin: 25px 0;
+    text-align: center;
+    border: 1px solid rgba(102, 126, 234, 0.2);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
 }
 
 /* Employee rows */
-/* Employee rows */
-.employee-row{
-display:flex;
-justify-content:space-between;
-align-items:center;
-padding:14px;
-border:1px solid #ddd;
-border-radius:8px;
-margin-bottom:12px;
-background:#fafafa;
+.employee-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 20px;
+    border: 1px solid #eee;
+    border-radius: 12px;
+    margin-bottom: 15px;
+    background: #fff;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+}
+
+.employee-row:hover {
+    transform: translateX(5px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    border-color: #e2e8f0;
 }
 
 /* Name column */
-.employee-name{
-width:150px;
-font-weight:bold;
+.employee-name {
+    width: 200px;
+    font-weight: 600;
+    color: #2d3748;
+    font-size: 16px;
 }
 
 /* Button area */
-.employee-actions{
-display:flex;
-align-items:center;
-gap:10px;
+.employee-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
 /* Present button */
-.present-btn{
-background:#28a745;
-color:white;
-padding:8px 14px;
-border:none;
-border-radius:6px;
-cursor:pointer;
+.present-btn {
+    background: #10b981;
+    color: white;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    width: auto;
+    margin-top: 0;
+    box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
 }
 
-.present-btn:hover{
-background:#218838;
+.present-btn:hover {
+    background: #059669;
+    box-shadow: 0 6px 15px rgba(16, 185, 129, 0.4);
 }
 
 /* Absent button */
-.absent-btn{
-background:#dc3545;
-color:white;
-padding:8px 14px;
-border:none;
-border-radius:6px;
-cursor:pointer;
+.absent-btn {
+    background: #ef4444;
+    color: white;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    width: auto;
+    margin-top: 0;
+    box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3);
 }
 
-.absent-btn:hover{
-background:#c82333;
+.absent-btn:hover {
+    background: #dc2626;
+    box-shadow: 0 6px 15px rgba(239, 68, 68, 0.4);
+}
+
+.present-btn:disabled, .absent-btn:disabled {
+    background: #ccc;
+    box-shadow: none;
+    cursor: not-allowed;
+    transform: none;
 }
 
 /* Status column */
-.attendance-status{
-width:90px;
-text-align:center;
-font-weight:bold;
+.attendance-status {
+    width: 100px;
+    text-align: right;
+    font-weight: 700;
+    font-size: 15px;
+}
+
+/* Error/Success Messages */
+#msg, #attMsg {
+    margin-top: 15px;
+    font-weight: 500;
+    color: #ef4444;
+}
+
+/* Scrollbar styling for modern look */
+::-webkit-scrollbar {
+    width: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #f1f1f1; 
+}
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1; 
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8; 
 }

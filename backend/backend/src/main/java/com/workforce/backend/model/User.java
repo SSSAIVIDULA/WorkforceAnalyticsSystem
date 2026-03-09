@@ -17,8 +17,17 @@ public class User {
     private String username;
     private String password;
     private String role;
+    private String skill;
 
     // getters and setters
+
+    public String getSkill() {
+        return skill;
+    }
+
+    public void setSkill(String skill) {
+        this.skill = skill;
+    }
 
     public Long getId() {
         return id;
