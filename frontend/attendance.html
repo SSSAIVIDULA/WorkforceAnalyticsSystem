@@ -1,45 +1,57 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-<title>Attendance Page</title>
+<title>Attendance</title>
 <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-<div class="container">
+<div class="attendance-wrapper">
+
+<div class="attendance-card">
 
 <h2>Attendance</h2>
 
-<!-- DATE SELECTOR -->
-<h3>Attendance Date</h3>
+<div class="date-section">
 
-<input type="date"
-       id="selectedDate"
-       onchange="loadEmployees()">
+<label>Attendance Date</label>
 
-<br><br>
+<input 
+type="date"
+id="selectedDate"
+onchange="loadEmployees()">
 
-<!-- SHOW SELECTED DATE -->
-<h3 id="todayDate"></h3>
-<h3 id="todayDate"></h3>
+</div>
 
-<div id="summaryBox">
-  <b>Total Present:</b> <span id="presentCount">0</span>
-  &nbsp;&nbsp;&nbsp;
-  <b>Total Absent:</b> <span id="absentCount">0</span>
+<div class="summary-box">
+
+<p id="todayDate"></p>
+
+<b>Total Present:</b>
+<span id="presentCount">0</span>
+
+&nbsp;&nbsp;&nbsp;
+
+<b>Total Absent:</b>
+<span id="absentCount">0</span>
+
+</div>
+
+<div class="employee-table">
+
+<div id="employeeList"></div>
+
 </div>
 
 <br>
 
-<div id="employeeList"></div>
-<!-- EMPLOYEE LIST -->
-<div id="employeeList"></div>
+<button onclick="goSupervisor()">Back</button>
 
 <p id="attMsg"></p>
 
-<br>
-<button onclick="goSupervisor()">Back</button>
+</div>
 
 </div>
 
@@ -50,4 +62,5 @@ loadEmployees();
 </script>
 
 </body>
+
 </html>

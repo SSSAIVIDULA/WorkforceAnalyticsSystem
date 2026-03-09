@@ -1,7 +1,9 @@
 package com.workforce.backend.controller;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -107,5 +109,26 @@ public class LoginController {
 
         return attendanceRepository.findByDate(date);
     }
+@GetMapping("/employeeStats")
+public Map<String, Integer> getEmployeeStats(@RequestParam String employeeName){
 
+    List<Attendance> records = attendanceRepository.findByEmployeeName(employeeName);
+
+    int present = 0;
+    int absent = 0;
+
+    for(Attendance a : records){
+        if(a.getStatus().equalsIgnoreCase("Present")){
+            present++;
+        }else{
+            absent++;
+        }
+    }
+
+    Map<String, Integer> stats = new HashMap<>();
+    stats.put("present", present);
+    stats.put("absent", absent);
+
+    return stats;
+}
 }

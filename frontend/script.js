@@ -1,26 +1,26 @@
-
 // ======================
 // NAVIGATION
 // ======================
 
 function goSupervisor(){
-    window.location = "supervisor-dashboard.html";
+window.location="supervisor-dashboard.html";
 }
 
 function goEmployee(){
-    window.location = "login.html";
+window.location="login.html";
 }
 
 function logout(){
-    window.location = "index.html";
+localStorage.removeItem("username");
+window.location="index.html";
 }
 
 function goAddEmployee(){
-    window.location = "add-employee.html";
+window.location="add-employee.html";
 }
 
 function goAttendance(){
-    window.location = "attendance.html";
+window.location="attendance.html";
 }
 
 
@@ -30,141 +30,179 @@ function goAttendance(){
 
 function addEmployee(){
 
-  let data = {
-    username: document.getElementById("username").value,
-    password: document.getElementById("password").value,
-    role: document.getElementById("role").value
-  };
+let username=document.getElementById("username").value.trim();
+let password=document.getElementById("password").value.trim();
+let role=document.getElementById("role").value;
 
-  fetch("http://localhost:8080/api/addEmployee",{
-      method:"POST",
-      headers:{
-        "Content-Type":"application/json"
-      },
-      body: JSON.stringify(data)
-  })
-  .then(res => res.json())
-  .then(result => {
-      document.getElementById("msg").innerHTML =
-      "Employee Added Successfully!";
-  });
+if(username===""||password===""){
+document.getElementById("msg").innerHTML="Please fill all fields";
+return;
+}
+
+fetch("http://localhost:8080/api/addEmployee",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({username,password,role})
+})
+.then(res=>res.json())
+.then(()=>{
+document.getElementById("msg").innerHTML="Employee added successfully";
+})
+.catch(()=>{
+document.getElementById("msg").innerHTML="Error adding employee";
+});
+
 }
 
 
 // ======================
-// EMPLOYEE LOGIN
+// LOGIN
 // ======================
 
 function login(){
 
-  let data = {
-    username: document.getElementById("username").value,
-    password: document.getElementById("password").value
-  };
+let username=document.getElementById("username").value.trim();
+let password=document.getElementById("password").value.trim();
 
-  fetch("http://localhost:8080/api/login",{
-      method:"POST",
-      headers:{
-        "Content-Type":"application/json"
-      },
-      body: JSON.stringify(data)
-  })
-  .then(res => res.json())
-  .then(result => {
+if(username===""||password===""){
+document.getElementById("msg").innerHTML="Enter username and password";
+return;
+}
 
-      if(result != null){
-          window.location = "employee-dashboard.html";
-      }else{
-          document.getElementById("msg").innerHTML =
-          "Invalid Login";
-      }
+fetch("http://localhost:8080/api/login",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({username,password})
+})
+.then(res=>res.json())
+.then(result=>{
 
-  });
+if(result){
+localStorage.setItem("username",result.username);
+window.location="employee-dashboard.html";
+}else{
+document.getElementById("msg").innerHTML="Invalid login";
+}
+
+})
+.catch(()=>{
+document.getElementById("msg").innerHTML="Server error";
+});
+
 }
 
 
 // ======================
-// LOAD EMPLOYEES + ATTENDANCE
+// EMPLOYEE STATS
+// ======================
+
+function loadEmployeeStats(){
+
+let username=localStorage.getItem("username");
+if(!username) return;
+
+document.getElementById("employeeName").innerText="Welcome "+username;
+
+fetch("http://localhost:8080/api/employeeStats?employeeName="+username)
+.then(res=>res.json())
+.then(data=>{
+document.getElementById("presentDays").innerText=data.present;
+document.getElementById("absentDays").innerText=data.absent;
+});
+
+}
+
+
+// ======================
+// LOAD ATTENDANCE
 // ======================
 
 function loadEmployees(){
 
-let today = new Date().toISOString().split('T')[0];
+let today=new Date().toISOString().split('T')[0];
+let dateInput=document.getElementById("selectedDate");
 
-let dateInput = document.getElementById("selectedDate");
-
-// first load -> today
-if(dateInput.value === ""){
-    dateInput.value = today;
+if(dateInput.value===""){
+dateInput.value=today;
 }
 
-let selectedDate = dateInput.value;
+let selectedDate=dateInput.value;
 
-document.getElementById("todayDate").innerHTML =
-"Showing Attendance : " + selectedDate;
+document.getElementById("todayDate").innerHTML=
+"Attendance Date : "+selectedDate;
 
-
-// FETCH EMPLOYEES + ATTENDANCE
 Promise.all([
-fetch("http://localhost:8080/api/employees").then(res=>res.json()),
-fetch("http://localhost:8080/api/attendanceByDate?date="+selectedDate)
-.then(res=>res.json())
-])
-.then(([employees, attendance])=>{
 
-let attendanceMap = {};
+fetch("http://localhost:8080/api/employees").then(res=>res.json()),
+fetch("http://localhost:8080/api/attendanceByDate?date="+selectedDate).then(res=>res.json())
+
+])
+.then(([employees,attendance])=>{
+
+let attendanceMap={};
 
 attendance.forEach(a=>{
-    attendanceMap[a.employeeName] = a.status;
+attendanceMap[a.employeeName]=a.status;
 });
 
-let html = "";
-
-let present = 0;
-let absent = 0;
+let html="";
+let present=0;
+let absent=0;
 
 employees.forEach(emp=>{
 
-let status = attendanceMap[emp.username];
+let status=attendanceMap[emp.username];
 
-// COUNT PRESENT / ABSENT
-if(status === "Present") present++;
-if(status === "Absent") absent++;
+if(status==="Present") present++;
+if(status==="Absent") absent++;
 
-let disableButtons =
-(selectedDate !== today || status)
-? "disabled style='opacity:0.5'"
-: "";
+let disableButtons=(selectedDate!==today||status)?"disabled":"";
 
-html += `
-<div>
-<b>${emp.username}</b>
+let statusColor="black";
+if(status==="Present") statusColor="green";
+if(status==="Absent") statusColor="red";
 
-<button ${disableButtons}
+html+=`
+
+<div class="employee-row">
+
+<div class="employee-name">
+${emp.username}
+</div>
+
+<div class="employee-actions">
+
+<button class="present-btn"
+${disableButtons}
 onclick="markAttendance('${emp.username}','Present')">
 Present
 </button>
 
-<button ${disableButtons}
+<button class="absent-btn"
+${disableButtons}
 onclick="markAttendance('${emp.username}','Absent')">
 Absent
 </button>
 
-<span style="margin-left:10px;color:green;">
-${status ? "Marked: "+status : ""}
+<span class="attendance-status"
+style="color:${statusColor}">
+${status ? status : "-"}
 </span>
-</div><br>
+
+</div>
+
+</div>
+
 `;
 
 });
 
-document.getElementById("employeeList").innerHTML = html;
-
-// SHOW SUMMARY
-document.getElementById("presentCount").innerHTML = present;
-document.getElementById("absentCount").innerHTML = absent;
+document.getElementById("employeeList").innerHTML=html;
+document.getElementById("presentCount").innerText=present;
+document.getElementById("absentCount").innerText=absent;
 
 });
+
 }
 
 
@@ -174,27 +212,24 @@ document.getElementById("absentCount").innerHTML = absent;
 
 function markAttendance(name,status){
 
-let today = new Date().toISOString().split('T')[0];
-
-let data = {
-employeeName:name,
-date:today,
-status:status
-};
+let today=new Date().toISOString().split('T')[0];
 
 fetch("http://localhost:8080/api/markAttendance",{
 method:"POST",
-headers:{ "Content-Type":"application/json" },
-body:JSON.stringify(data)
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({
+employeeName:name,
+date:today,
+status:status
+})
 })
 .then(res=>res.json())
-.then(result=>{
-
-document.getElementById("attMsg").innerHTML =
-"Attendance Updated!";
-
-// reload data
+.then(()=>{
+document.getElementById("attMsg").innerHTML="Attendance updated successfully";
 loadEmployees();
-
+})
+.catch(()=>{
+document.getElementById("attMsg").innerHTML="Error updating attendance";
 });
+
 }

@@ -9,18 +9,38 @@
 
 <div class="container">
 
+<div class="page">
+
+<div class="card">
+
 <h2>Employee Dashboard</h2>
 
-<p>Welcome Employee 👋</p>
+<h3 id="employeeName"></h3>
 
-<p>Task Assigned: Assembly Work</p>
-<p>Attendance: 90%</p>
+<div class="summary">
+
+<p><b>Days Present:</b> <span id="presentDays"></span></p>
+
+<p><b>Days Absent:</b> <span id="absentDays"></span></p>
+
+</div>
 
 <button onclick="logout()">Logout</button>
 
 </div>
 
+</div>
+</div>
+
+
+
+</div>
+
 <script src="script.js"></script>
+
+<script>
+loadEmployeeStats();
+</script>
 
 </body>
 </html>
