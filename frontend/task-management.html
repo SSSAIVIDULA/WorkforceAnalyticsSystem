@@ -226,6 +226,147 @@
       font-weight: 700;
       margin-right: 15px;
     }
+
+    /* Modal Styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(8px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .modal-content {
+      background: white;
+      width: 90%;
+      max-width: 900px;
+      max-height: 90vh;
+      border-radius: 24px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    }
+
+    .modal-header {
+      padding: 25px 30px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f8fafc;
+    }
+
+    .modal-body {
+      padding: 30px;
+      overflow-y: auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+    }
+
+    .modal-footer {
+      padding: 20px 30px;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      background: #f8fafc;
+    }
+
+    .close-modal {
+      font-size: 24px;
+      cursor: pointer;
+      color: #64748b;
+      transition: color 0.2s;
+    }
+
+    .close-modal:hover {
+      color: #1e293b;
+    }
+
+    .task-info-panel {
+      background: #f1f5f9;
+      padding: 20px;
+      border-radius: 16px;
+    }
+
+    .info-item {
+      margin-bottom: 15px;
+    }
+
+    .info-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .info-value {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1e293b;
+      margin-top: 4px;
+    }
+
+    .assigned-tag {
+      display: inline-flex;
+      align-items: center;
+      background: #e0e7ff;
+      color: #4338ca;
+      padding: 6px 12px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      margin: 4px;
+    }
+
+    .unassign-btn {
+      margin-left: 8px;
+      color: #ef4444;
+      cursor: pointer;
+      font-weight: 800;
+    }
+
+    .suggestion-item {
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+
+    .suggestion-item:hover {
+      border-color: var(--primary);
+      background: #f5f7ff;
+    }
+
+    .suggestion-item.selected {
+      border-color: var(--primary);
+      background: #eff6ff;
+    }
+
+    .status-active-badge {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background: #10b981;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
   </style>
 </head>
 
@@ -319,9 +460,77 @@
           </div>
         </div>
       </div>
-    </div>
-  </div>
-  <script src="script.js"></script>
+      <!-- Task Detail Modal -->
+      <div id="taskModal" class="modal-overlay" onclick="handleOutsideClick(event)">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 id="modalTitle" style="margin: 0; font-size: 22px; font-weight: 800; color: #1e293b;">Task Details</h2>
+            <span class="close-modal" onclick="closeTaskModal()">&times;</span>
+          </div>
+          <div class="modal-body">
+            <!-- Left Side: Task info & Assignments -->
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+              <div class="task-info-panel" id="modalInfoPanel">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                  <div class="info-item">
+                    <div class="info-label">Section</div>
+                    <div id="modalSection" class="info-value">-</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">Priority</div>
+                    <div id="modalPriority" class="info-value">-</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">Deadline</div>
+                    <div id="modalDeadline" class="info-value">-</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">Status</div>
+                    <div id="modalStatus" class="info-value">-</div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 style="font-size: 15px; font-weight: 700; color: #1e293b; margin-bottom: 12px;">Assigned Staff</h3>
+                <div id="modalAssignedList"
+                  style="min-height: 40px; background: #fff; border: 1px dashed #cbd5e1; border-radius: 12px; padding: 10px;">
+                  <!-- Assigned tags injected here -->
+                </div>
+              </div>
+
+              <div style="margin-top: auto;">
+                <button id="completeBtn" onclick="markTaskCompletedFromModal()" class="btn-premium btn-primary"
+                  style="width: 100%; background: var(--success); border: none;">
+                  Mark as Completed
+                </button>
+              </div>
+            </div>
+
+            <!-- Right Side: Suggestions -->
+            <div style="display: flex; flex-direction: column;">
+              <h3 style="font-size: 15px; font-weight: 700; color: #1e293b; margin-bottom: 12px;">Suggested Employees
+              </h3>
+              <div id="modalSuggestionsList" style="flex: 1; overflow-y: auto; max-height: 400px; padding-right: 5px;">
+                <!-- Suggestions injected here -->
+              </div>
+
+              <div id="modalSelectionActions" style="margin-top: 15px; display: none;">
+                <button onclick="confirmModalAssignment()" class="btn-premium btn-primary" style="width: 100%;">
+                  Assign Selected Staff
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button onclick="handleDeleteFromModal()" class="btn-premium"
+              style="background: #fee2e2; color: #ef4444; border: none;">Delete Task</button>
+            <button onclick="closeTaskModal()" class="btn-premium btn-secondary" style="border: none;">Close</button>
+          </div>
+        </div>
+      </div>
+
+      <script src="script.js"></script>
 </body>
 
 </html>

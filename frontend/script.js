@@ -44,37 +44,48 @@ function addEmployee() {
     let skill = selectedSkills.join(", ");
 
     let employeeId = document.getElementById("employeeId").value.trim();
-    let department = document.getElementById("department").value.trim();
+    let phoneNumber = document.getElementById("phoneNumber").value.trim();
 
     if (username === "" || password === "") {
         document.getElementById("msg").innerHTML = "Please fill all fields";
         return;
     }
 
-    fetch("http://localhost:8080/api/addEmployee", {
+    fetch("/api/addEmployee", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password, role, skill, employeeId, department })
+        body: JSON.stringify({ username, password, role, skill, employeeId, phoneNumber })
     })
-        .then(res => res.json())
+        .then(async res => {
+            if (res.ok) {
+                return res.json();
+            } else {
+                let errorData = await res.json().catch(() => ({ message: "Server error" }));
+                throw new Error(errorData.message || "Registration failed");
+            }
+        })
         .then(() => {
-
-            document.getElementById("msg").innerHTML = "Employee added successfully";
+            document.getElementById("msg").style.color = "lightgreen";
+            document.getElementById("msg").innerHTML = "Employee added successfully ✓";
 
             document.getElementById("username").value = "";
             document.getElementById("password").value = "";
             document.getElementById("employeeId").value = "";
-            document.getElementById("department").value = "";
+            document.getElementById("phoneNumber").value = "";
 
-            document.querySelectorAll('input[name="empSkill"]').forEach(cb => cb.checked = false);
+            document.querySelectorAll('input[name="empSkill"]').forEach(cb => {
+                cb.checked = false;
+                cb.parentElement.classList.remove('selected');
+            });
 
             setTimeout(() => {
                 window.location = "attendance.html";
             }, 1000);
-
         })
-        .catch(() => {
-            document.getElementById("msg").innerHTML = "Error adding employee";
+        .catch((err) => {
+            console.error("Add Employee Error:", err);
+            document.getElementById("msg").style.color = "red";
+            document.getElementById("msg").innerHTML = "Error: " + err.message;
         });
 
 }
@@ -94,7 +105,7 @@ function login() {
         return;
     }
 
-    fetch("http://localhost:8080/api/login", {
+    fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password })
@@ -133,8 +144,8 @@ function loadEmployees() {
     let selectedDate = dateInput.value;
 
     Promise.all([
-        fetch("http://localhost:8080/api/employees").then(res => res.json()),
-        fetch("http://localhost:8080/api/attendanceByDate?date=" + selectedDate).then(res => res.json())
+        fetch("/api/employees").then(res => res.json()),
+        fetch("/api/attendanceByDate?date=" + selectedDate).then(res => res.json())
     ])
         .then(([employees, attendance]) => {
 
@@ -201,7 +212,7 @@ function markAttendance(name, status) {
 
     let today = new Date().toISOString().split('T')[0];
 
-    fetch("http://localhost:8080/api/markAttendance", {
+    fetch("/api/markAttendance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -264,7 +275,7 @@ function createTask() {
         return;
     }
 
-    fetch("http://localhost:8080/api/createTask", {
+    fetch("/api/createTask", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -292,7 +303,7 @@ function loadTasks() {
 
     let today = new Date().toISOString().split('T')[0];
 
-    fetch("http://localhost:8080/api/tasksByDate?date=" + today)
+    fetch("/api/tasksByDate?date=" + today)
         .then(res => res.json())
         .then(tasks => {
 
@@ -303,7 +314,20 @@ function loadTasks() {
 
             tasks.forEach(task => {
                 let isSelected = selectedTaskId === task.id ? "border: 2px solid #2196f3; background: #e3f2fd;" : "border: 1px solid #ddd;";
-                let assignedList = task.assignedEmployees ? task.assignedEmployees : "<span style='color:red;'>Not Assigned</span>";
+
+                let assignedListHTML = "<span style='color:red;'>Not Assigned</span>";
+                if (task.assignedEmployees && task.assignedEmployees.trim() !== "") {
+                    let emps = task.assignedEmployees.split(",");
+                    let badges = emps.map(emp => {
+                        let eName = emp.trim();
+                        return `<span style="display:inline-block; background:#e0e7ff; color:#4338ca; padding:2px 8px; border-radius:12px; margin:2px; font-size:12px;">
+                                    ${eName} 
+                                    <span onclick="unassignEmployee(event, ${task.id}, '${eName}')" style="cursor:pointer; color:#ef4444; font-weight:bold; margin-left:4px;">&times;</span>
+                                </span>`;
+                    });
+                    assignedListHTML = badges.join("");
+                }
+
                 let hasSkill = task.requiredSkill && task.requiredSkill.trim() !== "";
                 let safeSkill = hasSkill ? task.requiredSkill.replace(/'/g, "\\'") : "";
                 let safeName = task.taskName ? task.taskName.replace(/'/g, "\\'") : "Untitled";
@@ -311,16 +335,17 @@ function loadTasks() {
                 if (hasSkill) {
                     html += `
 <div class="employee-row" 
-     onclick="selectTask(${task.id}, '${safeSkill}', '${safeName}')" 
+     onclick="openTaskModal(${task.id})" 
      style="cursor:pointer; margin-bottom: 10px; padding: 12px; border-radius: 8px; transition: 0.3s; ${isSelected}">
     <div style="flex: 1;">
         <b style="font-size: 16px; color: #333;">${task.taskName || 'Untitled'}</b><br>
         <small style="color: #666;">Section: ${task.section} | Priority: ${task.priority}</small><br>
         <small style="color: #667eea;">Skills: ${task.requiredSkill}</small><br>
-        <span style="font-size: 13px;"><b>Assigned:</b> ${assignedList}</span>
+        <div style="font-size: 13px; margin-top:5px;"><b>Assigned:</b> ${assignedListHTML}</div>
     </div>
-    <div style="text-align: right;">
+    <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
         <span style="background: #eee; padding: 3px 8px; border-radius: 12px; font-size: 11px;">${task.status}</span>
+        <button onclick="deleteTask(event, ${task.id})" style="background: #fee2e2; color: #ef4444; border: none; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; transition: 0.2s;">Discard</button>
     </div>
 </div>
 `;
@@ -332,8 +357,9 @@ function loadTasks() {
         <b style="font-size: 16px; color: #999;">${task.taskName || 'Untitled'}</b><br>
         <small style="color: #ef4444;">⚠ No skills set — cannot suggest employees</small>
     </div>
-    <div style="text-align: right;">
+    <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
         <span style="background: #fecaca; padding: 3px 8px; border-radius: 12px; font-size: 11px;">${task.status}</span>
+        <button onclick="deleteTask(event, ${task.id})" style="background: #fee2e2; color: #ef4444; border: none; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; transition: 0.2s;">Discard</button>
     </div>
 </div>
 `;
@@ -358,7 +384,7 @@ function selectTask(taskId, skill, name) {
     document.getElementById("selectionHint").innerText = "Suggesting employees for: " + name;
     loadTasks();
 
-    fetch("http://localhost:8080/api/employeesBySkill?skill=" + encodeURIComponent(skill))
+    fetch("/api/employeesBySkill?skill=" + encodeURIComponent(skill))
         .then(res => res.json())
         .then(data => {
             currentSuggestions = data;
@@ -445,7 +471,7 @@ function confirmTaskAssignment() {
 
     let employees = Array.from(selectedEmployeesForTask).join(", ");
 
-    fetch(`http://localhost:8080/api/assignEmployees?taskId=${selectedTaskId}&employees=${encodeURIComponent(employees)}`, {
+    fetch(`/api/assignEmployees?taskId=${selectedTaskId}&employees=${encodeURIComponent(employees)}`, {
         method: "POST"
     })
         .then(res => res.json())
@@ -460,6 +486,253 @@ function confirmTaskAssignment() {
             document.getElementById("selectionHint").innerText = "Select a task on the left to see matching staff members.";
         })
         .catch(() => alert("Error assigning employees."));
+}
+
+function unassignEmployee(event, taskId, employeeName) {
+    event.stopPropagation(); // Prevent row click
+    if (!confirm(`Are you sure you want to remove ${employeeName} from this task?`)) {
+        return;
+    }
+
+    fetch(`/api/unassignEmployee?taskId=${taskId}&employee=${encodeURIComponent(employeeName)}`, {
+        method: "POST"
+    })
+        .then(res => res.json())
+        .then(() => {
+            loadTasks();
+            // If the currently selected task was updated, refresh suggestions
+            if (selectedTaskId === taskId) {
+                // We don't have the skill easily here, but we can clear the selection for safety
+                selectedTaskId = null;
+                document.getElementById("suggestedEmployees").innerHTML = "";
+                document.getElementById("selectionHint").style.display = "block";
+                document.getElementById("selectionHint").innerText = "Select a task on the left to see matching staff members.";
+            }
+        })
+        .catch(err => {
+            console.error("Error unassigning:", err);
+            alert("Error removing employee.");
+        });
+}
+
+function deleteTask(event, taskId) {
+    event.stopPropagation(); // Prevent row click
+    if (!confirm("Are you sure you want to permanently delete this task?")) {
+        return;
+    }
+
+    fetch(`/api/deleteTask?taskId=${taskId}`, {
+        method: "POST"
+    })
+        .then(() => {
+            if (selectedTaskId === taskId) {
+                selectedTaskId = null;
+                document.getElementById("suggestedEmployees").innerHTML = "";
+                document.getElementById("selectionHint").style.display = "block";
+                document.getElementById("selectionHint").innerText = "Select a task on the left to see matching staff members.";
+                if (document.getElementById("assignmentActions")) document.getElementById("assignmentActions").style.display = "none";
+                if (document.getElementById("selectionCounter")) document.getElementById("selectionCounter").style.display = "none";
+            }
+            loadTasks();
+        })
+        .catch(err => {
+            console.error("Error deleting task:", err);
+            alert("Error deleting task.");
+        });
+}
+
+
+// ======================
+// TASK MODAL LOGIC (NEW)
+// ======================
+
+let modalSelectedEmployees = new Set();
+let currentModalTask = null;
+
+function openTaskModal(taskId) {
+    selectedTaskId = taskId;
+    fetch(`/api/tasksByDate?date=${new Date().toISOString().split('T')[0]}`)
+        .then(res => res.json())
+        .then(tasks => {
+            const task = tasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            currentModalTask = task;
+            modalSelectedEmployees.clear();
+
+            // Update Modal UI
+            document.getElementById("modalTitle").innerText = task.taskName;
+            document.getElementById("modalSection").innerText = task.section;
+            document.getElementById("modalPriority").innerText = task.priority;
+            document.getElementById("modalDeadline").innerText = task.deadline || "None";
+            document.getElementById("modalStatus").innerText = task.status;
+
+            // Completion Button state
+            const completeBtn = document.getElementById("completeBtn");
+            if (task.status === "Completed") {
+                completeBtn.innerText = "Task Completed ✓";
+                completeBtn.disabled = true;
+                completeBtn.style.opacity = "0.6";
+                completeBtn.style.cursor = "not-allowed";
+            } else {
+                completeBtn.innerText = "Mark as Completed";
+                completeBtn.disabled = false;
+                completeBtn.style.opacity = "1";
+                completeBtn.style.cursor = "pointer";
+            }
+
+            // Render assigned list
+            renderModalAssigned(task);
+
+            // Fetch suggestions
+            fetch("/api/employeesBySkill?skill=" + encodeURIComponent(task.requiredSkill))
+                .then(res => res.json())
+                .then(data => {
+                    renderModalSuggestions(data, task);
+                });
+
+            document.getElementById("taskModal").style.display = "flex";
+        });
+}
+
+function closeTaskModal() {
+    document.getElementById("taskModal").style.display = "none";
+    loadTasks();
+}
+
+function handleOutsideClick(event) {
+    if (event.target.id === "taskModal") {
+        closeTaskModal();
+    }
+}
+
+function renderModalAssigned(task) {
+    const container = document.getElementById("modalAssignedList");
+    if (!task.assignedEmployees || task.assignedEmployees.trim() === "") {
+        container.innerHTML = "<p style='color:#94a3b8; font-size:13px; margin:0;'>No one assigned yet.</p>";
+        return;
+    }
+
+    const emps = task.assignedEmployees.split(", ");
+    container.innerHTML = emps.map(emp => `
+        <span class="assigned-tag">
+            ${emp}
+            <span class="unassign-btn" onclick="unassignFromModal('${emp}')">&times;</span>
+        </span>
+    `).join("");
+}
+
+function renderModalSuggestions(employees, task) {
+    const container = document.getElementById("modalSuggestionsList");
+    const actions = document.getElementById("modalSelectionActions");
+
+    if (employees.length === 0) {
+        container.innerHTML = "<p style='color:#64748b; font-size:13px; text-align:center; padding:20px;'>No matching employees found.</p>";
+        actions.style.display = "none";
+        return;
+    }
+
+    // Filter out already assigned
+    const assignedSet = new Set(task.assignedEmployees ? task.assignedEmployees.split(", ").map(e => e.trim()) : []);
+    const available = employees.filter(e => !assignedSet.has(e.username));
+
+    if (available.length === 0) {
+        container.innerHTML = "<p style='color:#10b981; font-size:13px; text-align:center; padding:20px; font-weight:600;'>All qualified staff are assigned!</p>";
+        actions.style.display = "none";
+        return;
+    }
+
+    container.innerHTML = available.map(emp => {
+        const isSelected = modalSelectedEmployees.has(emp.username);
+        return `
+            <div class="suggestion-item ${isSelected ? 'selected' : ''}" onclick="toggleModalEmpSelection('${emp.username}')">
+                <div style="display: flex; align-items: center;">
+                    <div class="status-active-badge"></div>
+                    <span style="font-weight:600; color:#1e293b;">${emp.username}</span>
+                </div>
+                <div style="color:var(--primary); font-weight:800;">${isSelected ? '✓' : '+'}</div>
+            </div>
+        `;
+    }).join("");
+
+    actions.style.display = modalSelectedEmployees.size > 0 ? "block" : "none";
+}
+
+function toggleModalEmpSelection(username) {
+    if (modalSelectedEmployees.has(username)) {
+        modalSelectedEmployees.delete(username);
+    } else {
+        modalSelectedEmployees.add(username);
+    }
+    fetch("/api/employeesBySkill?skill=" + encodeURIComponent(currentModalTask.requiredSkill))
+        .then(res => res.json())
+        .then(data => renderModalSuggestions(data, currentModalTask));
+}
+
+function confirmModalAssignment() {
+    if (modalSelectedEmployees.size === 0) return;
+    const employees = Array.from(modalSelectedEmployees).join(", ");
+
+    fetch(`/api/assignEmployees?taskId=${selectedTaskId}&employees=${encodeURIComponent(employees)}`, {
+        method: "POST"
+    })
+        .then(res => res.json())
+        .then(updatedTask => {
+            currentModalTask = updatedTask;
+            modalSelectedEmployees.clear();
+            renderModalAssigned(updatedTask);
+            // Refresh suggestions
+            fetch("/api/employeesBySkill?skill=" + encodeURIComponent(updatedTask.requiredSkill))
+                .then(res => res.json())
+                .then(data => renderModalSuggestions(data, updatedTask));
+        });
+}
+
+function unassignFromModal(employeeName) {
+    if (!confirm(`Remove ${employeeName} from this task?`)) return;
+
+    fetch(`/api/unassignEmployee?taskId=${selectedTaskId}&employee=${encodeURIComponent(employeeName)}`, {
+        method: "POST"
+    })
+        .then(res => res.json())
+        .then(updatedTask => {
+            currentModalTask = updatedTask;
+            renderModalAssigned(updatedTask);
+            // Refresh suggestions
+            fetch("/api/employeesBySkill?skill=" + encodeURIComponent(updatedTask.requiredSkill))
+                .then(res => res.json())
+                .then(data => renderModalSuggestions(data, updatedTask));
+        });
+}
+
+function markTaskCompletedFromModal() {
+    if (!currentModalTask) return;
+
+    fetch(`/api/updateTaskStatus?taskId=${selectedTaskId}&status=Completed`, {
+        method: "POST"
+    })
+        .then(res => res.json())
+        .then(updatedTask => {
+            alert("Task marked as completed!");
+            document.getElementById("modalStatus").innerText = "Completed";
+            const completeBtn = document.getElementById("completeBtn");
+            completeBtn.innerText = "Task Completed ✓";
+            completeBtn.disabled = true;
+            completeBtn.style.opacity = "0.6";
+            completeBtn.style.cursor = "not-allowed";
+            currentModalTask = updatedTask;
+        });
+}
+
+function handleDeleteFromModal() {
+    if (!confirm("Are you sure you want to permanently delete this task?")) return;
+
+    fetch(`/api/deleteTask?taskId=${selectedTaskId}`, {
+        method: "POST"
+    })
+        .then(() => {
+            closeTaskModal();
+        });
 }
 
 
@@ -481,12 +754,14 @@ function loadEmployeeStats() {
     document.getElementById("employeeName").innerText = "Welcome, " + username;
 
     // Fetch profile
-    fetch("http://localhost:8080/api/employeeProfile?username=" + encodeURIComponent(username))
+    fetch("/api/employeeProfile?username=" + encodeURIComponent(username))
         .then(res => res.json())
         .then(profile => {
 
-            if (profile && profile.department) {
-                document.getElementById("empDept").innerText = "Department: " + profile.department;
+            if (profile && profile.phoneNumber) {
+                document.getElementById("empDept").innerText = "📞 " + profile.phoneNumber;
+            } else if (profile && profile.department) {
+                document.getElementById("empDept").innerText = "🏢 " + profile.department;
             }
 
             // Display skills as badges
@@ -507,7 +782,7 @@ function loadEmployeeStats() {
         });
 
     // Fetch attendance stats
-    fetch("http://localhost:8080/api/employeeStats?employeeName=" + encodeURIComponent(username))
+    fetch("/api/employeeStats?employeeName=" + encodeURIComponent(username))
         .then(res => res.json())
         .then(stats => {
 
@@ -555,7 +830,7 @@ function loadEmployeeTasks() {
     let username = localStorage.getItem("username");
     if (!username) return;
 
-    fetch("http://localhost:8080/api/tasksByEmployee?employeeName=" + encodeURIComponent(username))
+    fetch("/api/tasksByEmployee?employeeName=" + encodeURIComponent(username))
         .then(res => res.json())
         .then(tasks => {
 
@@ -598,11 +873,14 @@ function loadEmployeeTasks() {
 
             // Task list
             let html = "";
+            let assignedTasks = [];
+
             if (tasks.length === 0) {
                 html = "<p style='color:#999;'>No tasks assigned yet.</p>";
             }
 
             tasks.forEach(task => {
+                assignedTasks.push(task);
                 let statusColor = "#f59e0b"; // Pending/Default
                 if (task.status === "Completed") statusColor = "#10b981";
                 if (task.status === "In Progress") statusColor = "#8b5cf6";
@@ -613,7 +891,8 @@ function loadEmployeeTasks() {
                     <div>
                         <div style="font-weight: 700; color: #1e293b;">${task.taskName}</div>
                         <div style="font-size: 12px; color: #64748b; margin-top: 4px;">
-                            ${task.section} • Priority: ${task.priority}
+                            ${task.section} • Priority: ${task.priority}<br>
+                            Deadline: ${task.deadline ? task.deadline : task.date}
                         </div>
                     </div>
                     <span class="status-badge" style="background: ${statusColor}15; color: ${statusColor}; border: 1px solid ${statusColor}30;">
@@ -624,10 +903,102 @@ function loadEmployeeTasks() {
 
             document.getElementById("employeeTaskList").innerHTML = html;
 
+            // Initialize Calendar with these tasks
+            window.employeeTasks = assignedTasks;
+            initCalendar();
+
         })
-        .catch(() => {
+        .catch((err) => {
+            console.error("Error loading tasks:", err);
             document.getElementById("employeeTaskList").innerHTML = "<p style='color:red;'>Error loading tasks.</p>";
         });
+}
+
+// ======================
+// EMPLOYEE CALENDAR
+// ======================
+
+let currentDate = new Date();
+
+function initCalendar() {
+    renderCalendar();
+
+    document.getElementById("prevMonth").addEventListener("click", () => {
+        currentDate.setMonth(currentDate.getMonth() - 1);
+        renderCalendar();
+    });
+
+    document.getElementById("nextMonth").addEventListener("click", () => {
+        currentDate.setMonth(currentDate.getMonth() + 1);
+        renderCalendar();
+    });
+}
+
+function renderCalendar() {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    document.getElementById("currentMonthDisplay").innerText = `${monthNames[month]} ${year}`;
+
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    const grid = document.getElementById("calendarGrid");
+    grid.innerHTML = "";
+
+    const today = new Date();
+    const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+
+    // Add empty cells for days before the 1st
+    for (let i = 0; i < firstDay; i++) {
+        grid.innerHTML += `<div class="calendar-day empty"></div>`;
+    }
+
+    // Group tasks by date
+    const tasksByDate = {};
+    if (window.employeeTasks) {
+        window.employeeTasks.forEach(task => {
+            // Use deadline if exists, else fallback to creation date
+            let dateStr = task.deadline ? task.deadline : task.date;
+            if (dateStr) {
+                if (!tasksByDate[dateStr]) tasksByDate[dateStr] = [];
+                tasksByDate[dateStr].push(task);
+            }
+        });
+    }
+
+    // Add days of the month
+    for (let i = 1; i <= daysInMonth; i++) {
+        let isToday = isCurrentMonth && today.getDate() === i;
+        let dayClass = isToday ? "day-number today" : "day-number";
+
+        // Format date string to match YYYY-MM-DD
+        let m = (month + 1).toString().padStart(2, '0');
+        let d = i.toString().padStart(2, '0');
+        let dateKey = `${year}-${m}-${d}`;
+
+        let tasksHtml = "";
+        if (tasksByDate[dateKey]) {
+            tasksByDate[dateKey].forEach(t => {
+                let badgeClass = "cal-task-pending";
+                if (t.status === "Started") badgeClass = "cal-task-started";
+                if (t.status === "In Progress") badgeClass = "cal-task-progress";
+                if (t.status === "Completed") badgeClass = "cal-task-completed";
+
+                tasksHtml += `<div class="cal-task-pill ${badgeClass}" title="${t.taskName} - ${t.status}">${t.taskName}</div>`;
+            });
+        }
+
+        grid.innerHTML += `
+            <div class="calendar-day">
+                <div class="${dayClass}">${i}</div>
+                <div style="flex:1; margin-top:5px;">
+                    ${tasksHtml}
+                </div>
+            </div>
+        `;
+    }
 }
 
 
@@ -638,7 +1009,7 @@ function loadEmployeeTasks() {
 function loadManagerAnalytics() {
 
     // Fetch employee count
-    fetch("http://localhost:8080/api/employees")
+    fetch("/api/employees")
         .then(res => res.json())
         .then(employees => {
             document.getElementById("totalEmployees").innerText = employees.length;
@@ -646,7 +1017,7 @@ function loadManagerAnalytics() {
         .catch(() => { });
 
     // Fetch main analytics
-    fetch("http://localhost:8080/api/managerAnalytics")
+    fetch("/api/managerAnalytics")
         .then(res => res.json())
         .then(data => {
 
@@ -735,5 +1106,48 @@ function loadManagerAnalytics() {
         })
         .catch(err => {
             console.error("Error loading manager analytics:", err);
+        });
+}
+
+function loadManagerTaskReport() {
+    const date = document.getElementById("reportDate").value;
+    const body = document.getElementById("taskReportBody");
+
+    if (!date) return;
+
+    body.innerHTML = `<tr><td colspan="5" style="padding: 20px; text-align: center;">Loading tasks for ${date}...</td></tr>`;
+
+    fetch(`/api/tasksByDate?date=${date}`)
+        .then(res => res.json())
+        .then(tasks => {
+            if (tasks.length === 0) {
+                body.innerHTML = `<tr><td colspan="5" style="padding: 30px; text-align: center; color: #94a3b8;">No tasks found for ${date}.</td></tr>`;
+                return;
+            }
+
+            body.innerHTML = tasks.map(t => {
+                let statusColor = "#f59e0b"; // Pending
+                if (t.status === "Completed") statusColor = "#10b981";
+                if (t.status === "In Progress") statusColor = "#8b5cf6";
+                if (t.status === "Started") statusColor = "#3b82f6";
+
+                return `
+                    <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='white'">
+                        <td style="padding: 12px; font-weight: 600; color: #1e293b;">${t.taskName || 'Untitled'}</td>
+                        <td style="padding: 12px; color: #64748b;">${t.section}</td>
+                        <td style="padding: 12px;">
+                            <span style="background: ${statusColor}15; color: ${statusColor}; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; border: 1px solid ${statusColor}30;">
+                                ${t.status}
+                            </span>
+                        </td>
+                        <td style="padding: 12px; color: #475569;">${t.assignedEmployees || '<span style="color:#cbd5e1">None</span>'}</td>
+                        <td style="padding: 12px; color: #475569; font-weight: 500;">${t.priority}</td>
+                    </tr>
+                `;
+            }).join("");
+        })
+        .catch(err => {
+            console.error("Error loading report:", err);
+            body.innerHTML = `<tr><td colspan="5" style="padding: 20px; text-align: center; color: #ef4444;">Error loading tasks.</td></tr>`;
         });
 }

@@ -1,55 +1,267 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-<link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add New Employee | Workforce Analytics</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .premium-form-container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .form-section-title {
+            text-align: left;
+            font-size: 14px;
+            font-weight: 700;
+            color: #6366f1;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 25px 0 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-section-title::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(to right, rgba(99, 102, 241, 0.2), transparent);
+        }
+
+        .input-group {
+            position: relative;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .input-group i {
+            position: absolute;
+            left: 15px;
+            top: 42px;
+            color: #94a3b8;
+            font-size: 14px;
+            transition: color 0.3s;
+        }
+
+        .input-group input:focus+i,
+        .input-group select:focus+i {
+            color: #6366f1;
+        }
+
+        .input-group input,
+        .input-group select {
+            padding-left: 42px;
+            margin-top: 8px;
+            margin-bottom: 0;
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px solid #e2e8f0;
+        }
+
+        .skills-grid-modern {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        .skill-option {
+            background: white;
+            border: 1px solid #e2e8f0;
+            padding: 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .skill-option:hover {
+            border-color: #6366f1;
+            background: #f8fafc;
+            transform: translateY(-2px);
+        }
+
+        .skill-option input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            margin: 0;
+            cursor: pointer;
+            accent-color: #6366f1;
+        }
+
+        .skill-option span {
+            font-size: 13px;
+            font-weight: 500;
+            color: #475569;
+        }
+
+        .skill-option.selected {
+            background: rgba(99, 102, 241, 0.05);
+            border-color: #6366f1;
+        }
+
+        .skill-option.selected span {
+            color: #6366f1;
+            font-weight: 600;
+        }
+
+        .btn-container {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 15px;
+            margin-top: 35px;
+        }
+
+        .back-btn {
+            background: white;
+            color: #64748b;
+            border: 1px solid #e2e8f0;
+            box-shadow: none;
+        }
+
+        .back-btn:hover {
+            background: #f8fafc;
+            color: #1e293b;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            border-color: #cbd5e1;
+        }
+    </style>
 </head>
 
 <body>
 
-<div class="page">
+    <div class="page">
+        <div class="card premium-card premium-form-container">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <div
+                    style="width: 60px; height: 60px; background: linear-gradient(135deg, #6366f1, #a855f7); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; color: white; font-size: 24px; box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);">
+                    <i class="fas fa-user-plus"></i>
+                </div>
+                <h2 style="margin: 0;">Add New Employee</h2>
+                <p style="color: #64748b; font-size: 14px; margin-top: 8px;">Onboard a new member to the workforce
+                    system</p>
+            </div>
 
-<div class="card">
+            <div class="form-section-title">
+                <i class="fas fa-id-card"></i> Basic Information
+            </div>
 
-<h2>Add Employee</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="input-group">
+                    <label for="username">Full Name</label>
+                    <input type="text" id="username" placeholder="e.g. John Doe">
+                    <i class="fas fa-user"></i>
+                </div>
 
-<input type="text" id="username" placeholder="Username">
+                <div class="input-group">
+                    <label for="employeeId">Employee ID</label>
+                    <input type="text" id="employeeId" placeholder="e.g. EMP-101">
+                    <i class="fas fa-hashtag"></i>
+                </div>
+            </div>
 
-<input type="text" id="employeeId" placeholder="Employee ID">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="input-group">
+                    <label for="phoneNumber">Phone Number</label>
+                    <input type="text" id="phoneNumber" placeholder="e.g. +1 234 567 890">
+                    <i class="fas fa-phone"></i>
+                </div>
 
-<input type="text" id="department" placeholder="Department">
+                <div class="input-group">
+                    <label for="password">Initial Password</label>
+                    <input type="password" id="password" placeholder="••••••••">
+                    <i class="fas fa-lock"></i>
+                </div>
+            </div>
 
-<input type="password" id="password" placeholder="Password">
+            <div class="input-group">
+                <label for="role">Access Role</label>
+                <select id="role">
+                    <option value="employee">Standard Employee</option>
+                    <option value="supervisor">Supervisor</option>
+                </select>
+                <i class="fas fa-shield-halved"></i>
+            </div>
 
-<select id="role">
-<option value="employee">Employee</option>
-</select>
+            <div class="form-section-title">
+                <i class="fas fa-star"></i> Skills & Expertise
+            </div>
 
-<div style="text-align: left; margin-bottom: 20px; background: #f9f9f9; padding: 15px; border-radius: 10px; border: 1px solid #e1e1e1;">
-    <label style="margin-bottom:10px; display:block;">Select Employee Skills:</label>
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-        <div class="employee-checkbox"><input type="checkbox" name="empSkill" value="Cleaning"> Cleaning</div>
-        <div class="employee-checkbox"><input type="checkbox" name="empSkill" value="Basic Handling"> Basic Handling</div>
-        <div class="employee-checkbox"><input type="checkbox" name="empSkill" value="Cutting"> Cutting</div>
-        <div class="employee-checkbox"><input type="checkbox" name="empSkill" value="Food Processing"> Food Processing</div>
-        <div class="employee-checkbox"><input type="checkbox" name="empSkill" value="Cooking"> Cooking</div>
-        <div class="employee-checkbox"><input type="checkbox" name="empSkill" value="Inspection"> Inspection</div>
-        <div class="employee-checkbox"><input type="checkbox" name="empSkill" value="Food Safety"> Food Safety</div>
-        <div class="employee-checkbox"><input type="checkbox" name="empSkill" value="Packing"> Packing</div>
-        <div class="employee-checkbox"><input type="checkbox" name="empSkill" value="Label Handling"> Label Handling</div>
-        <div class="employee-checkbox"><input type="checkbox" name="empSkill" value="Warehouse Handling"> Warehouse Handling</div>
+            <div class="skills-grid-modern" id="skillsGrid">
+                <label class="skill-option">
+                    <input type="checkbox" name="empSkill" value="Cleaning">
+                    <span>Cleaning</span>
+                </label>
+                <label class="skill-option">
+                    <input type="checkbox" name="empSkill" value="Basic Handling">
+                    <span>Basic Handling</span>
+                </label>
+                <label class="skill-option">
+                    <input type="checkbox" name="empSkill" value="Cutting">
+                    <span>Cutting</span>
+                </label>
+                <label class="skill-option">
+                    <input type="checkbox" name="empSkill" value="Food Processing">
+                    <span>Food Processing</span>
+                </label>
+                <label class="skill-option">
+                    <input type="checkbox" name="empSkill" value="Cooking">
+                    <span>Cooking</span>
+                </label>
+                <label class="skill-option">
+                    <input type="checkbox" name="empSkill" value="Inspection">
+                    <span>Inspection</span>
+                </label>
+                <label class="skill-option">
+                    <input type="checkbox" name="empSkill" value="Food Safety">
+                    <span>Food Safety</span>
+                </label>
+                <label class="skill-option">
+                    <input type="checkbox" name="empSkill" value="Packing">
+                    <span>Packing</span>
+                </label>
+                <label class="skill-option">
+                    <input type="checkbox" name="empSkill" value="Label Handling">
+                    <span>Label Handling</span>
+                </label>
+                <label class="skill-option">
+                    <input type="checkbox" name="empSkill" value="Warehouse Handling">
+                    <span>Warehouse Handling</span>
+                </label>
+            </div>
+
+            <div id="msg" style="margin-top: 15px; font-size: 14px;"></div>
+
+            <div class="btn-container">
+                <button onclick="addEmployee()" style="margin-top: 0;">Confirm & Add Employee</button>
+                <button onclick="goSupervisor()" class="back-btn" style="margin-top: 0;">Cancel</button>
+            </div>
+        </div>
     </div>
-</div>
 
-<button onclick="addEmployee()">Add Employee</button>
-
-<p id="msg"></p>
-
-<button onclick="goSupervisor()">Back</button>
-
-</div>
-
-</div>
-<script src="script.js"></script>
+    <script src="script.js"></script>
+    <script>
+        // Add visual feedback for selected skills
+        document.querySelectorAll('.skill-option input').forEach(checkbox => {
+            checkbox.addEventListener('change', function () {
+                if (this.checked) {
+                    this.parentElement.classList.add('selected');
+                } else {
+                    this.parentElement.classList.add('selected');
+                    this.parentElement.classList.remove('selected');
+                }
+            });
+        });
+    </script>
 
 </body>
+
 </html>

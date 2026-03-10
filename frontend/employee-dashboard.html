@@ -124,6 +124,126 @@
             margin: 0 auto;
             padding: 0 20px;
         }
+
+        /* Calendar Styles */
+        .calendar-container {
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .calendar-header {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            text-align: center;
+            font-weight: 700;
+            color: #64748b;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e2e8f0;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+        }
+
+        .calendar-day {
+            min-height: 100px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.2s;
+        }
+
+        .calendar-day:hover {
+            border-color: #cbd5e1;
+            background: #fff;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        .calendar-day.empty {
+            background: rgba(248, 250, 252, 0.5);
+            border: 1px dashed #e2e8f0;
+        }
+
+        .day-number {
+            font-size: 14px;
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 5px;
+            align-self: flex-end;
+        }
+
+        .day-number.today {
+            background: #6366f1;
+            color: white;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        .cal-task-pill {
+            font-size: 11px;
+            padding: 4px 6px;
+            border-radius: 4px;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-weight: 600;
+        }
+
+        .cal-task-pending {
+            background: #fef3c7;
+            color: #92400e;
+            border-left: 3px solid #f59e0b;
+        }
+
+        .cal-task-started {
+            background: #dbeafe;
+            color: #1e40af;
+            border-left: 3px solid #3b82f6;
+        }
+
+        .cal-task-progress {
+            background: #ede9fe;
+            color: #5b21b6;
+            border-left: 3px solid #8b5cf6;
+        }
+
+        .cal-task-completed {
+            background: #d1fae5;
+            color: #065f46;
+            border-left: 3px solid #10b981;
+        }
+
+        .cal-nav-btn {
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #475569;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .cal-nav-btn:hover {
+            background: #e2e8f0;
+            color: #1e293b;
+        }
     </style>
 </head>
 
@@ -206,20 +326,46 @@
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
+            <!-- Calendar Section -->
+            <div class="premium-card" style="margin-top: 25px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="margin: 0; font-size: 18px;">Monthly Task Calendar</h3>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button id="prevMonth" class="cal-nav-btn">&lt;</button>
+                        <span id="currentMonthDisplay"
+                            style="font-weight: 600; font-size: 16px; color: #1e293b; min-width: 140px; text-align: center;"></span>
+                        <button id="nextMonth" class="cal-nav-btn">&gt;</button>
+                    </div>
+                </div>
 
-    <script src="script.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const username = localStorage.getItem("username");
-            if (username) {
-                document.getElementById("navUsername").innerText = "Logged in as " + username;
-            }
-            loadEmployeeStats();
-            loadEmployeeTasks();
-        });
-    </script>
+                <div class="calendar-container">
+                    <div class="calendar-header">
+                        <div>Sun</div>
+                        <div>Mon</div>
+                        <div>Tue</div>
+                        <div>Wed</div>
+                        <div>Thu</div>
+                        <div>Fri</div>
+                        <div>Sat</div>
+                    </div>
+                    <div class="calendar-grid" id="calendarGrid">
+                        <!-- Calendar days injected here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script src="script.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const username = localStorage.getItem("username");
+                if (username) {
+                    document.getElementById("navUsername").innerText = "Logged in as " + username;
+                }
+                loadEmployeeStats();
+                loadEmployeeTasks();
+            });
+        </script>
 
 </body>
 
