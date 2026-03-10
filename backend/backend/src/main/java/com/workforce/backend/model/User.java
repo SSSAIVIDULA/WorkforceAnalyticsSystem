@@ -18,6 +18,8 @@ public class User {
     private String password;
     private String role;
     private String skill;
+    private String employeeId;
+    private String department;
 
     // getters and setters
 
@@ -59,5 +61,21 @@ public class User {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public String getEmployeeId() {
+        return employeeId;
+    }
+
+    public void setEmployeeId(String employeeId) {
+        this.employeeId = employeeId;
+    }
+
+    public String getDepartment() {
+        return department;
+    }
+
+    public void setDepartment(String department) {
+        this.department = department;
     }
 }

@@ -14,19 +14,31 @@
 
 <input type="text" id="username" placeholder="Username">
 
+<input type="text" id="employeeId" placeholder="Employee ID">
+
+<input type="text" id="department" placeholder="Department">
+
 <input type="password" id="password" placeholder="Password">
 
 <select id="role">
 <option value="employee">Employee</option>
 </select>
 
-<select id="skill">
-<option value="Java">Java</option>
-<option value="Python">Python</option>
-<option value="React">React</option>
-<option value="Data Analysis">Data Analysis</option>
-<option value="Testing">Testing</option>
-</select>
+<div style="text-align: left; margin-bottom: 20px; background: #f9f9f9; padding: 15px; border-radius: 10px; border: 1px solid #e1e1e1;">
+    <label style="margin-bottom:10px; display:block;">Select Employee Skills:</label>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div class="employee-checkbox"><input type="checkbox" name="empSkill" value="Cleaning"> Cleaning</div>
+        <div class="employee-checkbox"><input type="checkbox" name="empSkill" value="Basic Handling"> Basic Handling</div>
+        <div class="employee-checkbox"><input type="checkbox" name="empSkill" value="Cutting"> Cutting</div>
+        <div class="employee-checkbox"><input type="checkbox" name="empSkill" value="Food Processing"> Food Processing</div>
+        <div class="employee-checkbox"><input type="checkbox" name="empSkill" value="Cooking"> Cooking</div>
+        <div class="employee-checkbox"><input type="checkbox" name="empSkill" value="Inspection"> Inspection</div>
+        <div class="employee-checkbox"><input type="checkbox" name="empSkill" value="Food Safety"> Food Safety</div>
+        <div class="employee-checkbox"><input type="checkbox" name="empSkill" value="Packing"> Packing</div>
+        <div class="employee-checkbox"><input type="checkbox" name="empSkill" value="Label Handling"> Label Handling</div>
+        <div class="employee-checkbox"><input type="checkbox" name="empSkill" value="Warehouse Handling"> Warehouse Handling</div>
+    </div>
+</div>
 
 <button onclick="addEmployee()">Add Employee</button>
 

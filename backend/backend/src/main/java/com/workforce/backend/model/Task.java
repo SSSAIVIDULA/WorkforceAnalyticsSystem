@@ -19,7 +19,10 @@ public class Task {
     private String requiredSkill;
     private String section;
     private String priority;
-    private String status; // Pending, Completed
+    private String status; // Pending, Started, In Progress, Completed
+    
+    private int employeesNeeded;
+    private LocalDate deadline;
     
     // Storing assigned employees as a comma-separated list of usernames to simplify implementation and avoid complex JoinTables since we don't have constraints
     private String assignedEmployees; 
@@ -90,5 +93,21 @@ public class Task {
 
     public void setDate(LocalDate date) {
         this.date = date;
+    }
+
+    public int getEmployeesNeeded() {
+        return employeesNeeded;
+    }
+
+    public void setEmployeesNeeded(int employeesNeeded) {
+        this.employeesNeeded = employeesNeeded;
+    }
+
+    public LocalDate getDeadline() {
+        return deadline;
+    }
+
+    public void setDeadline(LocalDate deadline) {
+        this.deadline = deadline;
     }
 }

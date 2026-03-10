@@ -35,7 +35,6 @@ public class LoginController {
     @Autowired
     private TaskRepository taskRepository;
 
-
     // =========================
     // LOGIN API
     // =========================
@@ -44,10 +43,8 @@ public class LoginController {
 
         return userRepository.findByUsernameAndPassword(
                 user.getUsername(),
-                user.getPassword()
-        );
+                user.getPassword());
     }
-
 
     // =========================
     // ADD EMPLOYEE
@@ -60,30 +57,26 @@ public class LoginController {
         return userRepository.save(user);
     }
 
-
     // =========================
     // GET EMPLOYEES
     // =========================
     @GetMapping("/employees")
-    public List<User> getEmployees(){
+    public List<User> getEmployees() {
 
         return userRepository.findByRole("employee");
     }
-
 
     // =========================
     // MARK ATTENDANCE
     // =========================
     @PostMapping("/markAttendance")
-    public Attendance markAttendance(@RequestBody Attendance attendance){
+    public Attendance markAttendance(@RequestBody Attendance attendance) {
 
-        Attendance existing =
-            attendanceRepository.findByEmployeeNameAndDate(
+        Attendance existing = attendanceRepository.findByEmployeeNameAndDate(
                 attendance.getEmployeeName(),
-                attendance.getDate()
-            );
+                attendance.getDate());
 
-        if(existing != null){
+        if (existing != null) {
             existing.setStatus(attendance.getStatus());
             return attendanceRepository.save(existing);
         }
@@ -91,18 +84,16 @@ public class LoginController {
         return attendanceRepository.save(attendance);
     }
 
-
     // =========================
     // TODAY ATTENDANCE
     // =========================
     @GetMapping("/todayAttendance")
-    public List<Attendance> getTodayAttendance(){
+    public List<Attendance> getTodayAttendance() {
 
         LocalDate today = LocalDate.now();
 
         return attendanceRepository.findByDate(today);
     }
-
 
     // =========================
     // ATTENDANCE BY SELECTED DATE
@@ -110,43 +101,78 @@ public class LoginController {
     // =========================
     @GetMapping("/attendanceByDate")
     public List<Attendance> getAttendanceByDate(
-            @RequestParam LocalDate date){
+            @RequestParam("date") LocalDate date) {
 
         return attendanceRepository.findByDate(date);
     }
-@GetMapping("/employeeStats")
-public Map<String, Integer> getEmployeeStats(@RequestParam String employeeName){
 
-    List<Attendance> records = attendanceRepository.findByEmployeeName(employeeName);
+    @GetMapping("/employeeStats")
+    public Map<String, Integer> getEmployeeStats(@RequestParam String employeeName) {
 
-    int present = 0;
-    int absent = 0;
+        List<Attendance> records = attendanceRepository.findByEmployeeName(employeeName);
 
-    for(Attendance a : records){
-        if(a.getStatus().equalsIgnoreCase("Present")){
-            present++;
-        }else{
-            absent++;
+        int present = 0;
+        int absent = 0;
+
+        for (Attendance a : records) {
+            if (a.getStatus().equalsIgnoreCase("Present")) {
+                present++;
+            } else {
+                absent++;
+            }
         }
+
+        Map<String, Integer> stats = new HashMap<>();
+        stats.put("present", present);
+        stats.put("absent", absent);
+
+        return stats;
     }
 
-    Map<String, Integer> stats = new HashMap<>();
-    stats.put("present", present);
-    stats.put("absent", absent);
-
-    return stats;
-}
+    @GetMapping("/employeeProfile")
+    public User getEmployeeProfile(@RequestParam String username) {
+        return userRepository.findByUsername(username);
+    }
 
     // =========================
     // TASK MANAGEMENT API
     // =========================
     @GetMapping("/employeesBySkill")
     public List<User> getEmployeesBySkill(@RequestParam String skill) {
-        List<User> employees = userRepository.findByRole("employee");
         List<User> matched = new java.util.ArrayList<>();
-        for(User u : employees) {
-            if(u.getSkill() != null && u.getSkill().toLowerCase().contains(skill.toLowerCase())) {
-                matched.add(u);
+
+        // Guard: return empty if no skill specified
+        if (skill == null || skill.trim().isEmpty()) {
+            return matched;
+        }
+
+        List<User> employees = userRepository.findByRole("employee");
+
+        // Split input skills (e.g. "Cleaning, Basic Handling")
+        String[] requiredSkills = skill.split(",");
+        for (int i = 0; i < requiredSkills.length; i++)
+            requiredSkills[i] = requiredSkills[i].trim().toLowerCase();
+
+        for (User u : employees) {
+            if (u.getSkill() != null && !u.getSkill().trim().isEmpty()) {
+                String[] userSkills = u.getSkill().toLowerCase().split(",");
+
+                boolean match = false;
+                for (String req : requiredSkills) {
+                    if (req.isEmpty()) continue;
+                    for (String uSkill : userSkills) {
+                        if (uSkill.trim().equals(req)) {
+                            match = true;
+                            break;
+                        }
+                    }
+                    if (match)
+                        break;
+                }
+
+                if (match) {
+                    matched.add(u);
+                }
             }
         }
         return matched;
@@ -154,7 +180,7 @@ public Map<String, Integer> getEmployeeStats(@RequestParam String employeeName){
 
     @PostMapping("/createTask")
     public Task createTask(@RequestBody Task task) {
-        if(task.getDate() == null) {
+        if (task.getDate() == null) {
             task.setDate(LocalDate.now());
         }
         task.setStatus("Pending");
@@ -162,14 +188,29 @@ public Map<String, Integer> getEmployeeStats(@RequestParam String employeeName){
     }
 
     @GetMapping("/tasksByDate")
-    public List<Task> getTasksByDate(@RequestParam LocalDate date) {
+    public List<Task> getTasksByDate(@RequestParam("date") LocalDate date) {
         return taskRepository.findByDate(date);
+    }
+
+    @PostMapping("/assignEmployees")
+    public Task assignEmployees(
+            @RequestParam Long taskId,
+            @RequestParam String employees) {
+
+        Task task = taskRepository.findById(taskId).orElse(null);
+
+        if (task != null) {
+            task.setAssignedEmployees(employees);
+            return taskRepository.save(task);
+        }
+
+        return null;
     }
 
     @PostMapping("/updateTaskStatus")
     public Task updateTaskStatus(@RequestParam Long taskId, @RequestParam String status) {
         Task task = taskRepository.findById(taskId).orElse(null);
-        if(task != null){
+        if (task != null) {
             task.setStatus(status);
             return taskRepository.save(task);
         }
@@ -187,24 +228,38 @@ public Map<String, Integer> getEmployeeStats(@RequestParam String employeeName){
     @GetMapping("/managerAnalytics")
     public Map<String, Object> getManagerAnalytics() {
         Map<String, Object> stats = new HashMap<>();
-        
+
         LocalDate today = LocalDate.now();
-        List<Task> todayTasks = taskRepository.findByDate(today);
-        long totalTasks = todayTasks.size();
-        long completedTasks = todayTasks.stream().filter(t -> "Completed".equalsIgnoreCase(t.getStatus())).count();
-        long pendingTasks = todayTasks.stream().filter(t -> "Pending".equalsIgnoreCase(t.getStatus())).count();
-        
+        List<Task> allTasks = taskRepository.findAll();
+        long totalTasks = allTasks.size();
+        long completedTasks = allTasks.stream().filter(t -> "Completed".equalsIgnoreCase(t.getStatus())).count();
+        long pendingTasks = allTasks.stream().filter(t -> "Pending".equalsIgnoreCase(t.getStatus())).count();
+
         stats.put("totalTasks", totalTasks);
         stats.put("completedTasks", completedTasks);
         stats.put("pendingTasks", pendingTasks);
-        
+
+        // Calculate most demanded skills
+        Map<String, Integer> skillsDemand = new HashMap<>();
+        for (Task t : allTasks) {
+            String skill = t.getRequiredSkill();
+            if (skill != null) {
+                String[] skills = skill.split(",");
+                for (String s : skills) {
+                    s = s.trim();
+                    skillsDemand.put(s, skillsDemand.getOrDefault(s, 0) + 1);
+                }
+            }
+        }
+        stats.put("skillsDemand", skillsDemand);
+
         List<Attendance> todayAttendance = attendanceRepository.findByDate(today);
         long present = todayAttendance.stream().filter(a -> "Present".equalsIgnoreCase(a.getStatus())).count();
         long absent = todayAttendance.stream().filter(a -> "Absent".equalsIgnoreCase(a.getStatus())).count();
-        
+
         stats.put("presentEmployees", present);
         stats.put("absentEmployees", absent);
-        
+
         return stats;
     }
 
