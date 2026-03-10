@@ -179,13 +179,53 @@ public class LoginController {
 
     @PostMapping("/assignEmployees")
     public Task assignEmployees(
-            @RequestParam Long taskId,
-            @RequestParam String employees) {
+            @RequestParam("taskId") Long taskId,
+            @RequestParam("employees") String employees) {
 
         Task task = taskRepository.findById(taskId).orElse(null);
 
         if (task != null) {
-            task.setAssignedEmployees(employees);
+            String currentAssigned = task.getAssignedEmployees();
+            if (currentAssigned == null || currentAssigned.trim().isEmpty()) {
+                task.setAssignedEmployees(employees);
+            } else {
+                // split, add, convert back to maintain unique
+                java.util.Set<String> assignedSet = new java.util.LinkedHashSet<>(
+                        java.util.Arrays.asList(currentAssigned.split(", ")));
+                String[] newAssigns = employees.split(", ");
+                for (String s : newAssigns) {
+                    assignedSet.add(s.trim());
+                }
+                task.setAssignedEmployees(String.join(", ", assignedSet));
+            }
+            return taskRepository.save(task);
+        }
+
+        return null;
+    }
+
+    @PostMapping("/unassignEmployee")
+    public Task unassignEmployee(
+            @RequestParam("taskId") Long taskId,
+            @RequestParam("employee") String employee) {
+
+        Task task = taskRepository.findById(taskId).orElse(null);
+
+        if (task != null && task.getAssignedEmployees() != null) {
+            String[] currentAssigned = task.getAssignedEmployees().split(", ");
+            java.util.List<String> updatedList = new java.util.ArrayList<>();
+
+            for (String emp : currentAssigned) {
+                if (!emp.trim().equals(employee.trim())) {
+                    updatedList.add(emp.trim());
+                }
+            }
+
+            if (updatedList.isEmpty()) {
+                task.setAssignedEmployees(""); // Or null, depending on preference
+            } else {
+                task.setAssignedEmployees(String.join(", ", updatedList));
+            }
             return taskRepository.save(task);
         }
 
@@ -203,8 +243,31 @@ public class LoginController {
     }
 
     @GetMapping("/tasksByEmployee")
-    public List<Task> getTasksByEmployee(@RequestParam String employeeName) {
-        return taskRepository.findByAssignedEmployeesContaining(employeeName);
+    public List<Task> getTasksByEmployee(@RequestParam("employeeName") String employeeName) {
+        List<Task> potentialMatches = taskRepository.findByAssignedEmployeesContaining(employeeName);
+        List<Task> exactMatches = new java.util.ArrayList<>();
+
+        if (potentialMatches != null) {
+            for (Task t : potentialMatches) {
+                if (t.getAssignedEmployees() != null) {
+                    String[] emps = t.getAssignedEmployees().split(",");
+                    for (String e : emps) {
+                        if (e.trim().equalsIgnoreCase(employeeName.trim())) {
+                            exactMatches.add(t);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        return exactMatches;
+    }
+
+    @PostMapping("/deleteTask")
+    public void deleteTask(@RequestParam("taskId") Long taskId) {
+        if (taskRepository.existsById(taskId)) {
+            taskRepository.deleteById(taskId);
+        }
     }
 
     // =========================
