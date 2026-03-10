@@ -129,53 +129,38 @@ public class LoginController {
         return stats;
     }
 
-    @GetMapping("/employeeProfile")
-    public User getEmployeeProfile(@RequestParam String username) {
-        return userRepository.findByUsername(username);
-    }
-
-    // =========================
-    // TASK MANAGEMENT API
-    // =========================
     @GetMapping("/employeesBySkill")
-    public List<User> getEmployeesBySkill(@RequestParam String skill) {
-        List<User> matched = new java.util.ArrayList<>();
+    public List<User> getEmployeesBySkill(@RequestParam("skill") String skill) {
 
-        // Guard: return empty if no skill specified
         if (skill == null || skill.trim().isEmpty()) {
-            return matched;
+            return List.of();
         }
 
         List<User> employees = userRepository.findByRole("employee");
+        java.util.Set<User> matched = new java.util.LinkedHashSet<>();
 
-        // Split input skills (e.g. "Cleaning, Basic Handling")
-        String[] requiredSkills = skill.split(",");
-        for (int i = 0; i < requiredSkills.length; i++)
-            requiredSkills[i] = requiredSkills[i].trim().toLowerCase();
+        String[] requiredSkills = skill.toLowerCase().split(",");
 
-        for (User u : employees) {
-            if (u.getSkill() != null && !u.getSkill().trim().isEmpty()) {
-                String[] userSkills = u.getSkill().toLowerCase().split(",");
+        for (User user : employees) {
 
-                boolean match = false;
-                for (String req : requiredSkills) {
-                    if (req.isEmpty()) continue;
-                    for (String uSkill : userSkills) {
-                        if (uSkill.trim().equals(req)) {
-                            match = true;
-                            break;
-                        }
-                    }
-                    if (match)
+            if (user.getSkill() == null)
+                continue;
+
+            String[] userSkills = user.getSkill().toLowerCase().split(",");
+
+            for (String req : requiredSkills) {
+
+                for (String s : userSkills) {
+
+                    if (s.trim().equals(req.trim())) {
+                        matched.add(user);
                         break;
-                }
-
-                if (match) {
-                    matched.add(u);
+                    }
                 }
             }
         }
-        return matched;
+
+        return new java.util.ArrayList<>(matched);
     }
 
     @PostMapping("/createTask")

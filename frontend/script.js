@@ -347,80 +347,119 @@ function loadTasks() {
 }
 
 
+let selectedEmployeesForTask = new Set(); // Global selection state
+let currentSuggestions = []; // Cache to allow re-rendering
+
 function selectTask(taskId, skill, name) {
-
     selectedTaskId = taskId;
-    document.getElementById("selectionHint").innerText = "Suggesting employees for: " + name;
+    selectedEmployeesForTask.clear();
+    updateSelectionUI();
 
-    // Refresh task list UI to show selection highlight
+    document.getElementById("selectionHint").innerText = "Suggesting employees for: " + name;
     loadTasks();
 
     fetch("http://localhost:8080/api/employeesBySkill?skill=" + encodeURIComponent(skill))
         .then(res => res.json())
         .then(data => {
-            console.log("Skill queried:", skill);
-            console.log("Employees found:", data.length, data);
-
-            let html = "";
-            if (data.length === 0) {
-                html = "<p style='color:red; padding: 10px;'>No matching employees found for this task's skills.</p>";
-            } else {
-                html = "<p style='font-size: 13px; margin-bottom: 10px;'>Click an employee name to assign them:</p>";
-                data.forEach(emp => {
-                    html += `
-<div onclick="assignSingleEmployee('${emp.username}')"
-     style="display: flex; align-items: center; background: #fff; padding: 10px; margin-bottom: 6px;
-            border-radius: 6px; border: 1px solid #ddd; cursor: pointer; transition: 0.2s;"
-     onmouseover="this.style.background='#e3f2fd'; this.style.borderColor='#2196f3';"
-     onmouseout="this.style.background='#fff'; this.style.borderColor='#ddd';">
-    <div style="width: 36px; height: 36px; border-radius: 50%; background: #667eea; color: #fff;
-                display: flex; align-items: center; justify-content: center; font-weight: bold;
-                margin-right: 12px; font-size: 16px;">
-        ${emp.username.charAt(0).toUpperCase()}
-    </div>
-    <div style="flex: 1;">
-        <b style="color: #333; font-size: 15px;">${emp.username}</b><br>
-        <small style="color: #888;">Skills: ${emp.skill}</small>
-    </div>
-    <span style="color: #2196f3; font-size: 20px;">➜</span>
-</div>
-`;
-                });
-            }
-
-            document.getElementById("suggestedEmployees").innerHTML = html;
-
+            currentSuggestions = data;
+            renderSuggestedEmployees();
+            document.getElementById("selectionHint").style.display = "none";
         })
-        .catch(() => {
+        .catch((err) => {
+            console.error("Fetch Error:", err);
             document.getElementById("suggestedEmployees").innerHTML =
-                "<p style='color:red;'>Error fetching employees. Is the server running?</p>";
+                "<p style='color:red;'>Error fetching employees. " + (err.message || "") + "</p>";
         });
-
 }
 
+function renderSuggestedEmployees() {
+    let html = "";
+    if (currentSuggestions.length === 0) {
+        html = `
+            <div style="text-align: center; padding: 40px 20px;">
+                <div style="font-size: 48px; margin-bottom: 10px;">👤</div>
+                <p style="color: #ef4444; font-weight: 600; margin: 0;">No matching employees found.</p>
+                <p style="color: #64748b; font-size: 13px; margin-top: 5px;">Adjust required skills in the task form.</p>
+            </div>`;
+    } else {
+        html = '<p style="font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 15px; padding-left: 5px;">Click to select staff members:</p>';
 
-function assignSingleEmployee(employeeName) {
+        // Sort: selected ones first
+        let sorted = [...currentSuggestions].sort((a, b) => {
+            let aSel = selectedEmployeesForTask.has(a.username);
+            let bSel = selectedEmployeesForTask.has(b.username);
+            return bSel - aSel;
+        });
 
-    if (!selectedTaskId) {
-        alert("Please select a task first.");
-        return;
+        sorted.forEach(emp => {
+            let isSelected = selectedEmployeesForTask.has(emp.username);
+            let initial = emp.username.charAt(0).toUpperCase();
+            html += `
+                <div class="emp-card ${isSelected ? 'selected' : ''}" 
+                     onclick="toggleEmployeeSelection('${emp.username}')"
+                     style="${isSelected ? 'border-color: #6366f1; background: #f5f7ff;' : ''}">
+                    <div class="emp-avatar" style="${isSelected ? 'background: #6366f1;' : ''}">${initial}</div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 700; color: #1e293b; font-size: 15px;">${emp.username}</div>
+                        <div style="color: #64748b; font-size: 12px; margin-top: 2px;">
+                            <span style="display: inline-block; width: 8px; height: 8px; background: #10b981; border-radius: 50%; margin-right: 5px;"></span>
+                            Qualified Staff
+                        </div>
+                    </div>
+                    <div style="color: #6366f1; font-weight: 800; font-size: 18px;">
+                        ${isSelected ? '✓' : '+'}
+                    </div>
+                </div>`;
+        });
     }
+    document.getElementById("suggestedEmployees").innerHTML = html;
+}
 
-    fetch(`http://localhost:8080/api/assignEmployees?taskId=${selectedTaskId}&employees=${encodeURIComponent(employeeName)}`, {
+function toggleEmployeeSelection(username) {
+    if (selectedEmployeesForTask.has(username)) {
+        selectedEmployeesForTask.delete(username);
+    } else {
+        selectedEmployeesForTask.add(username);
+    }
+    updateSelectionUI();
+    renderSuggestedEmployees();
+}
+
+function updateSelectionUI() {
+    let count = selectedEmployeesForTask.size;
+    let counter = document.getElementById("selectionCounter");
+    let actions = document.getElementById("assignmentActions");
+
+    if (count > 0) {
+        counter.style.display = "block";
+        counter.innerText = count + " Selected";
+        actions.style.display = "block";
+    } else {
+        counter.style.display = "none";
+        actions.style.display = "none";
+    }
+}
+
+function confirmTaskAssignment() {
+    if (selectedEmployeesForTask.size === 0) return;
+
+    let employees = Array.from(selectedEmployeesForTask).join(", ");
+
+    fetch(`http://localhost:8080/api/assignEmployees?taskId=${selectedTaskId}&employees=${encodeURIComponent(employees)}`, {
         method: "POST"
     })
         .then(res => res.json())
         .then(() => {
-
-            alert(employeeName + " assigned successfully!");
-            document.getElementById("suggestedEmployees").innerHTML =
-                "<p style='color:green; font-weight: bold;'>✔ " + employeeName + " has been assigned.</p>";
+            alert("Assignment successful!");
+            selectedEmployeesForTask.clear();
+            updateSelectionUI();
             selectedTaskId = null;
             loadTasks();
-
+            document.getElementById("suggestedEmployees").innerHTML = "";
+            document.getElementById("selectionHint").style.display = "block";
+            document.getElementById("selectionHint").innerText = "Select a task on the left to see matching staff members.";
         })
-        .catch(() => alert("Error assigning employee. Please check server."));
-
+        .catch(() => alert("Error assigning employees."));
 }
 
 
@@ -564,22 +603,23 @@ function loadEmployeeTasks() {
             }
 
             tasks.forEach(task => {
-                let statusColor = "#f59e0b";
+                let statusColor = "#f59e0b"; // Pending/Default
                 if (task.status === "Completed") statusColor = "#10b981";
                 if (task.status === "In Progress") statusColor = "#8b5cf6";
                 if (task.status === "Started") statusColor = "#3b82f6";
 
                 html += `
-<div class="task-item">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-        <div>
-            <b>${task.taskName}</b><br>
-            <small style="color: #666;">Section: ${task.section} | Priority: ${task.priority}</small>
-        </div>
-        <span class="task-status-badge" style="background: ${statusColor}20; color: ${statusColor};">${task.status}</span>
-    </div>
-</div>
-`;
+                <div class="task-item">
+                    <div>
+                        <div style="font-weight: 700; color: #1e293b;">${task.taskName}</div>
+                        <div style="font-size: 12px; color: #64748b; margin-top: 4px;">
+                            ${task.section} • Priority: ${task.priority}
+                        </div>
+                    </div>
+                    <span class="status-badge" style="background: ${statusColor}15; color: ${statusColor}; border: 1px solid ${statusColor}30;">
+                        ${task.status}
+                    </span>
+                </div>`;
             });
 
             document.getElementById("employeeTaskList").innerHTML = html;

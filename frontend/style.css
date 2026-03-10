@@ -52,7 +52,8 @@ body {
 }
 
 /* Titles */
-h1, h2 {
+h1,
+h2 {
     text-align: center;
     margin-bottom: 25px;
     color: #1a1a1a;
@@ -80,7 +81,8 @@ label {
 }
 
 /* Inputs */
-input, select {
+input,
+select {
     width: 100%;
     padding: 12px 15px;
     margin-top: 5px;
@@ -94,7 +96,8 @@ input, select {
     background: #fff;
 }
 
-input:focus, select:focus {
+input:focus,
+select:focus {
     outline: none;
     border-color: #667eea;
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
@@ -146,7 +149,7 @@ button:active {
     cursor: pointer;
     background: #f8f9fa;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
 }
 
 .role-card:hover {
@@ -165,7 +168,7 @@ button:active {
 .icon {
     font-size: 36px;
     margin-bottom: 10px;
-    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
 }
 
 /* Dashboard buttons */
@@ -200,12 +203,12 @@ button:active {
     margin-bottom: 15px;
     background: #fff;
     transition: all 0.2s ease;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
 }
 
 .employee-row:hover {
     transform: translateX(5px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     border-color: #e2e8f0;
 }
 
@@ -262,7 +265,8 @@ button:active {
     box-shadow: 0 6px 15px rgba(239, 68, 68, 0.4);
 }
 
-.present-btn:disabled, .absent-btn:disabled {
+.present-btn:disabled,
+.absent-btn:disabled {
     background: #ccc;
     box-shadow: none;
     cursor: not-allowed;
@@ -278,7 +282,8 @@ button:active {
 }
 
 /* Error/Success Messages */
-#msg, #attMsg {
+#msg,
+#attMsg {
     margin-top: 15px;
     font-weight: 500;
     color: #ef4444;
@@ -288,13 +293,57 @@ button:active {
 ::-webkit-scrollbar {
     width: 8px;
 }
+
 ::-webkit-scrollbar-track {
-    background: #f1f1f1; 
+    background: #f1f1f1;
 }
+
 ::-webkit-scrollbar-thumb {
-    background: #c1c1c1; 
+    background: #c1c1c1;
     border-radius: 4px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
-    background: #a8a8a8; 
+    background: #a8a8a8;
+}
+
+/* Premium Task Management UI Styles */
+.premium-card {
+    background: rgba(255, 255, 255, 0.8) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1) !important;
+    border-radius: 20px !important;
+}
+
+.emp-card {
+    background: white;
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 12px;
+    border: 1px solid #e2e8f0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+
+.emp-card:hover {
+    transform: scale(1.02);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+    border-color: #6366f1;
+}
+
+.emp-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #6366f1;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    margin-right: 15px;
 }
