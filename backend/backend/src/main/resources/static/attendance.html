@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<title>Attendance</title>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="attendance-wrapper">
+
+<div class="attendance-card">
+
+<h2>Attendance</h2>
+
+<div class="date-section">
+
+<label>Attendance Date</label>
+
+<input 
+type="date"
+id="selectedDate"
+onchange="loadEmployees()">
+
+</div>
+
+<div class="summary-box">
+
+<p id="todayDate"></p>
+
+<b>Total Present:</b>
+<span id="presentCount">0</span>
+
+&nbsp;&nbsp;&nbsp;
+
+<b>Total Absent:</b>
+<span id="absentCount">0</span>
+
+</div>
+
+<div class="employee-table">
+
+<div id="employeeList"></div>
+
+</div>
+
+<br>
+
+<button onclick="goSupervisor()">Back</button>
+
+<p id="attMsg"></p>
+
+</div>
+
+</div>
+
+<script src="script.js"></script>
+
+<script>
+loadEmployees();
+</script>
+
+</body>
+
+</html>

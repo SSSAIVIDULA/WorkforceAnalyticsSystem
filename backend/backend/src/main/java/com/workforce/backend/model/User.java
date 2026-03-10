@@ -5,6 +5,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Column;
 
 @Entity
 @Table(name = "users")
@@ -20,6 +21,9 @@ public class User {
     private String skill;
     private String employeeId;
     private String department;
+
+    @Column(name = "phone_number")
+    private String phoneNumber;
 
     // getters and setters
 
@@ -69,6 +73,14 @@ public class User {
 
     public void setEmployeeId(String employeeId) {
         this.employeeId = employeeId;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
     }
 
     public String getDepartment() {

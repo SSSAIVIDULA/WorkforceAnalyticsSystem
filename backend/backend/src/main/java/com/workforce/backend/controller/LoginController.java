@@ -50,11 +50,32 @@ public class LoginController {
     // ADD EMPLOYEE
     // =========================
     @PostMapping("/addEmployee")
-    public User addEmployee(@RequestBody User user) {
-
-        user.setRole("employee");
-
-        return userRepository.save(user);
+    public org.springframework.http.ResponseEntity<?> addEmployee(@RequestBody User user) {
+        try {
+            if (user.getUsername() == null || user.getUsername().isEmpty()) {
+                return org.springframework.http.ResponseEntity.badRequest()
+                        .body(java.util.Map.of("message", "Username is required"));
+            }
+            List<User> existingUsers = userRepository.findByUsername(user.getUsername());
+            if (!existingUsers.isEmpty()) {
+                return org.springframework.http.ResponseEntity.badRequest()
+                        .body(java.util.Map.of("message", "Username '" + user.getUsername() + "' already exists"));
+            }
+            if (user.getRole() == null || user.getRole().isEmpty()) {
+                user.setRole("employee");
+            }
+            if (user.getDepartment() == null) {
+                user.setDepartment(""); // Fallback for database NOT NULL constraints
+            }
+            System.out.println("Attempting to save user: " + user.getUsername());
+            User savedUser = userRepository.save(user);
+            return org.springframework.http.ResponseEntity.ok(savedUser);
+        } catch (Exception e) {
+            System.err.println("Error saving employee: " + e.getMessage());
+            e.printStackTrace();
+            return org.springframework.http.ResponseEntity.internalServerError()
+                    .body(java.util.Map.of("message", "Database error: " + e.getMessage()));
+        }
     }
 
     // =========================
@@ -234,11 +255,20 @@ public class LoginController {
 
     @PostMapping("/updateTaskStatus")
     public Task updateTaskStatus(@RequestParam Long taskId, @RequestParam String status) {
+
         Task task = taskRepository.findById(taskId).orElse(null);
+
         if (task != null) {
+
             task.setStatus(status);
+
+            if (status.equalsIgnoreCase("Completed")) {
+                task.setCompletedDate(LocalDate.now());
+            }
+
             return taskRepository.save(task);
         }
+
         return null;
     }
 
@@ -268,6 +298,12 @@ public class LoginController {
         if (taskRepository.existsById(taskId)) {
             taskRepository.deleteById(taskId);
         }
+    }
+
+    @GetMapping("/employeeProfile")
+    public User getEmployeeProfile(@RequestParam String username) {
+        List<User> users = userRepository.findByUsername(username);
+        return users.isEmpty() ? null : users.get(0);
     }
 
     // =========================

@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task Management | Workforce Analytics</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --secondary: #64748b;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --background: #f8fafc;
+      --card-bg: rgba(255, 255, 255, 0.8);
+      --glass-border: rgba(255, 255, 255, 0.2);
+      --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #f0f4ff 0%, #e5e7eb 100%);
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .premium-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--glass-shadow);
+      border-radius: 20px;
+      padding: 30px;
+      margin-bottom: 30px;
+      animation: fadeIn 0.6s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .header-section {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 25px;
+    }
+
+    .header-section h2 {
+      margin: 0;
+      font-weight: 700;
+      color: #1e293b;
+      font-size: 28px;
+    }
+
+    .grid-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 25px;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: #475569;
+      margin-bottom: 6px;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+      background: #fff;
+      font-size: 15px;
+      transition: all 0.2s;
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    }
+
+    .btn-premium {
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: #e2e8f0;
+      color: #475569;
+    }
+
+    .btn-secondary:hover {
+      background: #cbd5e1;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--primary);
+      display: inline-block;
+    }
+
+    .task-list-container {
+      max-height: 500px;
+      overflow-y: auto;
+      padding-right: 10px;
+    }
+
+    .task-list-container::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .task-list-container::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 10px;
+    }
+
+    .suggestion-area {
+      background: rgba(248, 250, 252, 0.5);
+      border: 2px dashed #e2e8f0;
+      border-radius: 15px;
+      padding: 20px;
+      min-height: 300px;
+    }
+
+    .hint-text {
+      color: #64748b;
+      font-size: 14px;
+      text-align: center;
+      margin-top: 50px;
+    }
+
+    .badge {
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .badge-pending {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .badge-completed {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    /* Animation for employee cards */
+    .emp-card {
+      background: white;
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 12px;
+      border: 1px solid #e2e8f0;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+    }
+
+    .emp-card:hover {
+      transform: scale(1.02);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+      border-color: var(--primary);
+    }
+
+    .emp-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      margin-right: 15px;
+    }
+
+    /* Modal Styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(8px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .modal-content {
+      background: white;
+      width: 90%;
+      max-width: 900px;
+      max-height: 90vh;
+      border-radius: 24px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    }
+
+    .modal-header {
+      padding: 25px 30px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f8fafc;
+    }
+
+    .modal-body {
+      padding: 30px;
+      overflow-y: auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+    }
+
+    .modal-footer {
+      padding: 20px 30px;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      background: #f8fafc;
+    }
+
+    .close-modal {
+      font-size: 24px;
+      cursor: pointer;
+      color: #64748b;
+      transition: color 0.2s;
+    }
+
+    .close-modal:hover {
+      color: #1e293b;
+    }
+
+    .task-info-panel {
+      background: #f1f5f9;
+      padding: 20px;
+      border-radius: 16px;
+    }
+
+    .info-item {
+      margin-bottom: 15px;
+    }
+
+    .info-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .info-value {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1e293b;
+      margin-top: 4px;
+    }
+
+    .assigned-tag {
+      display: inline-flex;
+      align-items: center;
+      background: #e0e7ff;
+      color: #4338ca;
+      padding: 6px 12px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      margin: 4px;
+    }
+
+    .unassign-btn {
+      margin-left: 8px;
+      color: #ef4444;
+      cursor: pointer;
+      font-weight: 800;
+    }
+
+    .suggestion-item {
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+
+    .suggestion-item:hover {
+      border-color: var(--primary);
+      background: #f5f7ff;
+    }
+
+    .suggestion-item.selected {
+      border-color: var(--primary);
+      background: #eff6ff;
+    }
+
+    .status-active-badge {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background: #10b981;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+  </style>
+</head>
+
+<body onload="loadTasks()">
+  <div class="container">
+    <div class="premium-card">
+      <div class="header-section">
+        <h2>Manage Daily Tasks</h2>
+        <button onclick="goSupervisor()" class="btn-premium btn-secondary">Dashboard</button>
+      </div>
+
+      <div class="section-title">1. Create New Task</div>
+      <div class="grid-layout">
+        <div class="form-group">
+          <label>Task Name</label>
+          <select id="taskName" class="form-control" onchange="autoFillTaskDetails()">
+            <option value="">Select Task...</option>
+            <option value="Wash Vegetables">Wash Vegetables</option>
+            <option value="Cut Vegetables">Cut Vegetables</option>
+            <option value="Cook Food">Cook Food</option>
+            <option value="Quality Inspection">Quality Inspection</option>
+            <option value="Pack Food">Pack Food</option>
+            <option value="Label Packages">Label Packages</option>
+            <option value="Load Products">Load Products</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Section</label>
+          <select id="taskSection" class="form-control">
+            <option value="Cleaning">Cleaning</option>
+            <option value="Processing">Processing</option>
+            <option value="Cooking">Cooking</option>
+            <option value="Quality Check">Quality Check</option>
+            <option value="Packaging">Packaging</option>
+            <option value="Labeling">Labeling</option>
+            <option value="Dispatch">Dispatch</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Priority</label>
+          <select id="taskPriority" class="form-control">
+            <option value="High">High Priority</option>
+            <option value="Medium" selected>Medium Priority</option>
+            <option value="Low">Low Priority</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Employees Needed</label>
+          <input type="number" id="employeesNeeded" class="form-control" min="1" value="1">
+        </div>
+        <div class="form-group">
+          <label>Deadline</label>
+          <input type="date" id="taskDeadline" class="form-control">
+        </div>
+        <div class="form-group">
+          <label>Required Skills (Auto-filled)</label>
+          <input type="text" id="taskSkill" class="form-control" readonly style="background: #f1f5f9;">
+        </div>
+      </div>
+      <button onclick="createTask()" class="btn-premium btn-primary" style="width: 100%; margin-top: 10px;">Create
+        Task</button>
+    </div>
+
+    <div class="grid-layout">
+      <div class="premium-card">
+        <div class="section-title">2. Today's Tasks</div>
+        <div id="taskList" class="task-list-container">
+          <!-- Tasks will be injected here -->
+        </div>
+      </div>
+
+      <div class="premium-card">
+        <div class="premium-card" style="padding: 25px; min-height: 400px; display: flex; flex-direction: column;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 class="section-title" style="margin: 0;">3. Smart Suggestions</h3>
+            <div id="selectionCounter"
+              style="display: none; background: #6366f1; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">
+              0 Selected
+            </div>
+          </div>
+
+          <p id="selectionHint" class="hint-text">Select a task on the left to see matching staff members.</p>
+          <div id="suggestedEmployees" style="flex: 1;"></div>
+
+          <!-- Assignment Actions -->
+          <div id="assignmentActions"
+            style="display: none; padding-top: 20px; border-top: 1px dashed #e2e8f0; margin-top: 20px;">
+            <button onclick="confirmTaskAssignment()" class="btn-premium" style="width: 100%; justify-content: center;">
+              Confirm Assignment
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- Task Detail Modal -->
+      <div id="taskModal" class="modal-overlay" onclick="handleOutsideClick(event)">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 id="modalTitle" style="margin: 0; font-size: 22px; font-weight: 800; color: #1e293b;">Task Details</h2>
+            <span class="close-modal" onclick="closeTaskModal()">&times;</span>
+          </div>
+          <div class="modal-body">
+            <!-- Left Side: Task info & Assignments -->
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+              <div class="task-info-panel" id="modalInfoPanel">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                  <div class="info-item">
+                    <div class="info-label">Section</div>
+                    <div id="modalSection" class="info-value">-</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">Priority</div>
+                    <div id="modalPriority" class="info-value">-</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">Deadline</div>
+                    <div id="modalDeadline" class="info-value">-</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">Status</div>
+                    <div id="modalStatus" class="info-value">-</div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 style="font-size: 15px; font-weight: 700; color: #1e293b; margin-bottom: 12px;">Assigned Staff</h3>
+                <div id="modalAssignedList"
+                  style="min-height: 40px; background: #fff; border: 1px dashed #cbd5e1; border-radius: 12px; padding: 10px;">
+                  <!-- Assigned tags injected here -->
+                </div>
+              </div>
+
+              <div style="margin-top: auto;">
+                <button id="completeBtn" onclick="markTaskCompletedFromModal()" class="btn-premium btn-primary"
+                  style="width: 100%; background: var(--success); border: none;">
+                  Mark as Completed
+                </button>
+              </div>
+            </div>
+
+            <!-- Right Side: Suggestions -->
+            <div style="display: flex; flex-direction: column;">
+              <h3 style="font-size: 15px; font-weight: 700; color: #1e293b; margin-bottom: 12px;">Suggested Employees
+              </h3>
+              <div id="modalSuggestionsList" style="flex: 1; overflow-y: auto; max-height: 400px; padding-right: 5px;">
+                <!-- Suggestions injected here -->
+              </div>
+
+              <div id="modalSelectionActions" style="margin-top: 15px; display: none;">
+                <button onclick="confirmModalAssignment()" class="btn-premium btn-primary" style="width: 100%;">
+                  Assign Selected Staff
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button onclick="handleDeleteFromModal()" class="btn-premium"
+              style="background: #fee2e2; color: #ef4444; border: none;">Delete Task</button>
+            <button onclick="closeTaskModal()" class="btn-premium btn-secondary" style="border: none;">Close</button>
+          </div>
+        </div>
+      </div>
+
+      <script src="script.js"></script>
+</body>
+
+</html>

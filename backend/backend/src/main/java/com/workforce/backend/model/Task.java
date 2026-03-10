@@ -1,5 +1,6 @@
 package com.workforce.backend.model;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -19,17 +20,24 @@ public class Task {
     private String requiredSkill;
     private String section;
     private String priority;
-    private String status; // Pending, Started, In Progress, Completed
-    
+
+    private String status = "Pending"; // Default status
+
     private int employeesNeeded;
+
     private LocalDate deadline;
-    
-    // Storing assigned employees as a comma-separated list of usernames to simplify implementation and avoid complex JoinTables since we don't have constraints
-    private String assignedEmployees; 
-    
+
+    @Column(name = "completed_date")
+    private LocalDate completedDate;
+
+    @Column(name = "assigned_employees")
+    private String assignedEmployees;
+
     private LocalDate date;
 
-    // Getters and Setters
+    // =========================
+    // GETTERS & SETTERS
+    // =========================
 
     public Long getId() {
         return id;
@@ -110,4 +118,13 @@ public class Task {
     public void setDeadline(LocalDate deadline) {
         this.deadline = deadline;
     }
+
+    public LocalDate getCompletedDate() {
+        return completedDate;
+    }
+
+    public void setCompletedDate(LocalDate completedDate) {
+        this.completedDate = completedDate;
+    }
+
 }
