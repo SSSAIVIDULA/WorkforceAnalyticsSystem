@@ -296,64 +296,63 @@
                 </div>
             </div>
 
-        </div>
-    </div>
-
-    <!-- Legacy IDs for script compatibility -->
-    <div id="teamDirectoryModal" style="display:none;"></div>
-
-    <!-- ===== SHARED EMPLOYEE DETAILS MODAL ===== -->
-    <div class="mgr-att-modal-overlay" id="empDetailsModal" onclick="closeEmpDetailsModal(event)">
-        <div class="mgr-att-modal" style="width: 850px; max-width: 95%; height: 85vh;" onclick="event.stopPropagation()">
-            <div class="mgr-att-modal-header">
-                <h4 id="empModalTitle">Team Member Insights</h4>
-                <button class="close-btn" onclick="closeEmpDetailsModal()">&times;</button>
-            </div>
-            <div class="mgr-att-modal-body" style="background: #f8fafc; padding: 25px; overflow-y: auto; height: calc(100% - 76px);">
-                <div style="display: grid; grid-template-columns: 300px 1fr; gap: 25px;">
-                    <!-- Sidebar -->
-                    <div style="display: flex; flex-direction: column; gap: 20px;">
-                        <div class="chart-box" style="text-align: center;">
-                            <div id="empModalAvatar" style="width: 80px; height: 80px; border-radius: 20px; background: #6366f1; color: white; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 800; margin: 0 auto 15px;">?</div>
-                            <h3 id="empModalName" style="margin-bottom: 5px;">Employee Name</h3>
-                            <p id="empModalContact" style="font-size: 13px; color: #64748b;">Contact Loading...</p>
-                            <div style="margin-top: 20px; text-align: left;">
-                                <h4 style="font-size: 11px; color: #94a3b8; text-transform: uppercase;">Skill Set</h4>
-                                <div id="empModalSkills"></div>
+            <!-- EMPLOYEE INSIGHTS FULL PAGE -->
+            <div id="tab-employee-insights" class="tab-section">
+                <button class="back-btn" onclick="switchTab('tab-sup-directory')">← Back to Directory</button>
+                
+                <div style="display: grid; grid-template-columns: 350px 1fr; gap: 30px;">
+                    <!-- Left Column: Profile Card -->
+                    <div style="display: flex; flex-direction: column; gap: 25px;">
+                        <div class="chart-box" style="text-align: center; padding: 40px 30px;">
+                            <div id="empPageAvatar" style="width: 100px; height: 100px; border-radius: 24px; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; display: flex; align-items: center; justify-content: center; font-size: 40px; font-weight: 800; margin: 0 auto 20px; box-shadow: 0 10px 20px rgba(99, 102, 241, 0.2);">?</div>
+                            <h2 id="empPageName" style="margin: 0; font-size: 24px; color: #1e293b; border: none; padding: 0;">Employee Name</h2>
+                            <p id="empPageContact" style="color: #64748b; font-size: 14px; margin-top: 5px;">contact@example.com</p>
+                            
+                            <div style="margin-top: 35px; text-align: left;">
+                                <h3 style="font-size: 12px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; border: none; padding: 0;">Expertise & Skills</h3>
+                                <div id="empPageSkills" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                                    <!-- Skills badges injected here -->
+                                </div>
                             </div>
                         </div>
-                        <div class="chart-box">
-                            <h4 style="font-size: 13px; margin: 0;">Attendance Consistency</h4>
-                            <div id="empModalAttendanceRate" style="font-size: 32px; font-weight: 800; color: #10b981; margin-top: 10px;">0%</div>
+
+                        <div class="chart-box" style="text-align: center; background: linear-gradient(135deg, #f8fafc, #f1f5f9);">
+                            <h3 style="font-size: 14px; margin-bottom: 15px; border: none; padding: 0; color: #64748b;">Reliability Score</h3>
+                            <div id="empPageAttendanceRate" style="font-size: 48px; font-weight: 800; color: #10b981;">0%</div>
+                            <p style="font-size: 12px; color: #94a3b8; margin-top: 5px;">Overall Attendance Consistency</p>
                         </div>
                     </div>
-                    <!-- Main Content -->
-                    <div style="display: flex; flex-direction: column; gap: 20px;">
-                        <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px;">
+
+                    <!-- Right Column: Performance Analytics -->
+                    <div style="display: flex; flex-direction: column; gap: 25px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 25px;">
                             <div class="chart-box">
-                                <h4 style="font-size: 13px; margin-bottom: 15px;">Attendance Split</h4>
-                                <canvas id="empModalAttendanceChart"></canvas>
+                                <h3 style="border: none; padding: 0; margin-bottom: 20px;">Attendance Breakdown</h3>
+                                <canvas id="empPageAttendanceChart"></canvas>
                             </div>
                             <div class="chart-box">
-                                <h4 style="font-size: 13px; margin-bottom: 15px;">Task Accomplishments</h4>
-                                <canvas id="empModalTaskChart"></canvas>
+                                <h3 style="border: none; padding: 0; margin-bottom: 20px;">Workload Distribution</h3>
+                                <canvas id="empPageTaskChart"></canvas>
                             </div>
                         </div>
+
                         <div class="chart-box">
-                            <h4 style="font-size: 13px; margin-bottom: 15px;">Assigned Workstream</h4>
-                            <div id="empModalTaskList" style="max-height: 150px; overflow-y: auto; margin-bottom: 15px;"></div>
+                            <h3 style="border: none; padding: 0; margin-bottom: 20px;">Current Workstream</h3>
+                            <div id="empPageTaskList" style="max-height: 250px; overflow-y: auto;">
+                                <!-- Tasks injected here -->
+                            </div>
                             
-                            <h4 style="font-size: 13px; border-top: 1px solid #f1f5f9; padding-top: 15px; margin-top: 15px;">📅 Daily Progress History</h4>
+                            <h3 style="border: none; padding: 15px 0 10px; margin-top: 25px; border-top: 1px solid #f1f5f9; font-size: 15px;">📅 Engagement History</h3>
                             <div style="overflow-x: auto;">
-                                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
                                     <thead>
-                                        <tr style="border-bottom: 2px solid #eef2ff; color: #64748b;">
-                                            <th style="padding: 8px; text-align: left;">Date</th>
-                                            <th style="padding: 8px; text-align: left;">Status</th>
+                                        <tr style="border-bottom: 2px solid #f1f5f9; color: #94a3b8; text-align: left;">
+                                            <th style="padding: 12px;">Date</th>
+                                            <th style="padding: 12px;">Status</th>
                                         </tr>
                                     </thead>
-                                    <tbody id="empModalProgressBody">
-                                        <tr><td colspan="2" style="padding: 10px; text-align: center; color: #94a3b8;">Loading...</td></tr>
+                                    <tbody id="empPageProgressBody">
+                                        <!-- History injected here -->
                                     </tbody>
                                 </table>
                             </div>
@@ -361,8 +360,13 @@
                     </div>
                 </div>
             </div>
+
         </div>
     </div>
+
+    <!-- Legacy IDs for script compatibility -->
+    <div id="teamDirectoryModal" style="display:none;"></div>
+    <div id="empDetailsModal" style="display:none;"></div>
 
     <script src="script.js"></script>
 </body>

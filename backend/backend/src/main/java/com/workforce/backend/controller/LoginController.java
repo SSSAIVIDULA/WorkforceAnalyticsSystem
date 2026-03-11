@@ -128,7 +128,7 @@ public class LoginController {
     }
 
     @GetMapping("/employeeStats")
-    public Map<String, Integer> getEmployeeStats(@RequestParam String employeeName) {
+    public Map<String, Integer> getEmployeeStats(@RequestParam("employeeName") String employeeName) {
 
         List<Attendance> records = attendanceRepository.findByEmployeeName(employeeName);
 
@@ -151,15 +151,31 @@ public class LoginController {
     }
 
     @GetMapping("/employeesBySkill")
-    public List<User> getEmployeesBySkill(@RequestParam("skill") String skill) {
+    public List<User> getEmployeesBySkill(
+            @RequestParam("skill") String skill,
+            @RequestParam(value = "date", required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate date) {
 
         if (skill == null || skill.trim().isEmpty()) {
             return List.of();
         }
 
         List<User> employees = userRepository.findByRole("employee");
-        java.util.Set<User> matched = new java.util.LinkedHashSet<>();
 
+        // Filter by attendance if date is provided
+        if (date != null) {
+            List<Attendance> attendanceRecords = attendanceRepository.findByDate(date);
+            java.util.Set<String> presentUsernames = new java.util.HashSet<>();
+            for (Attendance a : attendanceRecords) {
+                if ("Present".equalsIgnoreCase(a.getStatus())) {
+                    presentUsernames.add(a.getEmployeeName());
+                }
+            }
+            employees = employees.stream()
+                    .filter(e -> presentUsernames.contains(e.getUsername()))
+                    .collect(java.util.stream.Collectors.toList());
+        }
+
+        java.util.Set<User> matched = new java.util.LinkedHashSet<>();
         String[] requiredSkills = skill.toLowerCase().split(",");
 
         for (User user : employees) {
@@ -254,7 +270,7 @@ public class LoginController {
     }
 
     @PostMapping("/updateTaskStatus")
-    public Task updateTaskStatus(@RequestParam Long taskId, @RequestParam String status) {
+    public Task updateTaskStatus(@RequestParam("taskId") Long taskId, @RequestParam("status") String status) {
 
         Task task = taskRepository.findById(taskId).orElse(null);
 
@@ -301,7 +317,7 @@ public class LoginController {
     }
 
     @GetMapping("/employeeProfile")
-    public User getEmployeeProfile(@RequestParam String username) {
+    public User getEmployeeProfile(@RequestParam("username") String username) {
         List<User> users = userRepository.findByUsername(username);
         return users.isEmpty() ? null : users.get(0);
     }
@@ -391,7 +407,7 @@ public class LoginController {
     // EMPLOYEE DAILY PROGRESS API
     // ===================================
     @GetMapping("/employeeAttendanceRecords")
-    public List<Attendance> getEmployeeAttendanceRecords(@RequestParam String username) {
+    public List<Attendance> getEmployeeAttendanceRecords(@RequestParam("username") String username) {
         return attendanceRepository.findByEmployeeName(username);
     }
 

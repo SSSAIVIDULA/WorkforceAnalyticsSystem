@@ -46,8 +46,9 @@ function switchTab(tabId, element) {
         if (reportDateInput && reportDateInput.value) {
             if (typeof loadManagerTaskReport === 'function') loadManagerTaskReport();
         }
-    } else if (tabId === 'tab-directory') {
-        if (typeof loadEmployeeDirectory === 'function') loadEmployeeDirectory();
+    } else if (tabId === 'tab-directory' || tabId === 'tab-sup-directory') {
+        const dirId = (tabId === 'tab-directory') ? "mgrEmployeeDirectory" : "supEmployeeDirectory";
+        if (typeof loadEmployeeDirectory === 'function') loadEmployeeDirectory(dirId);
     }
 }
 
@@ -432,7 +433,9 @@ function selectTask(taskId, skill, name) {
     document.getElementById("selectionHint").innerText = "Suggesting employees for: " + name;
     loadTasks();
 
-    fetch("/api/employeesBySkill?skill=" + encodeURIComponent(skill))
+    // Note: selectTask seems unused in the new modal-based UI, but updated for consistency.
+    // We would need the date passed here if this function were ever revived.
+    fetch(`/api/employeesBySkill?skill=${encodeURIComponent(skill)}`)
         .then(res => res.json())
         .then(data => {
             currentSuggestions = data;
@@ -634,8 +637,8 @@ function openTaskModal(taskId) {
             // Render assigned list
             renderModalAssigned(task);
 
-            // Fetch suggestions
-            fetch("/api/employeesBySkill?skill=" + encodeURIComponent(task.requiredSkill))
+            // Fetch suggestions (Filtered by presence on the task's date)
+            fetch(`/api/employeesBySkill?skill=${encodeURIComponent(task.requiredSkill)}&date=${task.date}`)
                 .then(res => res.json())
                 .then(data => {
                     renderModalSuggestions(data, task);
@@ -714,7 +717,7 @@ function toggleModalEmpSelection(username) {
     } else {
         modalSelectedEmployees.add(username);
     }
-    fetch("/api/employeesBySkill?skill=" + encodeURIComponent(currentModalTask.requiredSkill))
+    fetch(`/api/employeesBySkill?skill=${encodeURIComponent(currentModalTask.requiredSkill)}&date=${currentModalTask.date}`)
         .then(res => res.json())
         .then(data => renderModalSuggestions(data, currentModalTask));
 }
@@ -732,7 +735,7 @@ function confirmModalAssignment() {
             modalSelectedEmployees.clear();
             renderModalAssigned(updatedTask);
             // Refresh suggestions
-            fetch("/api/employeesBySkill?skill=" + encodeURIComponent(updatedTask.requiredSkill))
+            fetch(`/api/employeesBySkill?skill=${encodeURIComponent(updatedTask.requiredSkill)}&date=${updatedTask.date}`)
                 .then(res => res.json())
                 .then(data => renderModalSuggestions(data, updatedTask));
         });
@@ -749,7 +752,7 @@ function unassignFromModal(employeeName) {
             currentModalTask = updatedTask;
             renderModalAssigned(updatedTask);
             // Refresh suggestions
-            fetch("/api/employeesBySkill?skill=" + encodeURIComponent(updatedTask.requiredSkill))
+            fetch(`/api/employeesBySkill?skill=${encodeURIComponent(updatedTask.requiredSkill)}&date=${updatedTask.date}`)
                 .then(res => res.json())
                 .then(data => renderModalSuggestions(data, updatedTask));
         });
@@ -1421,7 +1424,7 @@ function renderEmployeeDirectory(containerId, employees) {
     container.innerHTML = employees.map(emp => {
         const initial = emp.username.charAt(0).toUpperCase();
         return `
-            <div class="chart-box" onclick="openEmpDetailsModal('${emp.username}')" style="cursor: pointer; transition: all 0.2s; border: 1px solid #eef2ff;" 
+            <div class="chart-box" onclick="openEmpDetailsPage('${emp.username}')" style="cursor: pointer; transition: all 0.2s; border: 1px solid #eef2ff;" 
                  onmouseover="this.style.borderColor='#6366f1'; this.style.transform='translateY(-3px)'" 
                  onmouseout="this.style.borderColor='#eef2ff'; this.style.transform='translateY(0)'">
                 <div style="display: flex; align-items: center; gap: 12px;">
@@ -1444,36 +1447,34 @@ function filterEmployeeDirectory(inputId, containerId) {
     renderEmployeeDirectory(containerId, filtered);
 }
 
-// Global scope tracker for modal charts to prevent reuse errors
-let empModalAttChartObj = null;
-let empModalTaskChartObj = null;
+// Global scope tracker for page charts to prevent reuse errors
+let empPageAttChartObj = null;
+let empPageTaskChartObj = null;
 
-function openEmpDetailsModal(username) {
-    document.getElementById("empModalTitle").innerText = `Employee Insights: ${username}`;
-    document.getElementById("empModalName").innerText = username;
-    document.getElementById("empModalAvatar").innerText = username.charAt(0).toUpperCase();
-    document.getElementById("empDetailsModal").classList.add("active");
+function openEmpDetailsPage(username) {
+    // Switch to the insights tab
+    if (typeof switchTab === 'function') switchTab('tab-employee-insights');
 
-    // Close directory modal if open (for supervisor)
-    const dirModal = document.getElementById("teamDirectoryModal");
-    if (dirModal) dirModal.classList.remove("active");
+    // Set header info
+    document.getElementById("empPageName").innerText = username;
+    document.getElementById("empPageAvatar").innerText = username.charAt(0).toUpperCase();
 
     // Show loading states
-    document.getElementById("empModalContact").innerText = "Loading profile...";
-    document.getElementById("empModalSkills").innerHTML = "Loading...";
-    document.getElementById("empModalAttendanceRate").innerText = "-%";
-    document.getElementById("empModalTaskList").innerHTML = '<p style="color: #94a3b8; font-size: 13px;">Syncing task history...</p>';
-    document.getElementById("empModalProgressBody").innerHTML = '<tr><td colspan="3" style="padding: 15px; text-align: center; color: #94a3b8;">Fetching records...</td></tr>';
+    document.getElementById("empPageContact").innerText = "Loading profile...";
+    document.getElementById("empPageSkills").innerHTML = "Loading...";
+    document.getElementById("empPageAttendanceRate").innerText = "-%";
+    document.getElementById("empPageTaskList").innerHTML = '<p style="color: #94a3b8; font-size: 13px;">Syncing task history...</p>';
+    document.getElementById("empPageProgressBody").innerHTML = '<tr><td colspan="3" style="padding: 15px; text-align: center; color: #94a3b8;">Fetching records...</td></tr>';
 
     // 1. Fetch Profile
     fetch(`/api/employeeProfile?username=${username}`)
         .then(res => res.json())
         .then(data => {
-            document.getElementById("empModalContact").innerText = data.email || 'No email provided';
+            document.getElementById("empPageContact").innerText = data.email || 'No email provided';
             let skillsHtml = (data.skills || "").split(",").map(skill => skill.trim()).filter(s => s).map(skill =>
-                `<span class="skill-badge" style="margin: 2px; font-size: 10px; padding: 3px 8px;">${skill}</span>`
+                `<span class="skill-badge" style="margin: 2px; font-size: 11px; padding: 4px 10px; background: #6366f115; color: #6366f1; border: 1px solid #6366f130; border-radius: 8px; font-weight: 600;">${skill}</span>`
             ).join("");
-            document.getElementById("empModalSkills").innerHTML = skillsHtml || '<span style="color:#94a3b8; font-size:11px;">No skills added</span>';
+            document.getElementById("empPageSkills").innerHTML = skillsHtml || '<span style="color:#94a3b8; font-size:12px;">No skills added yet</span>';
         });
 
     // 2. Fetch Attendance Stats
@@ -1485,14 +1486,14 @@ function openEmpDetailsModal(username) {
             let total = p + a;
             let rate = total > 0 ? Math.round((p / total) * 100) : 0;
 
-            document.getElementById("empModalAttendanceRate").innerText = rate + "%";
-            document.getElementById("empModalAttendanceRate").style.color = rate > 75 ? "#10b981" : (rate > 50 ? "#f59e0b" : "#ef4444");
+            document.getElementById("empPageAttendanceRate").innerText = rate + "%";
+            document.getElementById("empPageAttendanceRate").style.color = rate > 75 ? "#10b981" : (rate > 50 ? "#f59e0b" : "#ef4444");
 
             // Render Attendance Pie
-            if (empModalAttChartObj) empModalAttChartObj.destroy();
-            const canvas = document.getElementById("empModalAttendanceChart");
+            if (empPageAttChartObj) empPageAttChartObj.destroy();
+            const canvas = document.getElementById("empPageAttendanceChart");
             if (canvas) {
-                empModalAttChartObj = new Chart(canvas.getContext("2d"), {
+                empPageAttChartObj = new Chart(canvas.getContext("2d"), {
                     type: 'doughnut',
                     data: {
                         labels: ['Present', 'Absent'],
@@ -1502,7 +1503,7 @@ function openEmpDetailsModal(username) {
                             borderWidth: 0
                         }]
                     },
-                    options: { responsive: true, plugins: { legend: { display: false } } }
+                    options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
                 });
             }
         });
@@ -1515,26 +1516,26 @@ function openEmpDetailsModal(username) {
             let listHtml = "";
 
             if (tasks.length === 0) {
-                listHtml = '<p style="color: #94a3b8; font-size: 13px; text-align: center; padding: 20px;">No tasks assigned yet.</p>';
+                listHtml = '<p style="color: #94a3b8; font-size: 13px; text-align: center; padding: 30px;">No tasks assigned to this member.</p>';
             } else {
                 tasks.forEach(t => {
                     if (stats[t.status] !== undefined) stats[t.status]++;
                     let statusColor = t.status === 'Completed' ? '#10b981' : (t.status === 'Pending' ? '#f59e0b' : '#6366f1');
                     listHtml += `
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #f1f5f9;">
-                            <div style="font-size: 13px; font-weight: 500;">${t.taskName}</div>
-                            <span style="font-size: 10px; color: ${statusColor}; background: ${statusColor}10; padding: 2px 8px; border-radius: 10px; border: 1px solid ${statusColor}30;">${t.status}</span>
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid #f1f5f9; transition: background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='white'">
+                            <div style="font-size: 14px; font-weight: 500; color: #1e293b;">${t.taskName}</div>
+                            <span style="font-size: 11px; color: ${statusColor}; background: ${statusColor}10; padding: 3px 10px; border-radius: 10px; border: 1px solid ${statusColor}30; font-weight: 700;">${t.status}</span>
                         </div>
                     `;
                 });
             }
-            document.getElementById("empModalTaskList").innerHTML = listHtml;
+            document.getElementById("empPageTaskList").innerHTML = listHtml;
 
             // Render Task Bar Chart
-            if (empModalTaskChartObj) empModalTaskChartObj.destroy();
-            const taskCanvas = document.getElementById("empModalTaskChart");
+            if (empPageTaskChartObj) empPageTaskChartObj.destroy();
+            const taskCanvas = document.getElementById("empPageTaskChart");
             if (taskCanvas) {
-                empModalTaskChartObj = new Chart(taskCanvas.getContext("2d"), {
+                empPageTaskChartObj = new Chart(taskCanvas.getContext("2d"), {
                     type: 'bar',
                     data: {
                         labels: Object.keys(stats),
@@ -1542,7 +1543,7 @@ function openEmpDetailsModal(username) {
                             label: 'Tasks',
                             data: Object.values(stats),
                             backgroundColor: ['#f59e0b', '#3b82f6', '#8b5cf6', '#10b981'],
-                            borderRadius: 4
+                            borderRadius: 6
                         }]
                     },
                     options: {
@@ -1558,9 +1559,9 @@ function openEmpDetailsModal(username) {
     fetch(`/api/employeeAttendanceRecords?username=${username}`)
         .then(res => res.json())
         .then(records => {
-            const body = document.getElementById("empModalProgressBody");
+            const body = document.getElementById("empPageProgressBody");
             if (!records || records.length === 0) {
-                body.innerHTML = '<tr><td colspan="3" style="padding: 20px; text-align: center; color: #94a3b8;">No historical records found.</td></tr>';
+                body.innerHTML = '<tr><td colspan="3" style="padding: 30px; text-align: center; color: #94a3b8;">No historical engagement records found.</td></tr>';
                 return;
             }
 
@@ -1570,19 +1571,63 @@ function openEmpDetailsModal(username) {
             body.innerHTML = records.map(r => {
                 const statusColor = r.status === 'Present' ? '#10b981' : '#ef4444';
                 return `
-                    <tr style="border-bottom: 1px solid #f8fafc;">
-                        <td style="padding: 10px; font-weight: 500; color: #1e293b;">${r.date}</td>
-                        <td style="padding: 10px;">
-                            <span style="color: ${statusColor}; font-weight: 700;">${r.status}</span>
+                    <tr style="border-bottom: 1px solid #f8fafc; transition: background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='white'">
+                        <td style="padding: 12px; font-weight: 500; color: #1e293b;">${r.date}</td>
+                        <td style="padding: 12px;">
+                            <span style="color: ${statusColor}; font-weight: 700; background: ${statusColor}10; padding: 2px 8px; border-radius: 6px;">${r.status}</span>
                         </td>
-                        <td style="padding: 10px; color: #64748b;">General</td>
+                        <td style="padding: 12px; color: #64748b;">Daily Check-in</td>
                     </tr>
                 `;
             }).join("");
         })
         .catch(err => {
             console.error("Error fetching attendance history:", err);
-            document.getElementById("empModalProgressBody").innerHTML = '<tr><td colspan="3" style="padding: 20px; text-align: center; color: #ef4444;">Error loading history.</td></tr>';
+            document.getElementById("empPageProgressBody").innerHTML = '<tr><td colspan="3" style="padding: 20px; text-align: center; color: #ef4444;">Error loading history.</td></tr>';
         });
 }
 
+
+function closeEmpDetailsModal(event) {
+    if (event && event.target !== document.getElementById("empDetailsModal")) return;
+    document.getElementById("empDetailsModal").classList.remove("active");
+    // Stop any charts if necessary to free resources
+}
+
+function showMgrAttEmployees(date, status) {
+    const title = document.getElementById("mgrAttModalTitle");
+    const body = document.getElementById("mgrAttModalBody");
+    if (!title || !body) return;
+
+    title.innerText = `${status.toUpperCase()} Employees - ${date}`;
+    body.innerHTML = '<p style="padding:20px; text-align:center;">Fetching list...</p>';
+    document.getElementById("mgrAttModal").classList.add("active");
+
+    fetch(`/api/attendanceByDate?date=${date}`)
+        .then(res => res.json())
+        .then(records => {
+            const filtered = records.filter(r => r.status.toLowerCase() === status.toLowerCase());
+            if (filtered.length === 0) {
+                body.innerHTML = `<p style="padding:30px; text-align:center; color:#94a3b8;">No ${status} employees on this day.</p>`;
+                return;
+            }
+
+            body.innerHTML = filtered.map(r => `
+                <div class="mgr-att-emp-item">
+                    <div class="mgr-att-emp-avatar ${status === 'present' ? 'present-av' : 'absent-av'}">
+                        ${r.employeeName.charAt(0).toUpperCase()}
+                    </div>
+                    <div class="mgr-att-emp-name">${r.employeeName}</div>
+                </div>
+            `).join("");
+        })
+        .catch(err => {
+            console.error("Error fetching attendance list:", err);
+            body.innerHTML = '<p style="padding:20px; text-align:center; color:#ef4444;">Error loading list.</p>';
+        });
+}
+
+function closeMgrAttModal(event) {
+    if (event && event.target !== document.getElementById("mgrAttModal")) return;
+    document.getElementById("mgrAttModal").classList.remove("active");
+}

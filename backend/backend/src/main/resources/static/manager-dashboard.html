@@ -620,6 +620,72 @@
                 </div>
             </div>
 
+            <!-- EMPLOYEE INSIGHTS FULL PAGE -->
+            <div id="tab-employee-insights" class="tab-section">
+                <button class="back-btn" onclick="switchTab('tab-directory')">← Back to Directory</button>
+                
+                <div style="display: grid; grid-template-columns: 350px 1fr; gap: 30px;">
+                    <!-- Left Column: Profile Card -->
+                    <div style="display: flex; flex-direction: column; gap: 25px;">
+                        <div class="chart-box" style="text-align: center; padding: 40px 30px;">
+                            <div id="empPageAvatar" style="width: 100px; height: 100px; border-radius: 24px; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; display: flex; align-items: center; justify-content: center; font-size: 40px; font-weight: 800; margin: 0 auto 20px; box-shadow: 0 10px 20px rgba(99, 102, 241, 0.2);">?</div>
+                            <h2 id="empPageName" style="margin: 0; font-size: 24px; color: #1e293b; border: none; padding: 0;">Employee Name</h2>
+                            <p id="empPageContact" style="color: #64748b; font-size: 14px; margin-top: 5px;">contact@example.com</p>
+                            
+                            <div style="margin-top: 35px; text-align: left;">
+                                <h3 style="font-size: 12px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; border: none; padding: 0;">Expertise & Skills</h3>
+                                <div id="empPageSkills" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                                    <!-- Skills badges injected here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="chart-box" style="text-align: center; background: linear-gradient(135deg, #f8fafc, #f1f5f9);">
+                            <h3 style="font-size: 14px; margin-bottom: 15px; border: none; padding: 0; color: #64748b;">Reliability Score</h3>
+                            <div id="empPageAttendanceRate" style="font-size: 48px; font-weight: 800; color: #10b981;">0%</div>
+                            <p style="font-size: 12px; color: #94a3b8; margin-top: 5px;">Overall Attendance Consistency</p>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Performance Analytics -->
+                    <div style="display: flex; flex-direction: column; gap: 25px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 25px;">
+                            <div class="chart-box">
+                                <h3 style="border: none; padding: 0; margin-bottom: 20px;">Attendance Breakdown</h3>
+                                <canvas id="empPageAttendanceChart"></canvas>
+                            </div>
+                            <div class="chart-box">
+                                <h3 style="border: none; padding: 0; margin-bottom: 20px;">Workload Distribution</h3>
+                                <canvas id="empPageTaskChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="chart-box">
+                            <h3 style="border: none; padding: 0; margin-bottom: 20px;">Current Workstream</h3>
+                            <div id="empPageTaskList" style="max-height: 250px; overflow-y: auto;">
+                                <!-- Tasks injected here -->
+                            </div>
+                            
+                            <h3 style="border: none; padding: 15px 0 10px; margin-top: 25px; border-top: 1px solid #f1f5f9; font-size: 15px;">📅 Engagement History</h3>
+                            <div style="overflow-x: auto;">
+                                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                                    <thead>
+                                        <tr style="border-bottom: 2px solid #f1f5f9; color: #94a3b8; text-align: left;">
+                                            <th style="padding: 12px;">Date</th>
+                                            <th style="padding: 12px;">Status</th>
+                                            <th style="padding: 12px;">Notes</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="empPageProgressBody">
+                                        <!-- History injected here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- REPORTS SECTION -->
             <div id="tab-reports" class="tab-section">
                 <button class="back-btn" onclick="switchTab('tab-hub')">← Back to Menu</button>
@@ -645,13 +711,14 @@
                                     <th style="padding: 15px; color: #475569;">Priority</th>
                                 </tr>
                             </thead>
-                            <tbody id="taskReportBody">
-                                <tr><td colspan="5" style="padding: 40px; text-align: center; color: #94a3b8;">Select a date to generate the report</td></tr>
                             </tbody>
                         </table>
-                    </div>
-                </div>
-          <!-- ===== SHARED MODALS ===== -->
+                    </div> <!-- CLOSE chart-box -->
+                </div> <!-- CLOSE tab-reports -->
+            </div> <!-- CLOSE main-content -->
+        </div> <!-- CLOSE dashboard-container -->
+
+    <!-- ===== SHARED MODALS ===== -->
 
     <!-- 1. Employee Details Modal -->
     <div class="mgr-att-modal-overlay" id="empDetailsModal" onclick="closeEmpDetailsModal(event)">
