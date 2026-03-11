@@ -337,7 +337,7 @@ function createTask() {
 function loadTasks() {
     const todayStr = new Date().toISOString().split('T')[0];
     const dateInput = document.getElementById("taskFilterDate");
-    
+
     if (dateInput && dateInput.value === "") {
         dateInput.value = todayStr;
     }
@@ -373,6 +373,10 @@ function loadTasks() {
                 let safeSkill = hasSkill ? task.requiredSkill.replace(/'/g, "\\'") : "";
                 let safeName = task.taskName ? task.taskName.replace(/'/g, "\\'") : "Untitled";
 
+                let statusBg = task.status === 'Completed' ? '#d1fae5' : '#fef3c7';
+                let statusColor = task.status === 'Completed' ? '#065f46' : '#92400e';
+                let statusLabelHTML = `<span style="background: ${statusBg}; color: ${statusColor}; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">${task.status}</span>`;
+
                 if (hasSkill) {
                     html += `
 <div class="employee-row" 
@@ -385,7 +389,7 @@ function loadTasks() {
         <div style="font-size: 13px; margin-top:5px;"><b>Assigned:</b> ${assignedListHTML}</div>
     </div>
     <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
-        <span style="background: #eee; padding: 3px 8px; border-radius: 12px; font-size: 11px;">${task.status}</span>
+        ${statusLabelHTML}
         <button onclick="deleteTask(event, ${task.id})" style="background: #fee2e2; color: #ef4444; border: none; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; transition: 0.2s;">Discard</button>
     </div>
 </div>
@@ -399,7 +403,7 @@ function loadTasks() {
         <small style="color: #ef4444;">⚠ No skills set — cannot suggest employees</small>
     </div>
     <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
-        <span style="background: #fecaca; padding: 3px 8px; border-radius: 12px; font-size: 11px;">${task.status}</span>
+        ${statusLabelHTML}
         <button onclick="deleteTask(event, ${task.id})" style="background: #fee2e2; color: #ef4444; border: none; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; transition: 0.2s;">Discard</button>
     </div>
 </div>
@@ -596,7 +600,7 @@ let currentModalTask = null;
 function openTaskModal(taskId) {
     selectedTaskId = taskId;
     const selectedDate = document.getElementById("taskFilterDate") ? document.getElementById("taskFilterDate").value : new Date().toISOString().split('T')[0];
-    
+
     fetch(`/api/tasksByDate?date=${selectedDate}`)
         .then(res => res.json())
         .then(tasks => {
@@ -752,27 +756,44 @@ function unassignFromModal(employeeName) {
 }
 
 function markTaskCompletedFromModal() {
-    if (!currentModalTask) return;
+
+    if (!currentModalTask || !selectedTaskId) {
+        alert("Task ID missing");
+        return;
+    }
 
     fetch(`/api/updateTaskStatus?taskId=${selectedTaskId}&status=Completed`, {
         method: "POST"
     })
-        .then(res => res.json())
-        .then(updatedTask => {
-            alert("Task marked as completed!");
+        .then(res => {
+            if (!res.ok) {
+                throw new Error("API failed");
+            }
+            return res.json();
+        })
+        .then(data => {
+
+            console.log("Task updated:", data);
+
+            // Update modal UI
             document.getElementById("modalStatus").innerText = "Completed";
+
             const completeBtn = document.getElementById("completeBtn");
             completeBtn.innerText = "Task Completed ✓";
             completeBtn.disabled = true;
-            completeBtn.style.opacity = "0.6";
-            completeBtn.style.cursor = "not-allowed";
-            currentModalTask = updatedTask;
-            
-            // Sync with main list
-            if (typeof loadTasks === 'function' && document.getElementById('taskList')) loadTasks();
-            // Sync with Hub stats
-            if (typeof loadSupervisorDashboard === 'function' && document.getElementById('totalEmployees')) loadSupervisorDashboard();
+
+            // 🔄 Refresh all dashboards
+            if (typeof loadTasks === "function") loadTasks();
+            if (typeof loadEmployeeTasks === "function") loadEmployeeTasks();
+            if (typeof loadEmployeeStats === "function") loadEmployeeStats();
+            if (typeof loadManagerAnalytics === "function") loadManagerAnalytics();
+
+        })
+        .catch(err => {
+            console.error("Status update failed:", err);
+            alert("Failed to update task status.");
         });
+
 }
 
 function handleDeleteFromModal() {
@@ -974,7 +995,7 @@ function loadEmployeeTasks() {
 }
 
 function updateTaskStatusFromDashboard(taskId, status) {
-    fetch(`/api/updateTaskStatus?taskId=${taskId}&status=${status}`, {
+    fetch(`/api/updateTaskStatus?taskId=${taskId}&status=${encodeURIComponent(status)}`, {
         method: "POST"
     })
         .then(res => res.json())
@@ -982,7 +1003,7 @@ function updateTaskStatusFromDashboard(taskId, status) {
             // Refresh stats and tasks on the current dashboard
             if (typeof loadEmployeeStats === 'function' && document.getElementById('presentDays')) loadEmployeeStats();
             if (typeof loadEmployeeTasks === 'function' && document.getElementById('employeeTaskList')) loadEmployeeTasks();
-            
+
             // If on supervisor management page
             if (typeof loadTasks === 'function' && document.getElementById('taskList')) loadTasks();
             if (typeof loadSupervisorDashboard === 'function' && document.getElementById('totalEmployees')) loadSupervisorDashboard();
@@ -1089,7 +1110,7 @@ function loadManagerAnalytics() {
 
     // Initialize attendance calendar
     loadMgrAttendanceCalendar();
-    
+
     // Load Employee Directory
     loadEmployeeDirectory("mgrEmployeeDirectory");
 
@@ -1341,13 +1362,13 @@ function loadSupervisorDashboard() {
     loadEmployeeDirectory("supEmployeeDirectory");
 
     // 2. Load Stats
-    fetch("/api/managerAnalytics", { cache: "no-store" }) 
+    fetch("/api/managerAnalytics", { cache: "no-store" })
         .then(res => res.json())
         .then(data => {
             document.getElementById("totalEmployees").innerText = data.totalEmployees || 0;
             document.getElementById("todayPresent").innerText = data.presentEmployees || 0;
             document.getElementById("pendingTasks").innerText = data.pendingTasks || 0;
-            
+
             let total = data.totalTasks || 0;
             let completed = data.completedTasks || 0;
             let rate = total > 0 ? Math.round((completed / total) * 100) : 0;
@@ -1449,21 +1470,21 @@ function openEmpDetailsModal(username) {
         .then(res => res.json())
         .then(data => {
             document.getElementById("empModalContact").innerText = data.email || 'No email provided';
-            let skillsHtml = (data.skills || "").split(",").map(skill => skill.trim()).filter(s => s).map(skill => 
+            let skillsHtml = (data.skills || "").split(",").map(skill => skill.trim()).filter(s => s).map(skill =>
                 `<span class="skill-badge" style="margin: 2px; font-size: 10px; padding: 3px 8px;">${skill}</span>`
             ).join("");
             document.getElementById("empModalSkills").innerHTML = skillsHtml || '<span style="color:#94a3b8; font-size:11px;">No skills added</span>';
         });
 
     // 2. Fetch Attendance Stats
-    fetch(`/api/employeeStats?username=${username}`)
+    fetch(`/api/employeeStats?employeeName=${username}`)
         .then(res => res.json())
         .then(data => {
             let p = data.present || 0;
             let a = data.absent || 0;
             let total = p + a;
             let rate = total > 0 ? Math.round((p / total) * 100) : 0;
-            
+
             document.getElementById("empModalAttendanceRate").innerText = rate + "%";
             document.getElementById("empModalAttendanceRate").style.color = rate > 75 ? "#10b981" : (rate > 50 ? "#f59e0b" : "#ef4444");
 
@@ -1487,7 +1508,7 @@ function openEmpDetailsModal(username) {
         });
 
     // 3. Fetch Tasks
-    fetch(`/api/tasksByEmployee?username=${username}`)
+    fetch(`/api/tasksByEmployee?employeeName=${username}`)
         .then(res => res.json())
         .then(tasks => {
             let stats = { "Pending": 0, "Started": 0, "In Progress": 0, "Completed": 0 };
@@ -1524,8 +1545,8 @@ function openEmpDetailsModal(username) {
                             borderRadius: 4
                         }]
                     },
-                    options: { 
-                        responsive: true, 
+                    options: {
+                        responsive: true,
                         plugins: { legend: { display: false } },
                         scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
                     }
