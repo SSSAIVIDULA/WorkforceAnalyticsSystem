@@ -347,4 +347,52 @@ public class LoginController {
         return stats;
     }
 
+    // =========================
+    // ATTENDANCE CALENDAR API
+    // =========================
+    @GetMapping("/attendanceSummaryByMonth")
+    public Map<String, Object> getAttendanceSummaryByMonth(
+            @RequestParam("year") int year,
+            @RequestParam("month") int month) {
+
+        LocalDate startDate = LocalDate.of(year, month, 1);
+        LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
+
+        List<Attendance> records = attendanceRepository.findByDateBetween(startDate, endDate);
+
+        // Group by date
+        Map<String, Map<String, Object>> dailySummary = new HashMap<>();
+
+        for (Attendance a : records) {
+            String dateKey = a.getDate().toString(); // YYYY-MM-DD
+            dailySummary.putIfAbsent(dateKey, new HashMap<>());
+            Map<String, Object> dayStat = dailySummary.get(dateKey);
+
+            dayStat.putIfAbsent("present", 0);
+            dayStat.putIfAbsent("absent", 0);
+            dayStat.putIfAbsent("presentNames", new java.util.ArrayList<String>());
+            dayStat.putIfAbsent("absentNames", new java.util.ArrayList<String>());
+
+            if ("Present".equalsIgnoreCase(a.getStatus())) {
+                dayStat.put("present", (int) dayStat.get("present") + 1);
+                ((java.util.List<String>) dayStat.get("presentNames")).add(a.getEmployeeName());
+            } else if ("Absent".equalsIgnoreCase(a.getStatus())) {
+                dayStat.put("absent", (int) dayStat.get("absent") + 1);
+                ((java.util.List<String>) dayStat.get("absentNames")).add(a.getEmployeeName());
+            }
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("summary", dailySummary);
+        return result;
+    }
+
+    // ===================================
+    // EMPLOYEE DAILY PROGRESS API
+    // ===================================
+    @GetMapping("/employeeAttendanceRecords")
+    public List<Attendance> getEmployeeAttendanceRecords(@RequestParam String username) {
+        return attendanceRepository.findByEmployeeName(username);
+    }
+
 }

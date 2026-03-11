@@ -1,39 +1,370 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-<title>Supervisor Dashboard</title>
-<link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supervisor Dashboard | Workforce Analytics</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            padding: 20px;
+            border-radius: 16px;
+            color: white;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-card h4 {
+            margin: 0;
+            font-size: 13px;
+            opacity: 0.9;
+            text-transform: uppercase;
+        }
+
+        .stat-card .num {
+            font-size: 32px;
+            font-weight: 800;
+            margin: 10px 0 0 0;
+        }
+
+        /* Reusing common dashboard styles */
+        .mgr-calendar-section {
+            background: #fff;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid #eef2ff;
+            margin-bottom: 25px;
+        }
+
+        /* Modal Styles */
+        .mgr-att-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .mgr-att-modal-overlay.active {
+            display: flex;
+        }
+
+        .mgr-att-modal {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+        }
+
+        .mgr-att-modal-header {
+            padding: 20px 25px;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .close-btn {
+            background: #f1f5f9;
+            border: none;
+            width: 35px;
+            height: 35px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 20px;
+        }
+
+        .chart-box {
+            background: #fff;
+            border-radius: 14px;
+            padding: 20px;
+            border: 1px solid #eef2ff;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+        }
+
+        /* ===== HUB UI STYLES ===== */
+        .hub-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-top: 40px;
+        }
+
+        .hub-card {
+            background: white;
+            padding: 40px 30px;
+            border-radius: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .hub-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border-color: #6366f1;
+        }
+
+        .hub-card .icon-box {
+            font-size: 50px;
+            margin-bottom: 20px;
+        }
+
+        .hub-card h3 {
+            margin: 0;
+            font-size: 20px;
+            color: #1e293b;
+        }
+
+        .hub-card p {
+            margin: 10px 0 0 0;
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: #f1f5f9;
+            color: #475569;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            border: 1px solid #e2e8f0;
+            cursor: pointer;
+            margin-bottom: 20px;
+            transition: all 0.2s;
+            width: auto;
+        }
+
+        .back-btn:hover {
+            background: #e2e8f0;
+            color: #1e293b;
+        }
+
+        /* ===== CLASSIC SIDEBAR LAYOUT (MODIFIED FOR HUB) ===== */
+        body { background-color: #f8fafc; margin: 0; }
+        .dashboard-container { display: block; min-height: 100vh; }
+        .sidebar { display: none; } /* HIDDEN BY DEFAULT */
+        .main-content { max-width: 1200px; margin: 0 auto; padding: 60px 30px; }
+        .tab-section { display: none; animation: fadeIn 0.3s ease; }
+        .tab-section.active { display: block; }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Override layouts */
+        .page { background: none; display: block; padding: 0; margin: 0; }
+        .card { width: 100%; max-width: none; box-shadow: none; background: transparent; padding: 0; }
+
+    </style>
 </head>
 
-<body>
+<body onload="loadSupervisorDashboard()">
 
-<div class="container">
+    <div class="dashboard-container">
+        <!-- SIDEBAR REMOVED IN FAVOR OF HUB NAV -->
 
-<div class="page">
+        <!-- MAIN CONTENT -->
+        <div class="main-content">
+            
+            <!-- HUB SECTION -->
+            <div id="tab-hub" class="tab-section active">
+                <div style="text-align: center; margin-bottom: 50px;">
+                    <h1 style="font-size: 36px; margin-bottom: 10px; background: linear-gradient(135deg, #6366f1, #a855f7); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Supervisor Terminal</h1>
+                    <p style="color: #64748b; font-size: 18px;">Select a workspace to manage your team operations</p>
+                </div>
 
-<div class="card">
+                <div class="hub-container">
+                    <div class="hub-card" onclick="switchTab('tab-sup-overview')">
+                        <div class="icon-box">📊</div>
+                        <h3>Stats Overview</h3>
+                        <p>Analyze team productivity and attendance metrics in real-time.</p>
+                    </div>
+                    <div class="hub-card" onclick="goAddEmployee()">
+                        <div class="icon-box">👤</div>
+                        <h3>Add Team Member</h3>
+                        <p>Register new employees and set their roles and skills.</p>
+                    </div>
+                    <div class="hub-card" onclick="goAttendance()">
+                        <div class="icon-box">✅</div>
+                        <h3>Mark Attendance</h3>
+                        <p>Daily check-in/out for all employees in your team.</p>
+                    </div>
+                    <div class="hub-card" onclick="goTaskManagement()">
+                        <div class="icon-box">📋</div>
+                        <h3>Manage Tasks</h3>
+                        <p>Assign work, set priorities, and track progress.</p>
+                    </div>
+                    <div class="hub-card" onclick="switchTab('tab-sup-directory')">
+                        <div class="icon-box">👥</div>
+                        <h3>Team Directory</h3>
+                        <p>View detailed profiles and performance history of your staff.</p>
+                    </div>
+                </div>
 
-<h2>Supervisor Dashboard</h2>
+                <div style="margin-top: 60px; text-align: center;">
+                    <button class="btn-logout" style="width: 200px; padding: 15px;" onclick="logout()">Logout Session</button>
+                </div>
+            </div>
 
-<p style="text-align:center">Manage Workforce Operations</p>
+            <!-- OVERVIEW SECTION -->
+            <div id="tab-sup-overview" class="tab-section">
+                <button class="back-btn" onclick="switchTab('tab-hub')">← Back to Menu</button>
+                <div style="margin-bottom: 30px;">
+                    <h2 style="margin: 0; font-size: 28px; text-align: left;">Performance Insights</h2>
+                    <p style="color: #64748b; margin: 5px 0 0 0;">Real-time team analytics and productivity metrics</p>
+                </div>
 
-<div class="dashboard-buttons">
+                <div class="stats-row">
+                    <div class="stat-card" style="background: linear-gradient(135deg, #6366f1, #4f46e5);">
+                        <h4>Active Staff</h4>
+                        <div class="num" id="totalEmployees">0</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #10b981, #059669);">
+                        <h4>Present Today</h4>
+                        <div class="num" id="todayPresent">0</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                        <h4>Pending Tasks</h4>
+                        <div class="num" id="pendingTasks">0</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #ec4899, #be185d);">
+                        <h4>Avg Productivity</h4>
+                        <div class="num" id="avgProductivity">0%</div>
+                    </div>
+                </div>
+            </div>
 
-<button onclick="goAddEmployee()">Add Employee</button>
+            <!-- OPERATIONS SECTION -->
+            <div id="tab-sup-ops" class="tab-section">
+                <button class="back-btn" onclick="switchTab('tab-hub')">← Back to Menu</button>
+                <div class="chart-box">
+                    <h3 style="margin-bottom: 25px; font-size: 20px; color: #1e293b; border-bottom: 2px solid #eef2ff; padding-bottom: 10px;">🛠️ Management Tools</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                        <div class="chart-box" style="text-align: center; cursor: pointer; border: 1px solid #e2e8f0; transition: all 0.2s;" onmouseover="this.style.borderColor='#6366f1'" onmouseout="this.style.borderColor='#e2e8f0'" onclick="goAddEmployee()">
+                            <div style="font-size: 40px; margin-bottom: 15px;">👤</div>
+                            <h4 style="margin: 0; color: #1e293b;">Add Employee</h4>
+                            <p style="font-size: 13px; color: #64748b; margin-top: 8px;">Register new team members</p>
+                        </div>
+                        <div class="chart-box" style="text-align: center; cursor: pointer; border: 1px solid #e2e8f0; transition: all 0.2s;" onmouseover="this.style.borderColor='#10b981'" onmouseout="this.style.borderColor='#e2e8f0'" onclick="goAttendance()">
+                            <div style="font-size: 40px; margin-bottom: 15px;">✅</div>
+                            <h4 style="margin: 0; color: #1e293b;">Attendance</h4>
+                            <p style="font-size: 13px; color: #64748b; margin-top: 8px;">Mark daily presence</p>
+                        </div>
+                        <div class="chart-box" style="text-align: center; cursor: pointer; border: 1px solid #e2e8f0; transition: all 0.2s;" onmouseover="this.style.borderColor='#f59e0b'" onmouseout="this.style.borderColor='#e2e8f0'" onclick="goTaskManagement()">
+                            <div style="font-size: 40px; margin-bottom: 15px;">📋</div>
+                            <h4 style="margin: 0; color: #1e293b;">Manage Tasks</h4>
+                            <p style="font-size: 13px; color: #64748b; margin-top: 8px;">Assign and track work</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-<button onclick="goAttendance()">Mark Attendance</button>
+            <!-- DIRECTORY SECTION -->
+            <div id="tab-sup-directory" class="tab-section">
+                <button class="back-btn" onclick="switchTab('tab-hub')">← Back to Menu</button>
+                <div class="mgr-calendar-section">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+                        <div>
+                            <h3 style="margin: 0; font-size: 24px; color: #1e293b;">👥 Team Member Directory</h3>
+                            <p style="color: #64748b; font-size: 14px; margin-top: 5px;">View detailed profile and granular progress history</p>
+                        </div>
+                        <input type="text" id="supEmpSearch" placeholder="Search team member..." 
+                               style="width: 300px; padding: 12px 20px; border-radius: 12px; border: 1px solid #e2e8f0; font-size: 14px;"
+                               onkeyup="filterEmployeeDirectory('supEmpSearch', 'supEmployeeDirectory')">
+                    </div>
+                    <div id="supEmployeeDirectory" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px;">
+                        <p style="text-align: center; grid-column: 1/-1; padding: 40px; color: #94a3b8;">Loading team directory...</p>
+                    </div>
+                </div>
+            </div>
 
-<button onclick="goTaskManagement()">Manage Tasks</button>
+        </div>
+    </div>
 
-<button onclick="logout()">Logout</button>
+    <!-- Legacy IDs for script compatibility -->
+    <div id="teamDirectoryModal" style="display:none;"></div>
 
-</div>
+    <!-- ===== SHARED EMPLOYEE DETAILS MODAL ===== -->
+    <div class="mgr-att-modal-overlay" id="empDetailsModal" onclick="closeEmpDetailsModal(event)">
+        <div class="mgr-att-modal" style="width: 850px; max-width: 95%; height: 85vh;" onclick="event.stopPropagation()">
+            <div class="mgr-att-modal-header">
+                <h4 id="empModalTitle">Team Member Insights</h4>
+                <button class="close-btn" onclick="closeEmpDetailsModal()">&times;</button>
+            </div>
+            <div class="mgr-att-modal-body" style="background: #f8fafc; padding: 25px; overflow-y: auto; height: calc(100% - 76px);">
+                <div style="display: grid; grid-template-columns: 300px 1fr; gap: 25px;">
+                    <!-- Sidebar -->
+                    <div style="display: flex; flex-direction: column; gap: 20px;">
+                        <div class="chart-box" style="text-align: center;">
+                            <div id="empModalAvatar" style="width: 80px; height: 80px; border-radius: 20px; background: #6366f1; color: white; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 800; margin: 0 auto 15px;">?</div>
+                            <h3 id="empModalName" style="margin-bottom: 5px;">Employee Name</h3>
+                            <p id="empModalContact" style="font-size: 13px; color: #64748b;">Contact Loading...</p>
+                            <div style="margin-top: 20px; text-align: left;">
+                                <h4 style="font-size: 11px; color: #94a3b8; text-transform: uppercase;">Skill Set</h4>
+                                <div id="empModalSkills"></div>
+                            </div>
+                        </div>
+                        <div class="chart-box">
+                            <h4 style="font-size: 13px; margin: 0;">Attendance Consistency</h4>
+                            <div id="empModalAttendanceRate" style="font-size: 32px; font-weight: 800; color: #10b981; margin-top: 10px;">0%</div>
+                        </div>
+                    </div>
+                    <!-- Main Content -->
+                    <div style="display: flex; flex-direction: column; gap: 20px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px;">
+                            <div class="chart-box">
+                                <h4 style="font-size: 13px; margin-bottom: 15px;">Attendance Split</h4>
+                                <canvas id="empModalAttendanceChart"></canvas>
+                            </div>
+                            <div class="chart-box">
+                                <h4 style="font-size: 13px; margin-bottom: 15px;">Task Accomplishments</h4>
+                                <canvas id="empModalTaskChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-box">
+                            <h4 style="font-size: 13px; margin-bottom: 15px;">Assigned Workstream</h4>
+                            <div id="empModalTaskList" style="max-height: 150px; overflow-y: auto; margin-bottom: 15px;"></div>
+                            
+                            <h4 style="font-size: 13px; border-top: 1px solid #f1f5f9; padding-top: 15px; margin-top: 15px;">📅 Daily Progress History</h4>
+                            <div style="overflow-x: auto;">
+                                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                                    <thead>
+                                        <tr style="border-bottom: 2px solid #eef2ff; color: #64748b;">
+                                            <th style="padding: 8px; text-align: left;">Date</th>
+                                            <th style="padding: 8px; text-align: left;">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="empModalProgressBody">
+                                        <tr><td colspan="2" style="padding: 10px; text-align: center; color: #94a3b8;">Loading...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-</div>
-
-</div>
-</div>
-<script src="script.js"></script>
-
+    <script src="script.js"></script>
 </body>
-</html>
+
+</html>

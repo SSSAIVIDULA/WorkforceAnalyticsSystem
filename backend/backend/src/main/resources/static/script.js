@@ -15,9 +15,44 @@ function logout() {
     window.location = "index.html";
 }
 
-function goAddEmployee() {
-    window.location = "add-employee.html";
+// Global Tab Switching Logic for Classic Dashboard
+function switchTab(tabId, element) {
+    // Hide all tab sections in the current page
+    const sections = document.querySelectorAll('.tab-section');
+    sections.forEach(s => s.classList.remove('active'));
+
+    // Remove active class from all nav items
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => item.classList.remove('active'));
+
+    // Show the target section
+    const target = document.getElementById(tabId);
+    if (target) {
+        target.classList.add('active');
+    }
+
+    // Set the clicked nav item as active
+    if (element) {
+        element.classList.add('active');
+    }
+
+    // AUTO-REFRESH DATA based on tab
+    if (tabId === 'tab-overview') {
+        if (typeof loadManagerAnalytics === 'function') loadManagerAnalytics();
+    } else if (tabId === 'tab-sup-overview') {
+        if (typeof loadSupervisorDashboard === 'function') loadSupervisorDashboard();
+    } else if (tabId === 'tab-reports') {
+        const reportDateInput = document.getElementById("reportDate");
+        if (reportDateInput && reportDateInput.value) {
+            if (typeof loadManagerTaskReport === 'function') loadManagerTaskReport();
+        }
+    } else if (tabId === 'tab-directory') {
+        if (typeof loadEmployeeDirectory === 'function') loadEmployeeDirectory();
+    }
 }
+
+// Global Redirects
+function goAddEmployee() { window.location.href = 'add-employee.html'; }
 
 function goAttendance() {
     window.location = "attendance.html";
@@ -300,10 +335,16 @@ function createTask() {
 
 
 function loadTasks() {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const dateInput = document.getElementById("taskFilterDate");
+    
+    if (dateInput && dateInput.value === "") {
+        dateInput.value = todayStr;
+    }
 
-    let today = new Date().toISOString().split('T')[0];
+    const selectedDate = dateInput ? dateInput.value : todayStr;
 
-    fetch("/api/tasksByDate?date=" + today)
+    fetch("/api/tasksByDate?date=" + selectedDate, { cache: "no-store" })
         .then(res => res.json())
         .then(tasks => {
 
@@ -366,7 +407,10 @@ function loadTasks() {
                 }
             });
 
-            document.getElementById("taskList").innerHTML = html;
+            let taskListEl = document.getElementById("taskList");
+            if (taskListEl) {
+                taskListEl.innerHTML = html;
+            }
 
         });
 
@@ -551,7 +595,9 @@ let currentModalTask = null;
 
 function openTaskModal(taskId) {
     selectedTaskId = taskId;
-    fetch(`/api/tasksByDate?date=${new Date().toISOString().split('T')[0]}`)
+    const selectedDate = document.getElementById("taskFilterDate") ? document.getElementById("taskFilterDate").value : new Date().toISOString().split('T')[0];
+    
+    fetch(`/api/tasksByDate?date=${selectedDate}`)
         .then(res => res.json())
         .then(tasks => {
             const task = tasks.find(t => t.id === taskId);
@@ -721,6 +767,11 @@ function markTaskCompletedFromModal() {
             completeBtn.style.opacity = "0.6";
             completeBtn.style.cursor = "not-allowed";
             currentModalTask = updatedTask;
+            
+            // Sync with main list
+            if (typeof loadTasks === 'function' && document.getElementById('taskList')) loadTasks();
+            // Sync with Hub stats
+            if (typeof loadSupervisorDashboard === 'function' && document.getElementById('totalEmployees')) loadSupervisorDashboard();
         });
 }
 
@@ -754,7 +805,7 @@ function loadEmployeeStats() {
     document.getElementById("employeeName").innerText = "Welcome, " + username;
 
     // Fetch profile
-    fetch("/api/employeeProfile?username=" + encodeURIComponent(username))
+    fetch("/api/employeeProfile?username=" + encodeURIComponent(username), { cache: "no-store" })
         .then(res => res.json())
         .then(profile => {
 
@@ -782,7 +833,7 @@ function loadEmployeeStats() {
         });
 
     // Fetch attendance stats
-    fetch("/api/employeeStats?employeeName=" + encodeURIComponent(username))
+    fetch("/api/employeeStats?employeeName=" + encodeURIComponent(username), { cache: "no-store" })
         .then(res => res.json())
         .then(stats => {
 
@@ -830,7 +881,7 @@ function loadEmployeeTasks() {
     let username = localStorage.getItem("username");
     if (!username) return;
 
-    fetch("/api/tasksByEmployee?employeeName=" + encodeURIComponent(username))
+    fetch("/api/tasksByEmployee?employeeName=" + encodeURIComponent(username), { cache: "no-store" })
         .then(res => res.json())
         .then(tasks => {
 
@@ -888,16 +939,24 @@ function loadEmployeeTasks() {
 
                 html += `
                 <div class="task-item">
-                    <div>
+                    <div style="flex: 1;">
                         <div style="font-weight: 700; color: #1e293b;">${task.taskName}</div>
                         <div style="font-size: 12px; color: #64748b; margin-top: 4px;">
                             ${task.section} • Priority: ${task.priority}<br>
                             Deadline: ${task.deadline ? task.deadline : task.date}
                         </div>
                     </div>
-                    <span class="status-badge" style="background: ${statusColor}15; color: ${statusColor}; border: 1px solid ${statusColor}30;">
-                        ${task.status}
-                    </span>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span class="status-badge" style="background: ${statusColor}15; color: ${statusColor}; border: 1px solid ${statusColor}30;">
+                            ${task.status}
+                        </span>
+                        ${task.status !== 'Completed' ? `
+                            <button onclick="updateTaskStatusFromDashboard(${task.id}, 'Completed')" 
+                                    style="background: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; transition: 0.2s;">
+                                Complete
+                            </button>
+                        ` : ''}
+                    </div>
                 </div>`;
             });
 
@@ -911,6 +970,26 @@ function loadEmployeeTasks() {
         .catch((err) => {
             console.error("Error loading tasks:", err);
             document.getElementById("employeeTaskList").innerHTML = "<p style='color:red;'>Error loading tasks.</p>";
+        });
+}
+
+function updateTaskStatusFromDashboard(taskId, status) {
+    fetch(`/api/updateTaskStatus?taskId=${taskId}&status=${status}`, {
+        method: "POST"
+    })
+        .then(res => res.json())
+        .then(() => {
+            // Refresh stats and tasks on the current dashboard
+            if (typeof loadEmployeeStats === 'function' && document.getElementById('presentDays')) loadEmployeeStats();
+            if (typeof loadEmployeeTasks === 'function' && document.getElementById('employeeTaskList')) loadEmployeeTasks();
+            
+            // If on supervisor management page
+            if (typeof loadTasks === 'function' && document.getElementById('taskList')) loadTasks();
+            if (typeof loadSupervisorDashboard === 'function' && document.getElementById('totalEmployees')) loadSupervisorDashboard();
+        })
+        .catch(err => {
+            console.error("Error updating status:", err);
+            alert("Error updating task status.");
         });
 }
 
@@ -1008,8 +1087,14 @@ function renderCalendar() {
 
 function loadManagerAnalytics() {
 
+    // Initialize attendance calendar
+    loadMgrAttendanceCalendar();
+    
+    // Load Employee Directory
+    loadEmployeeDirectory("mgrEmployeeDirectory");
+
     // Fetch employee count
-    fetch("/api/employees")
+    fetch("/api/employees", { cache: "no-store" })
         .then(res => res.json())
         .then(employees => {
             document.getElementById("totalEmployees").innerText = employees.length;
@@ -1017,7 +1102,7 @@ function loadManagerAnalytics() {
         .catch(() => { });
 
     // Fetch main analytics
-    fetch("/api/managerAnalytics")
+    fetch("/api/managerAnalytics", { cache: "no-store" })
         .then(res => res.json())
         .then(data => {
 
@@ -1151,3 +1236,332 @@ function loadManagerTaskReport() {
             body.innerHTML = `<tr><td colspan="5" style="padding: 20px; text-align: center; color: #ef4444;">Error loading tasks.</td></tr>`;
         });
 }
+
+
+// ======================
+// MANAGER ATTENDANCE CALENDAR
+// ======================
+
+let mgrCalDate = new Date();
+let mgrCalData = {}; // Cached attendance summary data
+
+function mgrCalPrev() {
+    mgrCalDate.setMonth(mgrCalDate.getMonth() - 1);
+    loadMgrAttendanceCalendar();
+}
+
+function mgrCalNext() {
+    mgrCalDate.setMonth(mgrCalDate.getMonth() + 1);
+    loadMgrAttendanceCalendar();
+}
+
+function loadMgrAttendanceCalendar() {
+    const year = mgrCalDate.getFullYear();
+    const month = mgrCalDate.getMonth() + 1; // 1-indexed for API
+
+    const monthNames = ["January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"];
+    document.getElementById("mgrCalMonthDisplay").innerText = `${monthNames[month - 1]} ${year}`;
+
+    // Show loading state
+    document.getElementById("mgrCalGrid").innerHTML =
+        '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #94a3b8;">Loading attendance data...</div>';
+
+    fetch(`/api/attendanceSummaryByMonth?year=${year}&month=${month}`)
+        .then(res => res.json())
+        .then(data => {
+            mgrCalData = data.summary || {};
+            renderMgrCalendar();
+        })
+        .catch(err => {
+            console.error("Error loading attendance calendar:", err);
+            document.getElementById("mgrCalGrid").innerHTML =
+                '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #ef4444;">Error loading calendar data.</div>';
+        });
+}
+
+function renderMgrCalendar() {
+    const year = mgrCalDate.getFullYear();
+    const month = mgrCalDate.getMonth();
+
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    const grid = document.getElementById("mgrCalGrid");
+    grid.innerHTML = "";
+
+    const today = new Date();
+    const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+
+    // Empty cells before month starts
+    for (let i = 0; i < firstDay; i++) {
+        grid.innerHTML += `<div class="mgr-cal-day empty"></div>`;
+    }
+
+    // Day cells
+    for (let d = 1; d <= daysInMonth; d++) {
+        const m = (month + 1).toString().padStart(2, '0');
+        const dd = d.toString().padStart(2, '0');
+        const dateKey = `${year}-${m}-${dd}`;
+
+        const isToday = isCurrentMonth && today.getDate() === d;
+        const dayClass = isToday ? "mgr-cal-day today" : "mgr-cal-day";
+
+        const dayStat = mgrCalData[dateKey];
+        let badgesHtml = "";
+
+        if (dayStat) {
+            const pCount = dayStat.present || 0;
+            const aCount = dayStat.absent || 0;
+
+            if (pCount > 0) {
+                badgesHtml += `<span class="mgr-cal-badge present" onclick="showMgrAttEmployees('${dateKey}', 'present')" title="Click to see present employees">✓ ${pCount}</span>`;
+            }
+            if (aCount > 0) {
+                badgesHtml += `<span class="mgr-cal-badge absent" onclick="showMgrAttEmployees('${dateKey}', 'absent')" title="Click to see absent employees">✗ ${aCount}</span>`;
+            }
+        }
+
+        grid.innerHTML += `
+            <div class="${dayClass}">
+                <div class="day-num">${d}</div>
+                <div class="mgr-cal-badges">${badgesHtml}</div>
+            </div>
+        `;
+    }
+}
+
+
+// ======================
+// SUPERVISOR DASHBOARD
+// ======================
+
+function loadSupervisorDashboard() {
+    // 1. Load Directory (cached for modal)
+    loadEmployeeDirectory("supEmployeeDirectory");
+
+    // 2. Load Stats
+    fetch("/api/managerAnalytics", { cache: "no-store" }) 
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById("totalEmployees").innerText = data.totalEmployees || 0;
+            document.getElementById("todayPresent").innerText = data.presentEmployees || 0;
+            document.getElementById("pendingTasks").innerText = data.pendingTasks || 0;
+            
+            let total = data.totalTasks || 0;
+            let completed = data.completedTasks || 0;
+            let rate = total > 0 ? Math.round((completed / total) * 100) : 0;
+            document.getElementById("avgProductivity").innerText = rate + "%";
+        })
+        .catch(err => console.error("Error loading supervisor dashboard:", err));
+}
+
+function openTeamDirectory() {
+    document.getElementById("teamDirectoryModal").classList.add("active");
+}
+
+function closeTeamDirectoryModal(event) {
+    if (event && event.target !== document.getElementById("teamDirectoryModal")) return;
+    document.getElementById("teamDirectoryModal").classList.remove("active");
+}
+
+
+// ======================
+// EMPLOYEE DIRECTORY & DETAILS MODAL
+// ======================
+
+let allEmployeesCache = []; // Global cache for filtering
+
+function loadEmployeeDirectory(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    fetch("/api/employees", { cache: "no-store" })
+        .then(res => res.json())
+        .then(employees => {
+            allEmployeesCache = employees || [];
+            renderEmployeeDirectory(containerId, allEmployeesCache);
+        })
+        .catch(err => {
+            console.error("Error loading directory:", err);
+            container.innerHTML = `<p style="text-align: center; grid-column: 1/-1; padding: 20px; color: #ef4444;">Error loading directory.</p>`;
+        });
+}
+
+function renderEmployeeDirectory(containerId, employees) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    if (!employees || employees.length === 0) {
+        container.innerHTML = `<p style="text-align: center; grid-column: 1/-1; padding: 20px; color: #94a3b8;">No matching employees found.</p>`;
+        return;
+    }
+
+    container.innerHTML = employees.map(emp => {
+        const initial = emp.username.charAt(0).toUpperCase();
+        return `
+            <div class="chart-box" onclick="openEmpDetailsModal('${emp.username}')" style="cursor: pointer; transition: all 0.2s; border: 1px solid #eef2ff;" 
+                 onmouseover="this.style.borderColor='#6366f1'; this.style.transform='translateY(-3px)'" 
+                 onmouseout="this.style.borderColor='#eef2ff'; this.style.transform='translateY(0)'">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 40px; height: 40px; border-radius: 12px; background: #6366f1; color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 16px;">
+                        ${initial}
+                    </div>
+                    <div>
+                        <div style="font-weight: 700; color: #1e293b; font-size: 14px;">${emp.username}</div>
+                        <div style="font-size: 11px; color: #64748b; text-transform: uppercase; font-weight: 600;">Staff Member</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join("");
+}
+
+function filterEmployeeDirectory(inputId, containerId) {
+    const query = document.getElementById(inputId).value.toLowerCase();
+    const filtered = allEmployeesCache.filter(emp => emp.username.toLowerCase().includes(query));
+    renderEmployeeDirectory(containerId, filtered);
+}
+
+// Global scope tracker for modal charts to prevent reuse errors
+let empModalAttChartObj = null;
+let empModalTaskChartObj = null;
+
+function openEmpDetailsModal(username) {
+    document.getElementById("empModalTitle").innerText = `Employee Insights: ${username}`;
+    document.getElementById("empModalName").innerText = username;
+    document.getElementById("empModalAvatar").innerText = username.charAt(0).toUpperCase();
+    document.getElementById("empDetailsModal").classList.add("active");
+
+    // Close directory modal if open (for supervisor)
+    const dirModal = document.getElementById("teamDirectoryModal");
+    if (dirModal) dirModal.classList.remove("active");
+
+    // Show loading states
+    document.getElementById("empModalContact").innerText = "Loading profile...";
+    document.getElementById("empModalSkills").innerHTML = "Loading...";
+    document.getElementById("empModalAttendanceRate").innerText = "-%";
+    document.getElementById("empModalTaskList").innerHTML = '<p style="color: #94a3b8; font-size: 13px;">Syncing task history...</p>';
+    document.getElementById("empModalProgressBody").innerHTML = '<tr><td colspan="3" style="padding: 15px; text-align: center; color: #94a3b8;">Fetching records...</td></tr>';
+
+    // 1. Fetch Profile
+    fetch(`/api/employeeProfile?username=${username}`)
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById("empModalContact").innerText = data.email || 'No email provided';
+            let skillsHtml = (data.skills || "").split(",").map(skill => skill.trim()).filter(s => s).map(skill => 
+                `<span class="skill-badge" style="margin: 2px; font-size: 10px; padding: 3px 8px;">${skill}</span>`
+            ).join("");
+            document.getElementById("empModalSkills").innerHTML = skillsHtml || '<span style="color:#94a3b8; font-size:11px;">No skills added</span>';
+        });
+
+    // 2. Fetch Attendance Stats
+    fetch(`/api/employeeStats?username=${username}`)
+        .then(res => res.json())
+        .then(data => {
+            let p = data.present || 0;
+            let a = data.absent || 0;
+            let total = p + a;
+            let rate = total > 0 ? Math.round((p / total) * 100) : 0;
+            
+            document.getElementById("empModalAttendanceRate").innerText = rate + "%";
+            document.getElementById("empModalAttendanceRate").style.color = rate > 75 ? "#10b981" : (rate > 50 ? "#f59e0b" : "#ef4444");
+
+            // Render Attendance Pie
+            if (empModalAttChartObj) empModalAttChartObj.destroy();
+            const canvas = document.getElementById("empModalAttendanceChart");
+            if (canvas) {
+                empModalAttChartObj = new Chart(canvas.getContext("2d"), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Present', 'Absent'],
+                        datasets: [{
+                            data: [p, a],
+                            backgroundColor: ['#10b981', '#ef4444'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: { responsive: true, plugins: { legend: { display: false } } }
+                });
+            }
+        });
+
+    // 3. Fetch Tasks
+    fetch(`/api/tasksByEmployee?username=${username}`)
+        .then(res => res.json())
+        .then(tasks => {
+            let stats = { "Pending": 0, "Started": 0, "In Progress": 0, "Completed": 0 };
+            let listHtml = "";
+
+            if (tasks.length === 0) {
+                listHtml = '<p style="color: #94a3b8; font-size: 13px; text-align: center; padding: 20px;">No tasks assigned yet.</p>';
+            } else {
+                tasks.forEach(t => {
+                    if (stats[t.status] !== undefined) stats[t.status]++;
+                    let statusColor = t.status === 'Completed' ? '#10b981' : (t.status === 'Pending' ? '#f59e0b' : '#6366f1');
+                    listHtml += `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #f1f5f9;">
+                            <div style="font-size: 13px; font-weight: 500;">${t.taskName}</div>
+                            <span style="font-size: 10px; color: ${statusColor}; background: ${statusColor}10; padding: 2px 8px; border-radius: 10px; border: 1px solid ${statusColor}30;">${t.status}</span>
+                        </div>
+                    `;
+                });
+            }
+            document.getElementById("empModalTaskList").innerHTML = listHtml;
+
+            // Render Task Bar Chart
+            if (empModalTaskChartObj) empModalTaskChartObj.destroy();
+            const taskCanvas = document.getElementById("empModalTaskChart");
+            if (taskCanvas) {
+                empModalTaskChartObj = new Chart(taskCanvas.getContext("2d"), {
+                    type: 'bar',
+                    data: {
+                        labels: Object.keys(stats),
+                        datasets: [{
+                            label: 'Tasks',
+                            data: Object.values(stats),
+                            backgroundColor: ['#f59e0b', '#3b82f6', '#8b5cf6', '#10b981'],
+                            borderRadius: 4
+                        }]
+                    },
+                    options: { 
+                        responsive: true, 
+                        plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                    }
+                });
+            }
+        });
+
+    // 4. Fetch Historical Attendance Records
+    fetch(`/api/employeeAttendanceRecords?username=${username}`)
+        .then(res => res.json())
+        .then(records => {
+            const body = document.getElementById("empModalProgressBody");
+            if (!records || records.length === 0) {
+                body.innerHTML = '<tr><td colspan="3" style="padding: 20px; text-align: center; color: #94a3b8;">No historical records found.</td></tr>';
+                return;
+            }
+
+            // Sort by date descending
+            records.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            body.innerHTML = records.map(r => {
+                const statusColor = r.status === 'Present' ? '#10b981' : '#ef4444';
+                return `
+                    <tr style="border-bottom: 1px solid #f8fafc;">
+                        <td style="padding: 10px; font-weight: 500; color: #1e293b;">${r.date}</td>
+                        <td style="padding: 10px;">
+                            <span style="color: ${statusColor}; font-weight: 700;">${r.status}</span>
+                        </td>
+                        <td style="padding: 10px; color: #64748b;">General</td>
+                    </tr>
+                `;
+            }).join("");
+        })
+        .catch(err => {
+            console.error("Error fetching attendance history:", err);
+            document.getElementById("empModalProgressBody").innerHTML = '<tr><td colspan="3" style="padding: 20px; text-align: center; color: #ef4444;">Error loading history.</td></tr>';
+        });
+}
+
