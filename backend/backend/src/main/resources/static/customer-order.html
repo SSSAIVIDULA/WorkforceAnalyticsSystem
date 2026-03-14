@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Place Order | Workforce Analytics</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: white;
+        }
+        .order-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 40px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .header p {
+            color: #94a3b8;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #cbd5e1;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: white;
+            font-size: 15px;
+            transition: all 0.2s;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+        }
+        .btn-order {
+            width: 100%;
+            background: linear-gradient(to right, #6366f1, #a855f7);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-top: 10px;
+        }
+        .btn-order:hover {
+            transform: translateY(-2px);
+        }
+        .msg {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        .order-success {
+            text-align: center;
+        }
+        .order-success h2 {
+            color: #10b981;
+            margin-bottom: 15px;
+        }
+        .order-id {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+            padding: 10px 20px;
+            border-radius: 8px;
+            display: inline-block;
+            font-family: monospace;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="order-card" id="orderContent">
+        <div class="header">
+            <h1>Customer Order Portal</h1>
+            <p>Place your manufacturing order online</p>
+        </div>
+        
+        <div class="form-group">
+            <label>Customer Name</label>
+            <input type="text" id="custName" placeholder="Enter your name or company">
+        </div>
+
+        <div class="form-group">
+            <label>Phone Number</label>
+            <input type="tel" id="custPhone" placeholder="e.g. +1 (555) 000-0000">
+        </div>
+
+        <div class="form-group">
+            <label>Street Address</label>
+            <input type="text" id="custAddress" placeholder="e.g. 123 Main St, Suite 4">
+        </div>
+
+        <div style="display: flex; gap: 15px;">
+            <div class="form-group" style="flex: 2;">
+                <label>City</label>
+                <input type="text" id="custCity" placeholder="e.g. New York">
+            </div>
+            <div class="form-group" style="flex: 1;">
+                <label>State / ZIP</label>
+                <input type="text" id="custZip" placeholder="e.g. NY 10001">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Order Description</label>
+            <textarea id="orderDesc" rows="3" placeholder="Describe your order requirements..."></textarea>
+        </div>
+
+        <div style="display: flex; gap: 15px;">
+            <div class="form-group" style="flex: 1;">
+                <label>Quantity</label>
+                <input type="number" id="orderQty" value="100">
+            </div>
+            <div class="form-group" style="flex: 1;">
+                <label>Priority</label>
+                <select id="orderPriority">
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                    <option value="Urgent">Urgent</option>
+                </select>
+            </div>
+        </div>
+
+        <button class="btn-order" onclick="submitOrder()">Place Your Order</button>
+        <div id="msg" class="msg"></div>
+
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="index.html" style="color: #94a3b8; text-decoration: none; font-size: 14px;">← Back to Home</a>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        function submitOrder() {
+            const customerName = document.getElementById("custName").value.trim();
+            const customerPhone = document.getElementById("custPhone").value.trim();
+            const customerAddress = document.getElementById("custAddress").value.trim();
+            const customerCity = document.getElementById("custCity").value.trim();
+            const customerZip = document.getElementById("custZip").value.trim();
+            const orderDescription = document.getElementById("orderDesc").value.trim();
+            const quantity = document.getElementById("orderQty").value;
+            const priority = document.getElementById("orderPriority").value;
+
+            if (!customerName || !customerPhone || !customerAddress || !orderDescription) {
+                document.getElementById("msg").innerHTML = "<span style='color:#ef4444'>Please fill all required fields</span>";
+                return;
+            }
+
+            const fullAddress = `${customerAddress}, ${customerCity}, ${customerZip}`;
+
+            fetch("/api/placeOrder", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    customerName,
+                    customerPhone,
+                    customerAddress: fullAddress,
+                    orderDescription,
+                    quantity,
+                    priority
+                })
+            })
+            .then(res => res.json())
+            .then(order => {
+                const container = document.getElementById("orderContent");
+                container.innerHTML = `
+                    <div class="order-success">
+                        <div style="font-size: 60px; margin-bottom: 20px;">✅</div>
+                        <h2>Order Placed Successfully!</h2>
+                        <p style="color:#94a3b8; margin-bottom: 10px;">Your Order ID is:</p>
+                        <div class="order-id">${order.orderId}</div>
+                        <p style="color:#cbd5e1; line-height: 1.6;">Our team will review your order and convert it into manufacturing tasks shortly.</p>
+                        <button class="btn-order" onclick="location.reload()" style="background:#334155; margin-top: 30px;">Place Another Order</button>
+                        <div style="margin-top: 20px;">
+                            <a href="index.html" style="color: #94a3b8; text-decoration: none; font-size: 14px;">← Back to Home</a>
+                        </div>
+                    </div>
+                `;
+            })
+            .catch(err => {
+                document.getElementById("msg").innerHTML = "<span style='color:#ef4444'>Error placing order. Try again.</span>";
+            });
+        }
+    </script>
+</body>
+</html>

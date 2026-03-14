@@ -1,50 +1,34 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Workforce Analytics System</title>
-<link rel="stylesheet" href="style.css">
+    <title>Workforce Analytics System</title>
+    <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
-
-<div class="page">
-
-<div class="card">
-
-<h1>Workforce Analytics System</h1>
-<p class="subtitle">Select your role</p>
-
-<div class="role-container">
-
-<div class="role-card" onclick="goEmployee()">
-<div class="icon">👤</div>
-<p>Employee</p>
-</div>
-
-<div class="role-card" onclick="goSupervisor()">
-<div class="icon">👨‍💼</div>
-<p>Supervisor</p>
-</div>
-
-<div class="role-card" onclick="window.location='manager-dashboard.html'">
-<div class="icon">💼</div>
-<p>Manager</p>
-</div>
-
-</div>
-
-</div>
-
-</div>
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-<script src="script.js"></script>
-
+    <div class="page">
+        <div class="card">
+            <h1>Workforce Analytics System</h1>
+            <p class="subtitle">Select your role</p>
+            <div class="role-container">
+                <div class="role-card" onclick="window.open('../Customer-Order-Portal/index.html', '_blank')" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white;">
+                    <div class="icon">🛒</div>
+                    <p style="color: white;">Customer Portal (External)</p>
+                </div>
+                <div class="role-card" onclick="goEmployee()">
+                    <div class="icon">👤</div>
+                    <p>Employee</p>
+                </div>
+                <div class="role-card" onclick="goSupervisor()">
+                    <div class="icon">👨‍💼</div>
+                    <p>Supervisor</p>
+                </div>
+                <div class="role-card" onclick="window.location='manager-dashboard.html'">
+                    <div class="icon">💼</div>
+                    <p>Manager</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
 </body>
 </html>

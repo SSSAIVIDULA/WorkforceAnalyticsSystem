@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Supervisor Dashboard | Workforce Analytics</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Notification Toast Container -->
+    <div id="notification-container" style="position: fixed; bottom: 30px; right: 30px; z-index: 10000; display: flex; flex-direction: column; gap: 10px;"></div>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         .stats-row {
@@ -217,6 +219,12 @@
                         <h3>Team Directory</h3>
                         <p>View detailed profiles and performance history of your staff.</p>
                     </div>
+                    <div class="hub-card" onclick="switchTab('tab-orders')" style="position: relative;">
+                        <div id="order-badge" class="nav-badge" style="display: none;">0</div>
+                        <div class="icon-box">📦</div>
+                        <h3>Order Management</h3>
+                        <p>View incoming customer orders and convert them into workforce tasks.</p>
+                    </div>
                 </div>
 
                 <div style="margin-top: 60px; text-align: center;">
@@ -296,67 +304,23 @@
                 </div>
             </div>
 
-            <!-- EMPLOYEE INSIGHTS FULL PAGE -->
-            <div id="tab-employee-insights" class="tab-section">
-                <button class="back-btn" onclick="switchTab('tab-sup-directory')">← Back to Directory</button>
-                
-                <div style="display: grid; grid-template-columns: 350px 1fr; gap: 30px;">
-                    <!-- Left Column: Profile Card -->
-                    <div style="display: flex; flex-direction: column; gap: 25px;">
-                        <div class="chart-box" style="text-align: center; padding: 40px 30px;">
-                            <div id="empPageAvatar" style="width: 100px; height: 100px; border-radius: 24px; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; display: flex; align-items: center; justify-content: center; font-size: 40px; font-weight: 800; margin: 0 auto 20px; box-shadow: 0 10px 20px rgba(99, 102, 241, 0.2);">?</div>
-                            <h2 id="empPageName" style="margin: 0; font-size: 24px; color: #1e293b; border: none; padding: 0;">Employee Name</h2>
-                            <p id="empPageContact" style="color: #64748b; font-size: 14px; margin-top: 5px;">contact@example.com</p>
-                            
-                            <div style="margin-top: 35px; text-align: left;">
-                                <h3 style="font-size: 12px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; border: none; padding: 0;">Expertise & Skills</h3>
-                                <div id="empPageSkills" style="display: flex; flex-wrap: wrap; gap: 8px;">
-                                    <!-- Skills badges injected here -->
-                                </div>
-                            </div>
-                        </div>
+            <!-- ORDER MANAGEMENT SECTION -->
+            <div id="tab-orders" class="tab-section">
+                <button class="back-btn" onclick="switchTab('tab-hub')">← Back to Menu</button>
+                <div style="margin-bottom: 30px;">
+                    <h2 style="margin: 0; font-size: 28px;">Incoming Orders</h2>
+                    <p style="color: #64748b; margin: 5px 0 0 0;">Review customer requests and convert them into production tasks</p>
+                </div>
 
-                        <div class="chart-box" style="text-align: center; background: linear-gradient(135deg, #f8fafc, #f1f5f9);">
-                            <h3 style="font-size: 14px; margin-bottom: 15px; border: none; padding: 0; color: #64748b;">Reliability Score</h3>
-                            <div id="empPageAttendanceRate" style="font-size: 48px; font-weight: 800; color: #10b981;">0%</div>
-                            <p style="font-size: 12px; color: #94a3b8; margin-top: 5px;">Overall Attendance Consistency</p>
+                <div class="mgr-calendar-section" style="background: white; border-radius: 16px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3 style="margin: 0; font-size: 20px;">Pending Customer Orders</h3>
+                        <div style="background: #f1f5f9; padding: 5px 15px; border-radius: 20px; font-size: 13px; font-weight: 600; color: #475569;">
+                            <span id="orderCount">0</span> Orders Found
                         </div>
                     </div>
-
-                    <!-- Right Column: Performance Analytics -->
-                    <div style="display: flex; flex-direction: column; gap: 25px;">
-                        <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 25px;">
-                            <div class="chart-box">
-                                <h3 style="border: none; padding: 0; margin-bottom: 20px;">Attendance Breakdown</h3>
-                                <canvas id="empPageAttendanceChart"></canvas>
-                            </div>
-                            <div class="chart-box">
-                                <h3 style="border: none; padding: 0; margin-bottom: 20px;">Workload Distribution</h3>
-                                <canvas id="empPageTaskChart"></canvas>
-                            </div>
-                        </div>
-
-                        <div class="chart-box">
-                            <h3 style="border: none; padding: 0; margin-bottom: 20px;">Current Workstream</h3>
-                            <div id="empPageTaskList" style="max-height: 250px; overflow-y: auto;">
-                                <!-- Tasks injected here -->
-                            </div>
-                            
-                            <h3 style="border: none; padding: 15px 0 10px; margin-top: 25px; border-top: 1px solid #f1f5f9; font-size: 15px;">📅 Engagement History</h3>
-                            <div style="overflow-x: auto;">
-                                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
-                                    <thead>
-                                        <tr style="border-bottom: 2px solid #f1f5f9; color: #94a3b8; text-align: left;">
-                                            <th style="padding: 12px;">Date</th>
-                                            <th style="padding: 12px;">Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="empPageProgressBody">
-                                        <!-- History injected here -->
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                    <div id="orderList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px;">
+                        <p style="text-align: center; grid-column: 1/-1; padding: 40px; color: #94a3b8;">No pending orders available.</p>
                     </div>
                 </div>
             </div>
@@ -366,7 +330,121 @@
 
     <!-- Legacy IDs for script compatibility -->
     <div id="teamDirectoryModal" style="display:none;"></div>
-    <div id="empDetailsModal" style="display:none;"></div>
+
+    <!-- ===== SHARED EMPLOYEE DETAILS MODAL ===== -->
+    <div class="mgr-att-modal-overlay" id="empDetailsModal" onclick="closeEmpDetailsModal(event)">
+        <div class="mgr-att-modal" style="width: 850px; max-width: 95%; height: 85vh;" onclick="event.stopPropagation()">
+            <div class="mgr-att-modal-header">
+                <h4 id="empModalTitle">Team Member Insights</h4>
+                <button class="close-btn" onclick="closeEmpDetailsModal()">&times;</button>
+            </div>
+            <div class="mgr-att-modal-body" style="background: #f8fafc; padding: 25px; overflow-y: auto; height: calc(100% - 76px);">
+                <div style="display: grid; grid-template-columns: 300px 1fr; gap: 25px;">
+                    <!-- Sidebar -->
+                    <div style="display: flex; flex-direction: column; gap: 20px;">
+                        <div class="chart-box" style="text-align: center;">
+                            <div id="empModalAvatar" style="width: 80px; height: 80px; border-radius: 20px; background: #6366f1; color: white; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 800; margin: 0 auto 15px;">?</div>
+                            <h3 id="empModalName" style="margin-bottom: 5px;">Employee Name</h3>
+                            <p id="empModalContact" style="font-size: 13px; color: #64748b;">Contact Loading...</p>
+                            <div style="margin-top: 20px; text-align: left;">
+                                <h4 style="font-size: 11px; color: #94a3b8; text-transform: uppercase;">Skill Set</h4>
+                                <div id="empModalSkills"></div>
+                            </div>
+                        </div>
+                        <div class="chart-box">
+                            <h4 style="font-size: 13px; margin: 0;">Attendance Consistency</h4>
+                            <div id="empModalAttendanceRate" style="font-size: 32px; font-weight: 800; color: #10b981; margin-top: 10px;">0%</div>
+                        </div>
+                    </div>
+                    <!-- Main Content -->
+                    <div style="display: flex; flex-direction: column; gap: 20px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px;">
+                            <div class="chart-box">
+                                <h4 style="font-size: 13px; margin-bottom: 15px;">Attendance Split</h4>
+                                <canvas id="empModalAttendanceChart"></canvas>
+                            </div>
+                            <div class="chart-box">
+                                <h4 style="font-size: 13px; margin-bottom: 15px;">Task Accomplishments</h4>
+                                <canvas id="empModalTaskChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-box">
+                            <h4 style="font-size: 13px; margin-bottom: 15px;">Assigned Workstream</h4>
+                            <div id="empModalTaskList" style="max-height: 150px; overflow-y: auto; margin-bottom: 15px;"></div>
+                            
+                            <h4 style="font-size: 13px; border-top: 1px solid #f1f5f9; padding-top: 15px; margin-top: 15px;">📅 Daily Progress History</h4>
+                            <div style="overflow-x: auto;">
+                                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                                    <thead>
+                                        <tr style="border-bottom: 2px solid #eef2ff; color: #64748b;">
+                                            <th style="padding: 8px; text-align: left;">Date</th>
+                                            <th style="padding: 8px; text-align: left;">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="empModalProgressBody">
+                                        <tr><td colspan="2" style="padding: 10px; text-align: center; color: #94a3b8;">Loading...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== CONVERT ORDER TO TASKS (MULTI-TASK BREAKDOWN BUILDER) ===== -->
+    <div class="mgr-att-modal-overlay" id="convertOrderModal" onclick="this.classList.remove('active')">
+        <div class="mgr-att-modal" style="width: 700px; max-width: 96vw; max-height: 90vh; display: flex; flex-direction: column;" onclick="event.stopPropagation()">
+            <div class="mgr-att-modal-header" style="flex-shrink: 0;">
+                <div>
+                    <h4 style="margin:0; font-size: 17px;">🔧 Break Order into Tasks</h4>
+                    <p style="margin: 4px 0 0; font-size: 12px; color: #64748b;">Create one or more tasks from this customer order</p>
+                </div>
+                <button class="close-btn" onclick="document.getElementById('convertOrderModal').classList.remove('active')">&times;</button>
+            </div>
+            <div style="padding: 20px 24px; overflow-y: auto; flex: 1;">
+                <!-- Order Summary Banner -->
+                <input type="hidden" id="convOrderId">
+                <div style="background: linear-gradient(135deg, #eef2ff, #f5f3ff); border: 1px solid #c7d2fe; border-radius: 12px; padding: 14px 18px; margin-bottom: 20px;">
+                    <div style="font-size: 10px; font-weight: 700; color: #6366f1; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px;">📦 Customer Order</div>
+                    <div id="convCustName" style="font-weight: 800; color: #1e293b; font-size: 16px;"></div>
+                    <div id="convOrderDesc" style="font-size: 12px; color: #64748b; margin-top: 4px; line-height: 1.5;"></div>
+                </div>
+
+                <!-- Sub-tasks header -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                    <div>
+                        <span style="font-weight: 700; color: #1e293b; font-size: 14px;">Sub-Tasks</span>
+                        <span id="taskCountBadge" style="background: #6366f1; color: white; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; margin-left: 8px;">1</span>
+                    </div>
+                    <button onclick="addSubTask()" style="background: #eef2ff; color: #6366f1; border: 1px solid #c7d2fe; padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s;"
+                            onmouseover="this.style.background='#6366f1'; this.style.color='white';"
+                            onmouseout="this.style.background='#eef2ff'; this.style.color='#6366f1';">
+                        + Add Sub-task
+                    </button>
+                </div>
+
+                <!-- Dynamic Sub-task List -->
+                <div id="subTasksList"></div>
+
+                <!-- Submit -->
+                <button onclick="confirmMultiTaskCreation()" 
+                        style="background: linear-gradient(to right, #6366f1, #a855f7); color: white; border: none; width: 100%; height: 50px; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 10px; transition: opacity 0.2s;"
+                        onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                    ✓ Create All Tasks from This Order
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .subtask-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 12px; position: relative; transition: box-shadow 0.2s; }
+        .subtask-card:hover { box-shadow: 0 4px 15px rgba(99,102,241,0.1); border-color: #c7d2fe; }
+        .subtask-input { width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 13px; box-sizing: border-box; transition: border-color 0.2s; }
+        .subtask-input:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+        .subtask-label { display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.3px; }
+    </style>
 
     <script src="script.js"></script>
 </body>

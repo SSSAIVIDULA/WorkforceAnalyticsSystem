@@ -2,6 +2,7 @@
 <html>
 
 <head>
+    <meta charset="UTF-8">
     <title>Manager Analytics Dashboard</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -59,114 +60,737 @@
         .chart-box canvas {
             max-height: 280px;
         }
+
+        /* ===== HUB UI STYLES ===== */
+        .hub-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-top: 40px;
+        }
+
+        .hub-card {
+            background: white;
+            padding: 35px 25px;
+            border-radius: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .hub-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border-color: #6366f1;
+        }
+
+        .hub-card .icon-box {
+            font-size: 45px;
+            margin-bottom: 15px;
+        }
+
+        .hub-card h3 {
+            margin: 0;
+            font-size: 18px;
+            color: #1e293b;
+            border: none;
+            padding: 0;
+        }
+
+        .hub-card p {
+            margin: 8px 0 0 0;
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: #f1f5f9;
+            color: #475569;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            border: 1px solid #e2e8f0;
+            cursor: pointer;
+            margin-bottom: 25px;
+            transition: all 0.2s;
+            width: auto;
+        }
+
+        .back-btn:hover {
+            background: #e2e8f0;
+            color: #1e293b;
+        }
+
+        /* ===== CLASSIC SIDEBAR LAYOUT (MODIFIED FOR HUB) ===== */
+        body { background-color: #f8fafc; }
+        .dashboard-container { display: block; min-height: 100vh; }
+        .sidebar { display: none; }
+        .main-content { max-width: 1200px; margin: 0 auto; padding: 60px 30px; }
+        .tab-section { display: none; animation: fadeIn 0.3s ease; }
+        .tab-section.active { display: block; }
+
+        .logout-section {
+            padding: 20px 25px;
+            border-top: 1px solid #334155;
+        }
+
+        .btn-logout {
+            width: 100%;
+            padding: 10px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        .btn-logout:hover {
+            background: #dc2626;
+        }
+
+        /* Override global card for main content */
+        .page { background: none; display: block; border-radius: 0; padding: 0; margin: 0; }
+        .card { width: 100%; max-width: none; box-shadow: none; background: transparent; padding: 0; }
+
+        /* ===== ATTENDANCE CALENDAR STYLES ===== */
+        .mgr-calendar-section {
+            background: #fff;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid #eef2ff;
+            margin-bottom: 25px;
+        }
+
+        .mgr-calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            padding: 16px 24px;
+            border-radius: 12px;
+            color: white;
+        }
+
+        .mgr-calendar-header h3 {
+            margin: 0;
+            font-size: 17px;
+            font-weight: 700;
+        }
+
+        .mgr-cal-nav {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .mgr-cal-nav button {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mgr-cal-nav button:hover {
+            background: rgba(255, 255, 255, 0.35);
+            transform: scale(1.05);
+        }
+
+        .mgr-cal-nav span {
+            font-size: 15px;
+            font-weight: 600;
+            min-width: 150px;
+            text-align: center;
+        }
+
+        .mgr-cal-weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            margin-bottom: 4px;
+        }
+
+        .mgr-cal-weekdays div {
+            text-align: center;
+            font-size: 11px;
+            font-weight: 700;
+            color: #94a3b8;
+            padding: 8px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .mgr-cal-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+
+        .mgr-cal-day {
+            min-height: 70px;
+            border-radius: 10px;
+            padding: 6px 8px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .mgr-cal-day:hover {
+            border-color: #667eea;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+            transform: translateY(-1px);
+        }
+
+        .mgr-cal-day.empty {
+            background: transparent;
+            border: none;
+            min-height: 0;
+        }
+
+        .mgr-cal-day.today {
+            border-color: #667eea;
+            background: #f5f3ff;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+        }
+
+        .mgr-cal-day .day-num {
+            font-size: 13px;
+            font-weight: 700;
+            color: #334155;
+            margin-bottom: 4px;
+        }
+
+        .mgr-cal-day.today .day-num {
+            color: #667eea;
+        }
+
+        .mgr-cal-badges {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .mgr-cal-badge {
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .mgr-cal-badge:hover {
+            transform: scale(1.08);
+        }
+
+        .mgr-cal-badge.present {
+            background: #dcfce7;
+            color: #16a34a;
+            border: 1px solid #bbf7d0;
+        }
+
+        .mgr-cal-badge.absent {
+            background: #fee2e2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+
+        /* Employee Names Modal */
+        .mgr-att-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .mgr-att-modal-overlay.active {
+            display: flex;
+        }
+
+        .mgr-att-modal {
+            background: white;
+            border-radius: 16px;
+            width: 420px;
+            max-width: 90%;
+            max-height: 70vh;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .mgr-att-modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .mgr-att-modal-header h4 {
+            margin: 0;
+            font-size: 16px;
+            color: #1e293b;
+        }
+
+        .mgr-att-modal-header .close-btn {
+            background: #f1f5f9;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            font-size: 18px;
+            cursor: pointer;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .mgr-att-modal-header .close-btn:hover {
+            background: #fee2e2;
+            color: #ef4444;
+        }
+
+        .mgr-att-modal-body {
+            padding: 16px 24px 24px;
+            overflow-y: auto;
+            max-height: 50vh;
+        }
+
+        .mgr-att-emp-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            margin-bottom: 6px;
+            transition: background 0.2s;
+        }
+
+        .mgr-att-emp-item:hover {
+            background: #f8fafc;
+        }
+
+        .mgr-att-emp-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+            color: white;
+        }
+
+        .mgr-att-emp-avatar.present-av {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .mgr-att-emp-avatar.absent-av {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        .mgr-att-emp-name {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 14px;
+        }
+
+        .mgr-cal-legend {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 16px;
+            padding-top: 14px;
+            border-top: 1px solid #f1f5f9;
+        }
+
+        .mgr-cal-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .mgr-cal-legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
     </style>
 </head>
 
 <body onload="loadManagerAnalytics()">
 
-    <div class="page">
-        <div class="card" style="width: 92%; max-width: 1100px;">
-            <h2 style="margin-bottom: 5px;">📊 Manager Analytics Dashboard</h2>
-            <p style="color: #888; margin: 0 0 25px 0; font-size: 14px;">Real-time workforce insights and task analytics
-            </p>
+    <div class="dashboard-container">
+        <!-- SIDEBAR REMOVED IN FAVOR OF HUB -->
 
-            <!-- Stat Cards -->
-            <div class="stats-row">
-                <div class="stat-card" style="background: linear-gradient(135deg, #667eea, #764ba2);">
-                    <h4>Total Tasks</h4>
-                    <div class="num" id="totalTasks">0</div>
+        <!-- MAIN CONTENT -->
+        <div class="main-content">
+            
+            <!-- HUB SECTION -->
+            <div id="tab-hub" class="tab-section active">
+                <div style="text-align: center; margin-bottom: 50px;">
+                    <h1 style="font-size: 36px; margin-bottom: 10px; background: linear-gradient(135deg, #6366f1, #06b6d4); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Manager Console</h1>
+                    <p style="color: #64748b; font-size: 18px;">Executive oversight and workforce strategy portal</p>
                 </div>
-                <div class="stat-card" style="background: linear-gradient(135deg, #10b981, #059669);">
-                    <h4>Completed</h4>
-                    <div class="num" id="totalCompleted">0</div>
+
+                <div class="hub-container">
+                    <div class="hub-card" onclick="switchTab('tab-overview')">
+                        <div class="icon-box">📊</div>
+                        <h3>Dashboard Overview</h3>
+                        <p>High-level analytics, task distribution, and attendance snapshots.</p>
+                    </div>
+                    <div class="hub-card" onclick="switchTab('tab-calendar')">
+                        <div class="icon-box">📅</div>
+                        <h3>Attendance Calendar</h3>
+                        <p>Track historical attendance trends and view daily member lists.</p>
+                    </div>
+                    <div class="hub-card" onclick="switchTab('tab-directory')">
+                        <div class="icon-box">👥</div>
+                        <h3>Team Directory</h3>
+                        <p>Audit performance profiles and detailed history for all staff.</p>
+                    </div>
+                    <div class="hub-card" onclick="switchTab('tab-reports')">
+                        <div class="icon-box">📋</div>
+                        <h3>Detailed Reports</h3>
+                        <p>Generate granular task and productivity reports for any date.</p>
+                    </div>
+                    <div class="hub-card" onclick="switchTab('tab-order-analytics')">
+                        <div class="icon-box">📦</div>
+                        <h3>Order Analytics</h3>
+                        <p>Track customer order fulfillment, trends, and completion metrics.</p>
+                    </div>
                 </div>
-                <div class="stat-card" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
-                    <h4>Pending</h4>
-                    <div class="num" id="totalPending">0</div>
-                </div>
-                <div class="stat-card" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
-                    <h4>Completion Rate</h4>
-                    <div class="num" id="completionRate">0%</div>
-                </div>
-                <div class="stat-card" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
-                    <h4>Total Employees</h4>
-                    <div class="num" id="totalEmployees">0</div>
+
+                <div style="margin-top: 60px; text-align: center;">
+                    <button class="btn-logout" style="width: 200px; padding: 15px;" onclick="window.location.href='index.html'">Logout Session</button>
                 </div>
             </div>
 
-            <!-- Attendance Quick Stats -->
-            <div style="display: flex; gap: 15px; margin-bottom: 25px;">
-                <div
-                    style="flex: 1; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 15px; text-align: center;">
-                    <div style="font-size: 24px; font-weight: 700; color: #16a34a;" id="totalPresent">0</div>
-                    <div style="font-size: 13px; color: #4ade80;">Present Today</div>
+            <!-- OVERVIEW SECTION -->
+            <div id="tab-overview" class="tab-section">
+                <button class="back-btn" onclick="switchTab('tab-hub')">← Back to Menu</button>
+                <div style="margin-bottom: 25px;">
+                    <h2 style="margin: 0; font-size: 28px; color: #1e293b; text-align: left;">Dashboard Analytics</h2>
+                    <p style="color: #64748b; margin: 5px 0 0 0;">Real-time workforce performance and status tracking</p>
                 </div>
-                <div
-                    style="flex: 1; background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 15px; text-align: center;">
-                    <div style="font-size: 24px; font-weight: 700; color: #dc2626;" id="totalAbsent">0</div>
-                    <div style="font-size: 13px; color: #f87171;">Absent Today</div>
+
+                <!-- Stat Cards -->
+                <div class="stats-row">
+                    <div class="stat-card" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                        <h4>Total Tasks</h4>
+                        <div class="num" id="totalTasks">0</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #10b981, #059669);">
+                        <h4>Completed</h4>
+                        <div class="num" id="totalCompleted">0</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                        <h4>Pending</h4>
+                        <div class="num" id="totalPending">0</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
+                        <h4>Completion Rate</h4>
+                        <div class="num" id="completionRate">0%</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
+                        <h4>Total Employees</h4>
+                        <div class="num" id="totalEmployees">0</div>
+                    </div>
+                </div>
+
+                <!-- Attendance Quick Stats -->
+                <div style="display: flex; gap: 15px; margin-bottom: 25px;">
+                    <div style="flex: 1; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 15px; text-align: center;">
+                        <div style="font-size: 24px; font-weight: 700; color: #16a34a;" id="totalPresent">0</div>
+                        <div style="font-size: 13px; color: #16a34a; font-weight: 600;">Present Today</div>
+                    </div>
+                    <div style="flex: 1; background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 15px; text-align: center;">
+                        <div style="font-size: 24px; font-weight: 700; color: #dc2626;" id="totalAbsent">0</div>
+                        <div style="font-size: 13px; color: #dc2626; font-weight: 600;">Absent Today</div>
+                    </div>
+                </div>
+
+                <!-- Main Charts Grid -->
+                <div class="chart-grid">
+                    <div class="chart-box">
+                        <h3>📋 Task Status Distribution</h3>
+                        <canvas id="taskChart"></canvas>
+                    </div>
+                    <div class="chart-box">
+                        <h3>👥 Today's Attendance</h3>
+                        <canvas id="attendanceChart"></canvas>
+                    </div>
+                    <div class="chart-box" style="grid-column: 1 / -1;">
+                        <h3>🔧 Most Demanded Skills</h3>
+                        <canvas id="skillsChart" height="100"></canvas>
+                    </div>
                 </div>
             </div>
 
-            <!-- Charts -->
-            <div class="chart-grid">
-                <div class="chart-box">
-                    <h3>📋 Task Status Distribution</h3>
-                    <canvas id="taskChart"></canvas>
-                </div>
-                <div class="chart-box">
-                    <h3>👥 Today's Attendance</h3>
-                    <canvas id="attendanceChart"></canvas>
-                </div>
+            <!-- CALENDAR SECTION -->
+            <div id="tab-calendar" class="tab-section">
+                <button class="back-btn" onclick="switchTab('tab-hub')">← Back to Menu</button>
+                <div class="mgr-calendar-section">
+                    <div class="mgr-calendar-header">
+                        <h3>📅 Attendance Calendar</h3>
+                        <div class="mgr-cal-nav">
+                            <button onclick="mgrCalPrev()" title="Previous Month">‹</button>
+                            <span id="mgrCalMonthDisplay">March 2026</span>
+                            <button onclick="mgrCalNext()" title="Next Month">›</button>
+                        </div>
+                    </div>
 
-                <!-- NEW: Detailed Task Report -->
-                <div class="chart-box" style="grid-column: 1 / -1;">
-                    <div
-                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <div class="mgr-cal-weekdays">
+                        <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+                    </div>
+
+                    <div class="mgr-cal-grid" id="mgrCalGrid">
+                        <!-- Calendar cells generated by JS -->
+                    </div>
+
+                    <div class="mgr-cal-legend">
+                        <div class="mgr-cal-legend-item">
+                            <div class="mgr-cal-legend-dot" style="background: #10b981;"></div>
+                            Present — click to see names
+                        </div>
+                        <div class="mgr-cal-legend-item">
+                            <div class="mgr-cal-legend-dot" style="background: #ef4444;"></div>
+                            Absent — click to see names
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DIRECTORY SECTION -->
+            <div id="tab-directory" class="tab-section">
+                <button class="back-btn" onclick="switchTab('tab-hub')">← Back to Menu</button>
+                <div class="mgr-calendar-section">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                        <div>
+                            <h3 style="margin: 0; font-size: 20px; color: #1e293b;">👥 Team Member Directory</h3>
+                            <p style="color: #64748b; font-size: 13px; margin-top: 5px;">Search and view detailed performance for each employee</p>
+                        </div>
+                        <input type="text" id="mgrEmpSearch" placeholder="Search by name..." 
+                               style="width: 250px; padding: 10px 15px; border-radius: 10px; border: 1px solid #e2e8f0; font-size: 14px;"
+                               onkeyup="filterEmployeeDirectory('mgrEmpSearch', 'mgrEmployeeDirectory')">
+                    </div>
+                    
+                    <div id="mgrEmployeeDirectory" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px;">
+                        <!-- Cards injected by JS -->
+                        <p style="text-align: center; grid-column: 1/-1; padding: 40px; color: #94a3b8;">Loading organization records...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- REPORTS SECTION -->
+            <div id="tab-reports" class="tab-section">
+                <button class="back-btn" onclick="switchTab('tab-hub')">← Back to Menu</button>
+                <div class="chart-box">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                         <h3 style="margin: 0; border: none; padding: 0;">📅 Detailed Task Report</h3>
-                        <div style="display: flex; gap: 10px; align-items: center;">
-                            <label style="font-size: 13px; color: #64748b;">Select Date:</label>
-                            <input type="date" id="reportDate" class="input-field"
-                                style="padding: 5px 10px; border-radius: 6px; border: 1px solid #e2e8f0; width: auto;"
-                                onchange="loadManagerTaskReport()">
+                        <div style="display: flex; gap: 12px; align-items: center;">
+                            <label style="font-size: 14px; color: #64748b; font-weight: 500;">Select Date:</label>
+                            <input type="date" id="reportDate" 
+                                   style="padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 14px;"
+                                   onchange="loadManagerTaskReport()">
                         </div>
                     </div>
 
                     <div style="overflow-x: auto;">
-                        <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 14px; text-align: left;">
                             <thead>
                                 <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
-                                    <th style="padding: 12px; color: #475569;">Task Name</th>
-                                    <th style="padding: 12px; color: #475569;">Section</th>
-                                    <th style="padding: 12px; color: #475569;">Status</th>
-                                    <th style="padding: 12px; color: #475569;">Assigned Staff</th>
-                                    <th style="padding: 12px; color: #475569;">Priority</th>
+                                    <th style="padding: 15px; color: #475569;">Task Name</th>
+                                    <th style="padding: 15px; color: #475569;">Section</th>
+                                    <th style="padding: 15px; color: #475569;">Status</th>
+                                    <th style="padding: 15px; color: #475569;">Assigned Staff</th>
+                                    <th style="padding: 15px; color: #475569;">Priority</th>
                                 </tr>
                             </thead>
-                            <tbody id="taskReportBody">
-                                <tr>
-                                    <td colspan="5" style="padding: 30px; text-align: center; color: #94a3b8;">
-                                        Select a date to view task details
-                                    </td>
-                                </tr>
                             </tbody>
                         </table>
+                    </div> <!-- CLOSE chart-box -->
+                </div> <!-- CLOSE tab-reports -->
+
+                <!-- ORDER ANALYTICS SECTION -->
+                <div id="tab-order-analytics" class="tab-section">
+                    <button class="back-btn" onclick="switchTab('tab-hub')">← Back to Menu</button>
+                    <div style="margin-bottom: 30px;">
+                        <h2 style="margin: 0; font-size: 28px;">Customer Order Analytics</h2>
+                        <p style="color: #64748b; margin: 5px 0 0 0;">Historical order trends and workforce fulfillment metrics</p>
+                    </div>
+
+                    <div class="stats-row" style="grid-template-columns: repeat(4, 1fr);">
+                        <div class="stat-card" style="background: linear-gradient(135deg, #6366f1, #4f46e5);">
+                            <h4>Total Orders</h4>
+                            <div class="num" id="anaTotalOrders">0</div>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #10b981, #059669);">
+                            <h4>Fulfilled</h4>
+                            <div class="num" id="anaCompletedOrders">0</div>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                            <h4>Pending</h4>
+                            <div class="num" id="anaPendingOrders">0</div>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
+                            <h4>Fulfillment Rate</h4>
+                            <div class="num" id="anaFulfillmentRate">0%</div>
+                        </div>
+                    </div>
+
+                    <div class="chart-grid" style="margin-bottom: 30px;">
+                        <div class="chart-box" style="grid-column: 1 / -1;">
+                            <h3>📦 Order Fulfillment Status</h3>
+                            <div style="height: 300px; display: flex; align-items: center; justify-content: center;">
+                                <canvas id="orderFulfillmentChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mgr-calendar-section">
+                        <h3 style="margin-bottom: 20px; font-size: 18px; color: #1e293b; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px;">Recent Customer Orders</h3>
+                        <div style="overflow-x: auto;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 14px; text-align: left;">
+                                <thead>
+                                    <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                                        <th style="padding: 15px; color: #475569;">Order ID</th>
+                                        <th style="padding: 15px; color: #475569;">Customer</th>
+                                        <th style="padding: 15px; color: #475569;">Product / Skill</th>
+                                        <th style="padding: 15px; color: #475569;">Status</th>
+                                        <th style="padding: 15px; color: #475569;">Priority</th>
+                                        <th style="padding: 15px; color: #475569;">Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="managerOrderList">
+                                    <tr><td colspan="6" style="padding: 20px; text-align: center; color: #94a3b8;">Loading order history...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
+            </div> <!-- CLOSE main-content -->
+        </div> <!-- CLOSE dashboard-container -->
 
-                <div class="chart-box" style="grid-column: 1 / -1;">
-                    <h3>🔧 Most Demanded Skills</h3>
-                    <canvas id="skillsChart" height="120"></canvas>
+    <!-- ===== SHARED MODALS ===== -->
+
+    <!-- 1. Employee Details Modal -->
+    <div class="mgr-att-modal-overlay" id="empDetailsModal" onclick="closeEmpDetailsModal(event)">
+        <div class="mgr-att-modal" style="width: 850px; max-width: 95%; height: 85vh;" onclick="event.stopPropagation()">
+            <div class="mgr-att-modal-header">
+                <h4 id="empModalTitle">Employee Detailed Profile</h4>
+                <button class="close-btn" onclick="closeEmpDetailsModal()">&times;</button>
+            </div>
+            <div class="mgr-att-modal-body" style="background: #f8fafc; padding: 25px; overflow-y: auto; max-height: 75vh;">
+                <div style="display: grid; grid-template-columns: 300px 1fr; gap: 25px;">
+                    <!-- Sidebar: Profile Info -->
+                    <div style="display: flex; flex-direction: column; gap: 20px;">
+                        <div class="chart-box" style="text-align: center;">
+                            <div id="empModalAvatar" style="width: 80px; height: 80px; border-radius: 20px; background: #6366f1; color: white; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 800; margin: 0 auto 15px;">?</div>
+                            <h3 id="empModalName" style="margin-bottom: 5px; border: none; padding: 0;">Name</h3>
+                            <p id="empModalContact" style="font-size: 13px; color: #64748b; margin: 0;">Email</p>
+                            <div style="margin-top: 20px; text-align: left;">
+                                <h4 style="font-size: 12px; color: #94a3b8; text-transform: uppercase;">Skills</h4>
+                                <div id="empModalSkills"></div>
+                            </div>
+                        </div>
+                        <div class="chart-box">
+                            <h3 style="font-size: 14px;">Attendance Rate</h3>
+                            <div id="empModalAttendanceRate" style="font-size: 32px; font-weight: 800; color: #10b981; text-align: center; padding: 10px;">0%</div>
+                        </div>
+                    </div>
+                    <!-- Main: Charts & History -->
+                    <div style="display: flex; flex-direction: column; gap: 25px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px;">
+                            <div class="chart-box">
+                                <h3 style="font-size: 14px;">Split</h3>
+                                <canvas id="empModalAttendanceChart"></canvas>
+                            </div>
+                            <div class="chart-box">
+                                <h3 style="font-size: 14px;">Progress</h3>
+                                <canvas id="empModalTaskChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-box">
+                            <h3 style="font-size: 14px;">Task History</h3>
+                            <div id="empModalTaskList" style="max-height: 150px; overflow-y: auto; margin-bottom: 15px;"></div>
+                            
+                            <h3 style="font-size: 14px; border-top: 1px solid #f1f5f9; padding-top: 15px; margin-top: 15px;">📅 Daily History</h3>
+                            <div style="overflow-x: auto;">
+                                <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                                    <thead>
+                                        <tr style="border-bottom: 1px solid #f1f5f9; color: #94a3b8;">
+                                            <th style="padding: 8px; text-align: left;">Date</th>
+                                            <th style="padding: 8px; text-align: left;">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="empModalProgressBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-
-            <br>
-            <button onclick="window.location='index.html'" style="margin-top: 20px;">Logout / Back</button>
         </div>
     </div>
 
+    <!-- 2. Attendance Status Modal (Calendar) -->
+    <div class="mgr-att-modal-overlay" id="mgrAttModal" onclick="closeMgrAttModal(event)">
+        <div class="mgr-att-modal" onclick="event.stopPropagation()">
+            <div class="mgr-att-modal-header">
+                <h4 id="mgrAttModalTitle">Attendance Details</h4>
+                <button class="close-btn" onclick="closeMgrAttModal()">&times;</button>
+            </div>
+            <div class="mgr-att-modal-body" id="mgrAttModalBody"></div>
+        </div>
+    </div>
+
+    <!-- Legacy ID for script compatibility if any -->
+    <div id="teamDirectoryModal" style="display:none;"></div>
+
     <script src="script.js"></script>
-
 </body>
-
 </html>

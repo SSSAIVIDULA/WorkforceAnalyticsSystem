@@ -497,6 +497,11 @@
                         <h3>Detailed Reports</h3>
                         <p>Generate granular task and productivity reports for any date.</p>
                     </div>
+                    <div class="hub-card" onclick="switchTab('tab-order-analytics')">
+                        <div class="icon-box">📦</div>
+                        <h3>Order Analytics</h3>
+                        <p>Track customer order fulfillment, trends, and completion metrics.</p>
+                    </div>
                 </div>
 
                 <div style="margin-top: 60px; text-align: center;">
@@ -620,72 +625,6 @@
                 </div>
             </div>
 
-            <!-- EMPLOYEE INSIGHTS FULL PAGE -->
-            <div id="tab-employee-insights" class="tab-section">
-                <button class="back-btn" onclick="switchTab('tab-directory')">← Back to Directory</button>
-                
-                <div style="display: grid; grid-template-columns: 350px 1fr; gap: 30px;">
-                    <!-- Left Column: Profile Card -->
-                    <div style="display: flex; flex-direction: column; gap: 25px;">
-                        <div class="chart-box" style="text-align: center; padding: 40px 30px;">
-                            <div id="empPageAvatar" style="width: 100px; height: 100px; border-radius: 24px; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; display: flex; align-items: center; justify-content: center; font-size: 40px; font-weight: 800; margin: 0 auto 20px; box-shadow: 0 10px 20px rgba(99, 102, 241, 0.2);">?</div>
-                            <h2 id="empPageName" style="margin: 0; font-size: 24px; color: #1e293b; border: none; padding: 0;">Employee Name</h2>
-                            <p id="empPageContact" style="color: #64748b; font-size: 14px; margin-top: 5px;">contact@example.com</p>
-                            
-                            <div style="margin-top: 35px; text-align: left;">
-                                <h3 style="font-size: 12px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; border: none; padding: 0;">Expertise & Skills</h3>
-                                <div id="empPageSkills" style="display: flex; flex-wrap: wrap; gap: 8px;">
-                                    <!-- Skills badges injected here -->
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="chart-box" style="text-align: center; background: linear-gradient(135deg, #f8fafc, #f1f5f9);">
-                            <h3 style="font-size: 14px; margin-bottom: 15px; border: none; padding: 0; color: #64748b;">Reliability Score</h3>
-                            <div id="empPageAttendanceRate" style="font-size: 48px; font-weight: 800; color: #10b981;">0%</div>
-                            <p style="font-size: 12px; color: #94a3b8; margin-top: 5px;">Overall Attendance Consistency</p>
-                        </div>
-                    </div>
-
-                    <!-- Right Column: Performance Analytics -->
-                    <div style="display: flex; flex-direction: column; gap: 25px;">
-                        <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 25px;">
-                            <div class="chart-box">
-                                <h3 style="border: none; padding: 0; margin-bottom: 20px;">Attendance Breakdown</h3>
-                                <canvas id="empPageAttendanceChart"></canvas>
-                            </div>
-                            <div class="chart-box">
-                                <h3 style="border: none; padding: 0; margin-bottom: 20px;">Workload Distribution</h3>
-                                <canvas id="empPageTaskChart"></canvas>
-                            </div>
-                        </div>
-
-                        <div class="chart-box">
-                            <h3 style="border: none; padding: 0; margin-bottom: 20px;">Current Workstream</h3>
-                            <div id="empPageTaskList" style="max-height: 250px; overflow-y: auto;">
-                                <!-- Tasks injected here -->
-                            </div>
-                            
-                            <h3 style="border: none; padding: 15px 0 10px; margin-top: 25px; border-top: 1px solid #f1f5f9; font-size: 15px;">📅 Engagement History</h3>
-                            <div style="overflow-x: auto;">
-                                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
-                                    <thead>
-                                        <tr style="border-bottom: 2px solid #f1f5f9; color: #94a3b8; text-align: left;">
-                                            <th style="padding: 12px;">Date</th>
-                                            <th style="padding: 12px;">Status</th>
-                                            <th style="padding: 12px;">Notes</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="empPageProgressBody">
-                                        <!-- History injected here -->
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <!-- REPORTS SECTION -->
             <div id="tab-reports" class="tab-section">
                 <button class="back-btn" onclick="switchTab('tab-hub')">← Back to Menu</button>
@@ -715,6 +654,64 @@
                         </table>
                     </div> <!-- CLOSE chart-box -->
                 </div> <!-- CLOSE tab-reports -->
+
+                <!-- ORDER ANALYTICS SECTION -->
+                <div id="tab-order-analytics" class="tab-section">
+                    <button class="back-btn" onclick="switchTab('tab-hub')">← Back to Menu</button>
+                    <div style="margin-bottom: 30px;">
+                        <h2 style="margin: 0; font-size: 28px;">Customer Order Analytics</h2>
+                        <p style="color: #64748b; margin: 5px 0 0 0;">Historical order trends and workforce fulfillment metrics</p>
+                    </div>
+
+                    <div class="stats-row" style="grid-template-columns: repeat(4, 1fr);">
+                        <div class="stat-card" style="background: linear-gradient(135deg, #6366f1, #4f46e5);">
+                            <h4>Total Orders</h4>
+                            <div class="num" id="anaTotalOrders">0</div>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #10b981, #059669);">
+                            <h4>Fulfilled</h4>
+                            <div class="num" id="anaCompletedOrders">0</div>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                            <h4>Pending</h4>
+                            <div class="num" id="anaPendingOrders">0</div>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
+                            <h4>Fulfillment Rate</h4>
+                            <div class="num" id="anaFulfillmentRate">0%</div>
+                        </div>
+                    </div>
+
+                    <div class="chart-grid" style="margin-bottom: 30px;">
+                        <div class="chart-box" style="grid-column: 1 / -1;">
+                            <h3>📦 Order Fulfillment Status</h3>
+                            <div style="height: 300px; display: flex; align-items: center; justify-content: center;">
+                                <canvas id="orderFulfillmentChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mgr-calendar-section">
+                        <h3 style="margin-bottom: 20px; font-size: 18px; color: #1e293b; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px;">Recent Customer Orders</h3>
+                        <div style="overflow-x: auto;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 14px; text-align: left;">
+                                <thead>
+                                    <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                                        <th style="padding: 15px; color: #475569;">Order ID</th>
+                                        <th style="padding: 15px; color: #475569;">Customer</th>
+                                        <th style="padding: 15px; color: #475569;">Product / Skill</th>
+                                        <th style="padding: 15px; color: #475569;">Status</th>
+                                        <th style="padding: 15px; color: #475569;">Priority</th>
+                                        <th style="padding: 15px; color: #475569;">Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="managerOrderList">
+                                    <tr><td colspan="6" style="padding: 20px; text-align: center; color: #94a3b8;">Loading order history...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div> <!-- CLOSE main-content -->
         </div> <!-- CLOSE dashboard-container -->
 

@@ -15,9 +15,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.workforce.backend.model.Attendance;
+import com.workforce.backend.model.Order;
 import com.workforce.backend.model.Task;
 import com.workforce.backend.model.User;
 import com.workforce.backend.repository.AttendanceRepository;
+import com.workforce.backend.repository.OrderRepository;
 import com.workforce.backend.repository.TaskRepository;
 import com.workforce.backend.repository.UserRepository;
 
@@ -34,6 +36,9 @@ public class LoginController {
 
     @Autowired
     private TaskRepository taskRepository;
+
+    @Autowired
+    private OrderRepository orderRepository;
 
     // =========================
     // LOGIN API
@@ -207,6 +212,16 @@ public class LoginController {
         }
         task.setStatus("Pending");
         return taskRepository.save(task);
+    }
+
+    @PostMapping("/updateTaskSkills")
+    public Task updateTaskSkills(@RequestParam("taskId") Long taskId, @RequestParam("skill") String skill) {
+        Task task = taskRepository.findById(taskId).orElse(null);
+        if (task != null) {
+            task.setRequiredSkill(skill);
+            return taskRepository.save(task);
+        }
+        return null;
     }
 
     @GetMapping("/tasksByDate")
@@ -409,6 +424,100 @@ public class LoginController {
     @GetMapping("/employeeAttendanceRecords")
     public List<Attendance> getEmployeeAttendanceRecords(@RequestParam("username") String username) {
         return attendanceRepository.findByEmployeeName(username);
+    }
+
+    // ===================================
+    // ORDER MANAGEMENT APIs
+    // ===================================
+
+    @PostMapping("/placeOrder")
+    public Order placeOrder(@RequestBody Order order) {
+        if (order.getCreatedAt() == null) {
+            order.setCreatedAt(LocalDate.now());
+        }
+        // Generate a simple Order ID if not provided
+        if (order.getOrderId() == null || order.getOrderId().isEmpty()) {
+            order.setOrderId("ORD-" + System.currentTimeMillis() % 10000);
+        }
+        order.setStatus("Pending");
+        return orderRepository.save(order);
+    }
+
+    @GetMapping("/orders")
+    public List<Order> getOrders() {
+        return orderRepository.findAllByOrderByCreatedAtDesc();
+    }
+
+    @GetMapping("/ordersByStatus")
+    public List<Order> getOrdersByStatus(@RequestParam("status") String status) {
+        return orderRepository.findByStatus(status);
+    }
+
+    @PostMapping("/updateOrderStatus")
+    public Order updateOrderStatus(@RequestParam("orderId") Long id, @RequestParam("status") String status) {
+        Order order = orderRepository.findById(id).orElse(null);
+        if (order != null) {
+            order.setStatus(status);
+            return orderRepository.save(order);
+        }
+        return null;
+    }
+
+    @GetMapping("/orderByCode")
+    public Order getOrderByCode(@RequestParam("orderId") String orderId) {
+        return orderRepository.findByOrderId(orderId).orElse(null);
+    }
+
+    @PostMapping("/rejectOrder")
+    public Order rejectOrder(@RequestParam("orderId") Long id) {
+        Order order = orderRepository.findById(id).orElse(null);
+        if (order != null) {
+            order.setStatus("Cancelled");
+            return orderRepository.save(order);
+        }
+        return null;
+    }
+
+    @PostMapping("/convertOrderToTask")
+    public Task convertOrderToTask(@RequestParam("orderId") Long orderId, @RequestBody Task task) {
+        Order order = orderRepository.findById(orderId).orElse(null);
+        if (order != null) {
+            // Mark order as In Progress
+            order.setStatus("In Progress");
+            orderRepository.save(order);
+
+            // Link task to order
+            task.setOrderId(orderId);
+            if (task.getDate() == null) {
+                task.setDate(LocalDate.now());
+            }
+            if (task.getStatus() == null) {
+                task.setStatus("Pending");
+            }
+            return taskRepository.save(task);
+        }
+        return null;
+    }
+
+    @GetMapping("/orderAnalytics")
+    public Map<String, Object> getOrderAnalytics() {
+        Map<String, Object> stats = new HashMap<>();
+        List<Order> allOrders = orderRepository.findAll();
+
+        long total = allOrders.size();
+        long pending = allOrders.stream().filter(o -> "Pending".equalsIgnoreCase(o.getStatus())).count();
+        long inProgress = allOrders.stream().filter(o -> "In Progress".equalsIgnoreCase(o.getStatus())).count();
+        long completed = allOrders.stream().filter(o -> "Completed".equalsIgnoreCase(o.getStatus())).count();
+        long cancelled = allOrders.stream().filter(o -> "Cancelled".equalsIgnoreCase(o.getStatus())).count();
+
+        stats.put("totalOrders", total);
+        stats.put("pendingOrders", pending);
+        stats.put("inProgressOrders", inProgress);
+        stats.put("completedOrders", completed);
+        stats.put("cancelledOrders", cancelled);
+        stats.put("recentOrders", allOrders.stream().limit(10).collect(java.util.stream.Collectors.toList()));
+
+        return stats;
     }
 
 }

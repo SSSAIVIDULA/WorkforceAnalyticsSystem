@@ -1,4 +1,9 @@
 // ======================
+// CONFIGURATION
+// ======================
+const API_BASE_URL = 'http://localhost:8080';
+
+// ======================
 // NAVIGATION
 // ======================
 
@@ -15,9 +20,49 @@ function logout() {
     window.location = "index.html";
 }
 
-function goAddEmployee() {
-    window.location = "add-employee.html";
+// Global Tab Switching Logic for Classic Dashboard
+function switchTab(tabId, element) {
+    // Hide all tab sections in the current page
+    const sections = document.querySelectorAll('.tab-section');
+    sections.forEach(s => s.classList.remove('active'));
+
+    // Remove active class from all nav items
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => item.classList.remove('active'));
+
+    // Show the target section
+    const target = document.getElementById(tabId);
+    if (target) {
+        target.classList.add('active');
+    }
+
+    // Set the clicked nav item as active
+    if (element) {
+        element.classList.add('active');
+    }
+
+    // AUTO-REFRESH DATA based on tab
+    if (tabId === 'tab-overview') {
+        if (typeof loadManagerAnalytics === 'function') loadManagerAnalytics();
+    } else if (tabId === 'tab-sup-overview') {
+        if (typeof loadSupervisorDashboard === 'function') loadSupervisorDashboard();
+    } else if (tabId === 'tab-reports') {
+        const reportDateInput = document.getElementById("reportDate");
+        if (reportDateInput && reportDateInput.value) {
+            if (typeof loadManagerTaskReport === 'function') loadManagerTaskReport();
+        }
+    } else if (tabId === 'tab-directory' || tabId === 'tab-sup-directory') {
+        const dirId = (tabId === 'tab-directory') ? "mgrEmployeeDirectory" : "supEmployeeDirectory";
+        if (typeof loadEmployeeDirectory === 'function') loadEmployeeDirectory(dirId);
+    } else if (tabId === 'tab-orders') {
+        if (typeof loadOrders === 'function') loadOrders();
+    } else if (tabId === 'tab-order-analytics') {
+        if (typeof loadOrderAnalytics === 'function') loadOrderAnalytics();
+    }
 }
+
+// Global Redirects
+function goAddEmployee() { window.location.href = 'add-employee.html'; }
 
 function goAttendance() {
     window.location = "attendance.html";
@@ -300,10 +345,16 @@ function createTask() {
 
 
 function loadTasks() {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const dateInput = document.getElementById("taskFilterDate");
+    
+    if (dateInput && dateInput.value === "") {
+        dateInput.value = todayStr;
+    }
 
-    let today = new Date().toISOString().split('T')[0];
+    const selectedDate = dateInput ? dateInput.value : todayStr;
 
-    fetch("/api/tasksByDate?date=" + today)
+    fetch("/api/tasksByDate?date=" + selectedDate, { cache: "no-store" })
         .then(res => res.json())
         .then(tasks => {
 
@@ -332,6 +383,10 @@ function loadTasks() {
                 let safeSkill = hasSkill ? task.requiredSkill.replace(/'/g, "\\'") : "";
                 let safeName = task.taskName ? task.taskName.replace(/'/g, "\\'") : "Untitled";
 
+                let statusBg = task.status === 'Completed' ? '#d1fae5' : '#fef3c7';
+                let statusColor = task.status === 'Completed' ? '#065f46' : '#92400e';
+                let statusLabelHTML = `<span style="background: ${statusBg}; color: ${statusColor}; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">${task.status}</span>`;
+
                 if (hasSkill) {
                     html += `
 <div class="employee-row" 
@@ -344,7 +399,7 @@ function loadTasks() {
         <div style="font-size: 13px; margin-top:5px;"><b>Assigned:</b> ${assignedListHTML}</div>
     </div>
     <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
-        <span style="background: #eee; padding: 3px 8px; border-radius: 12px; font-size: 11px;">${task.status}</span>
+        ${statusLabelHTML}
         <button onclick="deleteTask(event, ${task.id})" style="background: #fee2e2; color: #ef4444; border: none; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; transition: 0.2s;">Discard</button>
     </div>
 </div>
@@ -358,7 +413,7 @@ function loadTasks() {
         <small style="color: #ef4444;">⚠ No skills set — cannot suggest employees</small>
     </div>
     <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
-        <span style="background: #fecaca; padding: 3px 8px; border-radius: 12px; font-size: 11px;">${task.status}</span>
+        ${statusLabelHTML}
         <button onclick="deleteTask(event, ${task.id})" style="background: #fee2e2; color: #ef4444; border: none; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; transition: 0.2s;">Discard</button>
     </div>
 </div>
@@ -366,7 +421,10 @@ function loadTasks() {
                 }
             });
 
-            document.getElementById("taskList").innerHTML = html;
+            let taskListEl = document.getElementById("taskList");
+            if (taskListEl) {
+                taskListEl.innerHTML = html;
+            }
 
         });
 
@@ -384,7 +442,9 @@ function selectTask(taskId, skill, name) {
     document.getElementById("selectionHint").innerText = "Suggesting employees for: " + name;
     loadTasks();
 
-    fetch("/api/employeesBySkill?skill=" + encodeURIComponent(skill))
+    // Note: selectTask seems unused in the new modal-based UI, but updated for consistency.
+    // We would need the date passed here if this function were ever revived.
+    fetch(`/api/employeesBySkill?skill=${encodeURIComponent(skill)}`)
         .then(res => res.json())
         .then(data => {
             currentSuggestions = data;
@@ -551,7 +611,9 @@ let currentModalTask = null;
 
 function openTaskModal(taskId) {
     selectedTaskId = taskId;
-    fetch(`/api/tasksByDate?date=${new Date().toISOString().split('T')[0]}`)
+    const selectedDate = document.getElementById("taskFilterDate") ? document.getElementById("taskFilterDate").value : new Date().toISOString().split('T')[0];
+    
+    fetch(`/api/tasksByDate?date=${selectedDate}`)
         .then(res => res.json())
         .then(tasks => {
             const task = tasks.find(t => t.id === taskId);
@@ -584,8 +646,8 @@ function openTaskModal(taskId) {
             // Render assigned list
             renderModalAssigned(task);
 
-            // Fetch suggestions
-            fetch("/api/employeesBySkill?skill=" + encodeURIComponent(task.requiredSkill))
+            // Fetch suggestions (Filtered by presence on the task's date)
+            fetch(`/api/employeesBySkill?skill=${encodeURIComponent(task.requiredSkill)}&date=${task.date}`)
                 .then(res => res.json())
                 .then(data => {
                     renderModalSuggestions(data, task);
@@ -664,7 +726,7 @@ function toggleModalEmpSelection(username) {
     } else {
         modalSelectedEmployees.add(username);
     }
-    fetch("/api/employeesBySkill?skill=" + encodeURIComponent(currentModalTask.requiredSkill))
+    fetch(`/api/employeesBySkill?skill=${encodeURIComponent(currentModalTask.requiredSkill)}&date=${currentModalTask.date}`)
         .then(res => res.json())
         .then(data => renderModalSuggestions(data, currentModalTask));
 }
@@ -682,7 +744,7 @@ function confirmModalAssignment() {
             modalSelectedEmployees.clear();
             renderModalAssigned(updatedTask);
             // Refresh suggestions
-            fetch("/api/employeesBySkill?skill=" + encodeURIComponent(updatedTask.requiredSkill))
+            fetch(`/api/employeesBySkill?skill=${encodeURIComponent(updatedTask.requiredSkill)}&date=${updatedTask.date}`)
                 .then(res => res.json())
                 .then(data => renderModalSuggestions(data, updatedTask));
         });
@@ -699,7 +761,7 @@ function unassignFromModal(employeeName) {
             currentModalTask = updatedTask;
             renderModalAssigned(updatedTask);
             // Refresh suggestions
-            fetch("/api/employeesBySkill?skill=" + encodeURIComponent(updatedTask.requiredSkill))
+            fetch(`/api/employeesBySkill?skill=${encodeURIComponent(updatedTask.requiredSkill)}&date=${updatedTask.date}`)
                 .then(res => res.json())
                 .then(data => renderModalSuggestions(data, updatedTask));
         });
@@ -721,6 +783,11 @@ function markTaskCompletedFromModal() {
             completeBtn.style.opacity = "0.6";
             completeBtn.style.cursor = "not-allowed";
             currentModalTask = updatedTask;
+            
+            // Sync with main list
+            if (typeof loadTasks === 'function' && document.getElementById('taskList')) loadTasks();
+            // Sync with Hub stats
+            if (typeof loadSupervisorDashboard === 'function' && document.getElementById('totalEmployees')) loadSupervisorDashboard();
         });
 }
 
@@ -754,7 +821,7 @@ function loadEmployeeStats() {
     document.getElementById("employeeName").innerText = "Welcome, " + username;
 
     // Fetch profile
-    fetch("/api/employeeProfile?username=" + encodeURIComponent(username))
+    fetch("/api/employeeProfile?username=" + encodeURIComponent(username), { cache: "no-store" })
         .then(res => res.json())
         .then(profile => {
 
@@ -782,7 +849,7 @@ function loadEmployeeStats() {
         });
 
     // Fetch attendance stats
-    fetch("/api/employeeStats?employeeName=" + encodeURIComponent(username))
+    fetch("/api/employeeStats?employeeName=" + encodeURIComponent(username), { cache: "no-store" })
         .then(res => res.json())
         .then(stats => {
 
@@ -830,7 +897,7 @@ function loadEmployeeTasks() {
     let username = localStorage.getItem("username");
     if (!username) return;
 
-    fetch("/api/tasksByEmployee?employeeName=" + encodeURIComponent(username))
+    fetch("/api/tasksByEmployee?employeeName=" + encodeURIComponent(username), { cache: "no-store" })
         .then(res => res.json())
         .then(tasks => {
 
@@ -888,16 +955,24 @@ function loadEmployeeTasks() {
 
                 html += `
                 <div class="task-item">
-                    <div>
+                    <div style="flex: 1;">
                         <div style="font-weight: 700; color: #1e293b;">${task.taskName}</div>
                         <div style="font-size: 12px; color: #64748b; margin-top: 4px;">
                             ${task.section} • Priority: ${task.priority}<br>
                             Deadline: ${task.deadline ? task.deadline : task.date}
                         </div>
                     </div>
-                    <span class="status-badge" style="background: ${statusColor}15; color: ${statusColor}; border: 1px solid ${statusColor}30;">
-                        ${task.status}
-                    </span>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span class="status-badge" style="background: ${statusColor}15; color: ${statusColor}; border: 1px solid ${statusColor}30;">
+                            ${task.status}
+                        </span>
+                        ${task.status !== 'Completed' ? `
+                            <button onclick="updateTaskStatusFromDashboard(${task.id}, 'Completed')" 
+                                    style="background: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; transition: 0.2s;">
+                                Complete
+                            </button>
+                        ` : ''}
+                    </div>
                 </div>`;
             });
 
@@ -911,6 +986,26 @@ function loadEmployeeTasks() {
         .catch((err) => {
             console.error("Error loading tasks:", err);
             document.getElementById("employeeTaskList").innerHTML = "<p style='color:red;'>Error loading tasks.</p>";
+        });
+}
+
+function updateTaskStatusFromDashboard(taskId, status) {
+    fetch(`/api/updateTaskStatus?taskId=${taskId}&status=${status}`, {
+        method: "POST"
+    })
+        .then(res => res.json())
+        .then(() => {
+            // Refresh stats and tasks on the current dashboard
+            if (typeof loadEmployeeStats === 'function' && document.getElementById('presentDays')) loadEmployeeStats();
+            if (typeof loadEmployeeTasks === 'function' && document.getElementById('employeeTaskList')) loadEmployeeTasks();
+            
+            // If on supervisor management page
+            if (typeof loadTasks === 'function' && document.getElementById('taskList')) loadTasks();
+            if (typeof loadSupervisorDashboard === 'function' && document.getElementById('totalEmployees')) loadSupervisorDashboard();
+        })
+        .catch(err => {
+            console.error("Error updating status:", err);
+            alert("Error updating task status.");
         });
 }
 
@@ -1008,8 +1103,14 @@ function renderCalendar() {
 
 function loadManagerAnalytics() {
 
+    // Initialize attendance calendar
+    loadMgrAttendanceCalendar();
+    
+    // Load Employee Directory
+    loadEmployeeDirectory("mgrEmployeeDirectory");
+
     // Fetch employee count
-    fetch("/api/employees")
+    fetch("/api/employees", { cache: "no-store" })
         .then(res => res.json())
         .then(employees => {
             document.getElementById("totalEmployees").innerText = employees.length;
@@ -1017,7 +1118,7 @@ function loadManagerAnalytics() {
         .catch(() => { });
 
     // Fetch main analytics
-    fetch("/api/managerAnalytics")
+    fetch("/api/managerAnalytics", { cache: "no-store" })
         .then(res => res.json())
         .then(data => {
 
@@ -1151,3 +1252,640 @@ function loadManagerTaskReport() {
             body.innerHTML = `<tr><td colspan="5" style="padding: 20px; text-align: center; color: #ef4444;">Error loading tasks.</td></tr>`;
         });
 }
+
+
+// ======================
+// MANAGER ATTENDANCE CALENDAR
+// ======================
+
+let mgrCalDate = new Date();
+let mgrCalData = {}; // Cached attendance summary data
+
+function mgrCalPrev() {
+    mgrCalDate.setMonth(mgrCalDate.getMonth() - 1);
+    loadMgrAttendanceCalendar();
+}
+
+function mgrCalNext() {
+    mgrCalDate.setMonth(mgrCalDate.getMonth() + 1);
+    loadMgrAttendanceCalendar();
+}
+
+function loadMgrAttendanceCalendar() {
+    const year = mgrCalDate.getFullYear();
+    const month = mgrCalDate.getMonth() + 1; // 1-indexed for API
+
+    const monthNames = ["January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"];
+    document.getElementById("mgrCalMonthDisplay").innerText = `${monthNames[month - 1]} ${year}`;
+
+    // Show loading state
+    document.getElementById("mgrCalGrid").innerHTML =
+        '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #94a3b8;">Loading attendance data...</div>';
+
+    fetch(`/api/attendanceSummaryByMonth?year=${year}&month=${month}`)
+        .then(res => res.json())
+        .then(data => {
+            mgrCalData = data.summary || {};
+            renderMgrCalendar();
+        })
+        .catch(err => {
+            console.error("Error loading attendance calendar:", err);
+            document.getElementById("mgrCalGrid").innerHTML =
+                '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #ef4444;">Error loading calendar data.</div>';
+        });
+}
+
+function renderMgrCalendar() {
+    const year = mgrCalDate.getFullYear();
+    const month = mgrCalDate.getMonth();
+
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    const grid = document.getElementById("mgrCalGrid");
+    grid.innerHTML = "";
+
+    const today = new Date();
+    const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+
+    // Empty cells before month starts
+    for (let i = 0; i < firstDay; i++) {
+        grid.innerHTML += `<div class="mgr-cal-day empty"></div>`;
+    }
+
+    // Day cells
+    for (let d = 1; d <= daysInMonth; d++) {
+        const m = (month + 1).toString().padStart(2, '0');
+        const dd = d.toString().padStart(2, '0');
+        const dateKey = `${year}-${m}-${dd}`;
+
+        const isToday = isCurrentMonth && today.getDate() === d;
+        const dayClass = isToday ? "mgr-cal-day today" : "mgr-cal-day";
+
+        const dayStat = mgrCalData[dateKey];
+        let badgesHtml = "";
+
+        if (dayStat) {
+            const pCount = dayStat.present || 0;
+            const aCount = dayStat.absent || 0;
+
+            if (pCount > 0) {
+                badgesHtml += `<span class="mgr-cal-badge present" onclick="showMgrAttEmployees('${dateKey}', 'present')" title="Click to see present employees">✓ ${pCount}</span>`;
+            }
+            if (aCount > 0) {
+                badgesHtml += `<span class="mgr-cal-badge absent" onclick="showMgrAttEmployees('${dateKey}', 'absent')" title="Click to see absent employees">✗ ${aCount}</span>`;
+            }
+        }
+
+        grid.innerHTML += `
+            <div class="${dayClass}">
+                <div class="day-num">${d}</div>
+                <div class="mgr-cal-badges">${badgesHtml}</div>
+            </div>
+        `;
+    }
+}
+
+
+// ======================
+// SUPERVISOR DASHBOARD
+// ======================
+
+function loadSupervisorDashboard() {
+    // 1. Load Directory (cached for modal)
+    loadEmployeeDirectory("supEmployeeDirectory");
+
+    // 2. Load Stats
+    fetch("/api/managerAnalytics", { cache: "no-store" }) 
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById("totalEmployees").innerText = data.totalEmployees || 0;
+            document.getElementById("todayPresent").innerText = data.presentEmployees || 0;
+            document.getElementById("pendingTasks").innerText = data.pendingTasks || 0;
+            
+            let total = data.totalTasks || 0;
+            let completed = data.completedTasks || 0;
+            let rate = total > 0 ? Math.round((completed / total) * 100) : 0;
+            document.getElementById("avgProductivity").innerText = rate + "%";
+        })
+        .catch(err => console.error("Error loading supervisor dashboard:", err));
+
+    // 3. Start Order Polling for Notifications
+    startSupervisorOrderPolling();
+}
+
+function openTeamDirectory() {
+    document.getElementById("teamDirectoryModal").classList.add("active");
+}
+
+function closeTeamDirectoryModal(event) {
+    if (event && event.target !== document.getElementById("teamDirectoryModal")) return;
+    document.getElementById("teamDirectoryModal").classList.remove("active");
+}
+
+
+// ======================
+// EMPLOYEE DIRECTORY & DETAILS MODAL
+// ======================
+
+let allEmployeesCache = []; // Global cache for filtering
+
+function loadEmployeeDirectory(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    fetch("/api/employees", { cache: "no-store" })
+        .then(res => res.json())
+        .then(employees => {
+            allEmployeesCache = employees || [];
+            renderEmployeeDirectory(containerId, allEmployeesCache);
+        })
+        .catch(err => {
+            console.error("Error loading directory:", err);
+            container.innerHTML = `<p style="text-align: center; grid-column: 1/-1; padding: 20px; color: #ef4444;">Error loading directory.</p>`;
+        });
+}
+
+function renderEmployeeDirectory(containerId, employees) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    if (!employees || employees.length === 0) {
+        container.innerHTML = `<p style="text-align: center; grid-column: 1/-1; padding: 20px; color: #94a3b8;">No matching employees found.</p>`;
+        return;
+    }
+
+    container.innerHTML = employees.map(emp => {
+        const initial = emp.username.charAt(0).toUpperCase();
+        return `
+            <div class="chart-box" onclick="openEmpDetailsModal('${emp.username}')" style="cursor: pointer; transition: all 0.2s; border: 1px solid #eef2ff;" 
+                 onmouseover="this.style.borderColor='#6366f1'; this.style.transform='translateY(-3px)'" 
+                 onmouseout="this.style.borderColor='#eef2ff'; this.style.transform='translateY(0)'">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 40px; height: 40px; border-radius: 12px; background: #6366f1; color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 16px;">
+                        ${initial}
+                    </div>
+                    <div>
+                        <div style="font-weight: 700; color: #1e293b; font-size: 14px;">${emp.username}</div>
+                        <div style="font-size: 11px; color: #64748b; text-transform: uppercase; font-weight: 600;">Staff Member</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join("");
+}
+
+function filterEmployeeDirectory(inputId, containerId) {
+    const query = document.getElementById(inputId).value.toLowerCase();
+    const filtered = allEmployeesCache.filter(emp => emp.username.toLowerCase().includes(query));
+    renderEmployeeDirectory(containerId, filtered);
+}
+
+// Global scope tracker for modal charts to prevent reuse errors
+let empModalAttChartObj = null;
+let empModalTaskChartObj = null;
+
+function openEmpDetailsModal(username) {
+    document.getElementById("empModalTitle").innerText = `Employee Insights: ${username}`;
+    document.getElementById("empModalName").innerText = username;
+    document.getElementById("empModalAvatar").innerText = username.charAt(0).toUpperCase();
+    document.getElementById("empDetailsModal").classList.add("active");
+
+    // Close directory modal if open (for supervisor)
+    const dirModal = document.getElementById("teamDirectoryModal");
+    if (dirModal) dirModal.classList.remove("active");
+
+    // Show loading states
+    document.getElementById("empModalContact").innerText = "Loading profile...";
+    document.getElementById("empModalSkills").innerHTML = "Loading...";
+    document.getElementById("empModalAttendanceRate").innerText = "-%";
+    document.getElementById("empModalTaskList").innerHTML = '<p style="color: #94a3b8; font-size: 13px;">Syncing task history...</p>';
+    document.getElementById("empModalProgressBody").innerHTML = '<tr><td colspan="3" style="padding: 15px; text-align: center; color: #94a3b8;">Fetching records...</td></tr>';
+
+    // 1. Fetch Profile
+    fetch(`/api/employeeProfile?username=${username}`)
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById("empModalContact").innerText = data.email || 'No email provided';
+            let skillsHtml = (data.skills || "").split(",").map(skill => skill.trim()).filter(s => s).map(skill => 
+                `<span class="skill-badge" style="margin: 2px; font-size: 10px; padding: 3px 8px;">${skill}</span>`
+            ).join("");
+            document.getElementById("empModalSkills").innerHTML = skillsHtml || '<span style="color:#94a3b8; font-size:11px;">No skills added</span>';
+        });
+
+    // 2. Fetch Attendance Stats
+    fetch(`/api/employeeStats?username=${username}`)
+        .then(res => res.json())
+        .then(data => {
+            let p = data.present || 0;
+            let a = data.absent || 0;
+            let total = p + a;
+            let rate = total > 0 ? Math.round((p / total) * 100) : 0;
+            
+            document.getElementById("empModalAttendanceRate").innerText = rate + "%";
+            document.getElementById("empModalAttendanceRate").style.color = rate > 75 ? "#10b981" : (rate > 50 ? "#f59e0b" : "#ef4444");
+
+            // Render Attendance Pie
+            if (empModalAttChartObj) empModalAttChartObj.destroy();
+            const canvas = document.getElementById("empModalAttendanceChart");
+            if (canvas) {
+                empModalAttChartObj = new Chart(canvas.getContext("2d"), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Present', 'Absent'],
+                        datasets: [{
+                            data: [p, a],
+                            backgroundColor: ['#10b981', '#ef4444'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: { responsive: true, plugins: { legend: { display: false } } }
+                });
+            }
+        });
+
+    // 3. Fetch Tasks
+    fetch(`/api/tasksByEmployee?username=${username}`)
+        .then(res => res.json())
+        .then(tasks => {
+            let stats = { "Pending": 0, "Started": 0, "In Progress": 0, "Completed": 0 };
+            let listHtml = "";
+
+            if (tasks.length === 0) {
+                listHtml = '<p style="color: #94a3b8; font-size: 13px; text-align: center; padding: 20px;">No tasks assigned yet.</p>';
+            } else {
+                tasks.forEach(t => {
+                    if (stats[t.status] !== undefined) stats[t.status]++;
+                    let statusColor = t.status === 'Completed' ? '#10b981' : (t.status === 'Pending' ? '#f59e0b' : '#6366f1');
+                    listHtml += `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #f1f5f9;">
+                            <div style="font-size: 13px; font-weight: 500;">${t.taskName}</div>
+                            <span style="font-size: 10px; color: ${statusColor}; background: ${statusColor}10; padding: 2px 8px; border-radius: 10px; border: 1px solid ${statusColor}30;">${t.status}</span>
+                        </div>
+                    `;
+                });
+            }
+            document.getElementById("empModalTaskList").innerHTML = listHtml;
+
+            // Render Task Bar Chart
+            if (empModalTaskChartObj) empModalTaskChartObj.destroy();
+            const taskCanvas = document.getElementById("empModalTaskChart");
+            if (taskCanvas) {
+                empModalTaskChartObj = new Chart(taskCanvas.getContext("2d"), {
+                    type: 'bar',
+                    data: {
+                        labels: Object.keys(stats),
+                        datasets: [{
+                            label: 'Tasks',
+                            data: Object.values(stats),
+                            backgroundColor: ['#f59e0b', '#3b82f6', '#8b5cf6', '#10b981'],
+                            borderRadius: 4
+                        }]
+                    },
+                    options: { 
+                        responsive: true, 
+                        plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                    }
+                });
+            }
+        });
+
+    // 4. Fetch Historical Attendance Records
+    fetch(`/api/employeeAttendanceRecords?username=${username}`)
+        .then(res => res.json())
+        .then(records => {
+            const body = document.getElementById("empModalProgressBody");
+            if (!records || records.length === 0) {
+                body.innerHTML = '<tr><td colspan="3" style="padding: 20px; text-align: center; color: #94a3b8;">No historical records found.</td></tr>';
+                return;
+            }
+
+            // Sort by date descending
+            records.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            body.innerHTML = records.map(r => {
+                const statusColor = r.status === 'Present' ? '#10b981' : '#ef4444';
+                return `
+                    <tr style="border-bottom: 1px solid #f8fafc;">
+                        <td style="padding: 10px; font-weight: 500; color: #1e293b;">${r.date}</td>
+                        <td style="padding: 10px;">
+                            <span style="color: ${statusColor}; font-weight: 700;">${r.status}</span>
+                        </td>
+                        <td style="padding: 10px; color: #64748b;">General</td>
+                    </tr>
+                `;
+            }).join("");
+        })
+        .catch(err => {
+            console.error("Error fetching attendance history:", err);
+            document.getElementById("empModalProgressBody").innerHTML = '<tr><td colspan="3" style="padding: 20px; text-align: center; color: #ef4444;">Error loading history.</td></tr>';
+        });
+}
+
+function closeEmpDetailsModal(event) {
+    if (event && event.target !== document.getElementById("empDetailsModal")) return;
+    document.getElementById("empDetailsModal").classList.remove("active");
+}
+
+function showMgrAttEmployees(date, status) {
+    const title = document.getElementById("mgrAttModalTitle");
+    const body = document.getElementById("mgrAttModalBody");
+    if (!title || !body) return;
+
+    title.innerText = `${status.toUpperCase()} Employees - ${date}`;
+    body.innerHTML = '<p style="padding:20px; text-align:center;">Fetching list...</p>';
+    document.getElementById("mgrAttModal").classList.add("active");
+
+    fetch(`/api/attendanceByDate?date=${date}`)
+        .then(res => res.json())
+        .then(records => {
+            const filtered = records.filter(r => r.status.toLowerCase() === status.toLowerCase());
+            if (filtered.length === 0) {
+                body.innerHTML = `<p style="padding:30px; text-align:center; color:#94a3b8;">No ${status} employees on this day.</p>`;
+                return;
+            }
+
+            body.innerHTML = filtered.map(r => `
+                <div class="mgr-att-emp-item">
+                    <div class="mgr-att-emp-avatar ${status === 'present' ? 'present-av' : 'absent-av'}">
+                        ${r.employeeName.charAt(0).toUpperCase()}
+                    </div>
+                    <div class="mgr-att-emp-name">${r.employeeName}</div>
+                </div>
+            `).join("");
+        })
+        .catch(err => {
+            console.error("Error fetching attendance list:", err);
+            body.innerHTML = '<p style="padding:20px; text-align:center; color:#ef4444;">Error loading list.</p>';
+        });
+}
+
+function closeMgrAttModal(event) {
+    if (event && event.target !== document.getElementById("mgrAttModal")) return;
+    document.getElementById("mgrAttModal").classList.remove("active");
+}
+
+
+// ===================================
+// ORDER MANAGEMENT (SUPERVISOR)
+// ===================================
+
+function loadOrders() {
+    fetch(API_BASE_URL + "/api/ordersByStatus?status=Pending")
+        .then(res => res.json())
+        .then(orders => {
+            const container = document.getElementById("orderList");
+            const countEl = document.getElementById("orderCount");
+            if (!container) return;
+
+            if (countEl) countEl.innerText = orders.length;
+
+            if (orders.length === 0) {
+                container.innerHTML = '<p style="text-align: center; grid-column: 1/-1; padding: 40px; color: #94a3b8;">No pending orders available.</p>';
+                return;
+            }
+
+            container.innerHTML = orders.map(o => {
+                const priorityColor = o.priority === 'Urgent' ? '#ef4444' : (o.priority === 'High' ? '#f59e0b' : '#3b82f6');
+                return `
+                    <div class="hub-card" style="text-align: left; padding: 25px; border-radius: 16px; cursor: default;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
+                            <span style="font-size: 11px; font-weight: 800; color: #1e293b; background: #e2e8f0; padding: 4px 10px; border-radius: 6px;">${o.orderId}</span>
+                            <span style="font-size: 11px; font-weight: 800; color: white; background: ${priorityColor}; padding: 4px 10px; border-radius: 6px;">${o.priority}</span>
+                        </div>
+                        <h4 style="margin: 0; font-size: 18px; color: #1e293b;">${o.customerName}</h4>
+                        <p style="margin: 10px 0; font-size: 13px; color: #64748b; line-height: 1.5;">${o.orderDescription}</p>
+                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
+                            <div style="display: flex; gap: 20px;">
+                                <div>
+                                    <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase;">Product Type</div>
+                                    <div style="font-size: 13px; font-weight: 600; color: #475569;">${o.requiredSkill}</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase;">Quantity</div>
+                                    <div style="font-size: 13px; font-weight: 600; color: #475569;">${o.quantity} units</div>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 10px;">
+                                <button onclick="rejectOrder(${o.id})" 
+                                        style="background: #fee2e2; color: #ef4444; border: none; padding: 8px 15px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer;">
+                                    Reject
+                                </button>
+                                <button onclick="openConvertOrderModal(${o.id}, '${o.customerName.replace(/'/g, "\\'")}', '${o.requiredSkill.replace(/'/g, "\\'")}', '${o.orderDescription.replace(/'/g, "\\'").replace(/\n/g, " ")}', ${o.quantity}, '${o.priority}')" 
+                                        style="background: #6366f1; color: white; border: none; padding: 8px 15px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer;">
+                                    Convert to Task
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join("");
+        });
+}
+
+function rejectOrder(orderId) {
+    if (!confirm("Are you sure you want to reject this order?")) return;
+
+    fetch(API_BASE_URL + `/api/rejectOrder?orderId=${orderId}`, {
+        method: "POST"
+    })
+    .then(res => res.json())
+    .then(() => {
+        alert("Order rejected successfully.");
+        loadOrders();
+    })
+    .catch(err => alert("Error rejecting order."));
+}
+
+function openConvertOrderModal(id, cust, skill, desc, qty, prio) {
+    document.getElementById("convOrderId").value = id;
+    document.getElementById("convCustName").innerText = cust;
+    document.getElementById("convTaskName").value = "Production: " + skill;
+    document.getElementById("convSection").value = "Manufacturing";
+    document.getElementById("convSkill").value = skill;
+    document.getElementById("convPriority").value = prio;
+    document.getElementById("convEmployees").value = Math.ceil(qty / 100); // Rough estimate
+
+    document.getElementById("convertOrderModal").classList.add("active");
+}
+
+function confirmOrderToTask() {
+    const orderId = document.getElementById("convOrderId").value;
+    const taskName = document.getElementById("convTaskName").value.trim();
+    const section = document.getElementById("convSection").value.trim();
+    const skill = document.getElementById("convSkill").value.trim();
+    const employees = document.getElementById("convEmployees").value;
+    const priority = document.getElementById("convPriority").value;
+
+    if (!taskName || !section || !skill) {
+        alert("Please fill all task details.");
+        return;
+    }
+
+    fetch(API_BASE_URL + `/api/convertOrderToTask?orderId=${orderId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            taskName: taskName,
+            section: section,
+            requiredSkill: skill,
+            employeesNeeded: employees,
+            priority: priority,
+            status: "Pending"
+        })
+    })
+    .then(res => res.json())
+    .then(() => {
+        alert("Task Created & Order Updated!");
+        document.getElementById("convertOrderModal").classList.remove("active");
+        loadOrders();
+    })
+    .catch(err => alert("Error converting order."));
+}
+
+// ===================================
+// ORDER ANALYTICS (MANAGER)
+// ===================================
+
+let orderFulfillmentChartObj = null;
+
+function loadOrderAnalytics() {
+    fetch(API_BASE_URL + "/api/orderAnalytics")
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById("anaTotalOrders").innerText = data.totalOrders;
+            document.getElementById("anaCompletedOrders").innerText = data.completedOrders;
+            document.getElementById("anaPendingOrders").innerText = data.pendingOrders;
+            
+            const rate = data.totalOrders > 0 ? Math.round((data.completedOrders / data.totalOrders) * 100) : 0;
+            document.getElementById("anaFulfillmentRate").innerText = rate + "%";
+
+            // Render Chart
+            if (orderFulfillmentChartObj) orderFulfillmentChartObj.destroy();
+            const ctx = document.getElementById("orderFulfillmentChart").getContext("2d");
+            orderFulfillmentChartObj = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Pending', 'In Progress', 'Completed', 'Cancelled'],
+                    datasets: [{
+                        data: [data.pendingOrders, data.inProgressOrders, data.completedOrders, data.cancelledOrders],
+                        backgroundColor: ['#f59e0b', '#3b82f6', '#10b981', '#ef4444'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+
+            // Render Recent Orders Table
+            const list = document.getElementById("managerOrderList");
+            if (!list) return;
+
+            if (!data.recentOrders || data.recentOrders.length === 0) {
+                list.innerHTML = '<tr><td colspan="6" style="padding: 20px; text-align: center; color: #94a3b8;">No orders found.</td></tr>';
+                return;
+            }
+
+            list.innerHTML = data.recentOrders.map(o => {
+                const statusColor = o.status === 'Completed' ? '#10b981' : (o.status === 'Pending' ? '#f59e0b' : '#3b82f6');
+                return `
+                    <tr style="border-bottom: 1px solid #f1f5f9;">
+                        <td style="padding: 15px; font-weight: 700; color: #6366f1;">${o.orderId}</td>
+                        <td style="padding: 15px;">${o.customerName}</td>
+                        <td style="padding: 15px;">${o.requiredSkill}</td>
+                        <td style="padding: 15px;">
+                            <span style="background: ${statusColor}10; color: ${statusColor}; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; border: 1px solid ${statusColor}30;">${o.status}</span>
+                        </td>
+                        <td style="padding: 15px;">${o.priority}</td>
+                        <td style="padding: 15px; color: #64748b;">${o.createdAt}</td>
+                    </tr>
+                `;
+            }).join("");
+        });
+}
+
+// ===================================
+// SUPERVISOR ORDER NOTIFICATIONS
+// ===================================
+
+let lastOrderCount = -1;
+let pollingInterval = null;
+
+function startSupervisorOrderPolling() {
+    if (pollingInterval) clearInterval(pollingInterval);
+    
+    // Initial check
+    checkNewOrders();
+    
+    // Poll every 30 seconds
+    pollingInterval = setInterval(checkNewOrders, 30000);
+}
+
+function checkNewOrders() {
+    fetch(API_BASE_URL + "/api/ordersByStatus?status=Pending")
+        .then(res => res.json())
+        .then(orders => {
+            const currentCount = orders.length;
+            const badge = document.getElementById("order-badge");
+            
+            // Update badge regardless of whether it's "new"
+            if (badge) {
+                if (currentCount > 0) {
+                    badge.innerText = currentCount;
+                    badge.style.display = "flex";
+                } else {
+                    badge.style.display = "none";
+                }
+            }
+
+            // Notify if count increased
+            if (lastOrderCount !== -1 && currentCount > lastOrderCount) {
+                const newOrders = orders.slice(0, currentCount - lastOrderCount);
+                newOrders.forEach(order => {
+                    showOrderNotification(order);
+                });
+            }
+
+            lastOrderCount = currentCount;
+        })
+        .catch(err => console.error("Polling Error:", err));
+}
+
+function showOrderNotification(order) {
+    const container = document.getElementById("notification-container");
+    if (!container) return;
+
+    const toast = document.createElement("div");
+    toast.className = "notification-toast";
+    toast.innerHTML = `
+        <div class="toast-icon">📦</div>
+        <div class="toast-content">
+            <div class="toast-title">New Order Received!</div>
+            <div class="toast-desc">${order.customerName}: ${order.requiredSkill}</div>
+        </div>
+    `;
+
+    toast.onclick = () => {
+        switchTab('tab-orders');
+        toast.classList.add("toast-exit");
+        setTimeout(() => toast.remove(), 300);
+    };
+
+    container.appendChild(toast);
+
+    // Auto-remove after 8 seconds
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.classList.add("toast-exit");
+            setTimeout(() => toast.remove(), 300);
+        }
+    }, 8000);
+}
+

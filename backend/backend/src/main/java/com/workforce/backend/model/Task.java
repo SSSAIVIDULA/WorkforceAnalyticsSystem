@@ -35,6 +35,9 @@ public class Task {
 
     private LocalDate date;
 
+    @Column(name = "order_id")
+    private Long orderId;
+
     // =========================
     // GETTERS & SETTERS
     // =========================
@@ -125,6 +128,14 @@ public class Task {
 
     public void setCompletedDate(LocalDate completedDate) {
         this.completedDate = completedDate;
+    }
+
+    public Long getOrderId() {
+        return orderId;
+    }
+
+    public void setOrderId(Long orderId) {
+        this.orderId = orderId;
     }
 
 }
