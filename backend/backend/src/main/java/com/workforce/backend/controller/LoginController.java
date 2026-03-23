@@ -226,7 +226,18 @@ public class LoginController {
 
     @GetMapping("/tasksByDate")
     public List<Task> getTasksByDate(@RequestParam("date") LocalDate date) {
-        return taskRepository.findByDate(date);
+        List<Task> tasks = taskRepository.findByDate(date);
+        for(Task t : tasks) {
+            if(t.getOrderId() != null) {
+                Order order = orderRepository.findById(t.getOrderId()).orElse(null);
+                if(order != null) {
+                    t.setOrderCode(order.getOrderId());
+                    t.setCustomerName(order.getCustomerName());
+                    t.setOrderDescription(order.getOrderDescription());
+                }
+            }
+        }
+        return tasks;
     }
 
     @PostMapping("/assignEmployees")

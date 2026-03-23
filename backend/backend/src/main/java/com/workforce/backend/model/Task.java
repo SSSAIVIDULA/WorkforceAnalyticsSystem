@@ -38,6 +38,15 @@ public class Task {
     @Column(name = "order_id")
     private Long orderId;
 
+    @jakarta.persistence.Transient
+    private String orderCode;
+
+    @jakarta.persistence.Transient
+    private String customerName;
+
+    @jakarta.persistence.Transient
+    private String orderDescription;
+
     // =========================
     // GETTERS & SETTERS
     // =========================
@@ -136,6 +145,30 @@ public class Task {
 
     public void setOrderId(Long orderId) {
         this.orderId = orderId;
+    }
+
+    public String getOrderCode() {
+        return orderCode;
+    }
+
+    public void setOrderCode(String orderCode) {
+        this.orderCode = orderCode;
+    }
+
+    public String getCustomerName() {
+        return customerName;
+    }
+
+    public void setCustomerName(String customerName) {
+        this.customerName = customerName;
+    }
+
+    public String getOrderDescription() {
+        return orderDescription;
+    }
+
+    public void setOrderDescription(String orderDescription) {
+        this.orderDescription = orderDescription;
     }
 
 }
