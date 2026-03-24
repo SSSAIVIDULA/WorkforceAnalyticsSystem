@@ -74,6 +74,11 @@ public class LoginController {
             }
             System.out.println("Attempting to save user: " + user.getUsername());
             User savedUser = userRepository.save(user);
+            
+            // Auto generate Employee ID
+            savedUser.setEmployeeId("EMP-" + savedUser.getId());
+            savedUser = userRepository.save(savedUser);
+            
             return org.springframework.http.ResponseEntity.ok(savedUser);
         } catch (Exception e) {
             System.err.println("Error saving employee: " + e.getMessage());

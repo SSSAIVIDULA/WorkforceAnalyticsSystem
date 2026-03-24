@@ -120,13 +120,12 @@ function addEmployee() {
                 throw new Error(errorData.message || "Registration failed");
             }
         })
-        .then(() => {
+        .then(data => {
             document.getElementById("msg").style.color = "lightgreen";
-            document.getElementById("msg").innerHTML = "Employee added successfully ✓";
+            document.getElementById("msg").innerHTML = `Employee added successfully ✓<br><span style="color:#10b981; font-size:16px; font-weight:bold;">Assigned Employee ID: ${data.employeeId}</span>`;
 
             document.getElementById("username").value = "";
             document.getElementById("password").value = "";
-            document.getElementById("employeeId").value = "";
             document.getElementById("phoneNumber").value = "";
 
             document.querySelectorAll('input[name="empSkill"]').forEach(cb => {
@@ -136,7 +135,7 @@ function addEmployee() {
 
             setTimeout(() => {
                 window.location = "attendance.html";
-            }, 1000);
+            }, 3000);
         })
         .catch((err) => {
             console.error("Add Employee Error:", err);
@@ -289,26 +288,24 @@ function markAttendance(name, status) {
 let selectedTaskId = null;
 
 const FACTORY_TASKS = {
-    "Wash Vegetables": { section: "Cleaning", skills: "Cleaning, Basic Handling" },
-    "Cut Vegetables": { section: "Processing", skills: "Cutting, Food Processing" },
-    "Cook Food": { section: "Cooking", skills: "Cooking, Food Processing" },
-    "Quality Inspection": { section: "Quality Check", skills: "Inspection, Food Safety" },
-    "Pack Food": { section: "Packaging", skills: "Packing, Basic Handling" },
-    "Label Packages": { section: "Labeling", skills: "Packing, Label Handling" },
-    "Load Products": { section: "Dispatch", skills: "Warehouse Handling, Packing" }
+    "Raw Material Intake": { section: "Raw Material Prep", skills: "Cleaning, Sorting, Basic Handling" },
+    "Cleaning & Preparation": { section: "Raw Material Prep", skills: "Cleaning, Sorting, Basic Handling" },
+    "Processing / Cutting": { section: "Processing", skills: "Cutting, Machine Handling, Food Processing" },
+    "Production / Cooking": { section: "Production", skills: "Cooking, Equipment Operation, Batch Processing" },
+    "Quality Check": { section: "Quality Control", skills: "Inspection, Food Safety, Quality Assurance" },
+    "Packaging": { section: "Packaging", skills: "Packing, Sealing, Handling" },
+    "Labeling": { section: "Labeling", skills: "Label Handling, Barcode Processing" },
+    "Dispatch": { section: "Dispatch", skills: "Warehouse Handling, Logistics Coordination" }
 };
 
 const SECTION_SKILLS = {
-    "Cleaning": "Cleaning, Basic Handling",
-    "Processing": "Cutting, Food Processing",
-    "Cooking": "Cooking, Food Processing",
-    "Quality Check": "Inspection, Food Safety",
-    "Quality Control": "Inspection, Food Safety",
-    "Packaging": "Packing, Basic Handling",
-    "Labeling": "Packing, Label Handling",
-    "Dispatch": "Warehouse Handling, Packing",
-    "Manufacturing": "Machine Operation, Assembly",
-    "General": "Basic Labor, Handling"
+    "Raw Material Prep": "Cleaning, Sorting, Basic Handling",
+    "Processing": "Cutting, Machine Handling, Food Processing",
+    "Production": "Cooking, Equipment Operation, Batch Processing",
+    "Quality Control": "Inspection, Food Safety, Quality Assurance",
+    "Packaging": "Packing, Sealing, Handling",
+    "Labeling": "Label Handling, Barcode Processing",
+    "Dispatch": "Warehouse Handling, Logistics Coordination"
 };
 
 function autoFillSkillsBySection() {
@@ -907,11 +904,16 @@ function loadEmployeeStats() {
         .then(res => res.json())
         .then(profile => {
 
-            if (profile && profile.phoneNumber) {
-                document.getElementById("empDept").innerText = "📞 " + profile.phoneNumber;
-            } else if (profile && profile.department) {
-                document.getElementById("empDept").innerText = "🏢 " + profile.department;
+            let deptText = "";
+            if (profile && profile.employeeId) {
+                deptText += "ID: " + profile.employeeId + "  |  ";
             }
+            if (profile && profile.phoneNumber) {
+                deptText += "📞 " + profile.phoneNumber;
+            } else if (profile && profile.department) {
+                deptText += "🏢 " + profile.department;
+            }
+            document.getElementById("empDept").innerText = deptText || "Department Information Loading...";
 
             // Display skills as badges
             if (profile && profile.skill) {
@@ -1829,18 +1831,18 @@ function addSubTask(name = '', section = '', skill = '') {
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                 <div style="grid-column: 1 / -1;">
                     <label class="subtask-label">Task Name *</label>
-                    <input type="text" id="st_name_${idx}" class="subtask-input" value="${name}" placeholder="e.g. Wash Vegetables" onchange="autoFillSubTaskSkill(${idx})">
+                    <input type="text" id="st_name_${idx}" class="subtask-input" value="${name}" placeholder="e.g. Raw Material Intake" onchange="autoFillSubTaskSkill(${idx})">
                 </div>
                 <div>
                     <label class="subtask-label">Section</label>
                     <select id="st_section_${idx}" class="subtask-input" onchange="autoFillSubTaskSkill(${idx})">
-                        <option value="Manufacturing" ${section === 'Manufacturing' ? 'selected' : ''}>Manufacturing</option>
+                        <option value="Raw Material Prep" ${section === 'Raw Material Prep' ? 'selected' : ''}>Raw Material Prep</option>
                         <option value="Processing" ${section === 'Processing' ? 'selected' : ''}>Processing</option>
-                        <option value="Cleaning" ${section === 'Cleaning' ? 'selected' : ''}>Cleaning</option>
-                        <option value="Packaging" ${section === 'Packaging' ? 'selected' : ''}>Packaging</option>
+                        <option value="Production" ${section === 'Production' ? 'selected' : ''}>Production</option>
                         <option value="Quality Control" ${section === 'Quality Control' ? 'selected' : ''}>Quality Control</option>
+                        <option value="Packaging" ${section === 'Packaging' ? 'selected' : ''}>Packaging</option>
+                        <option value="Labeling" ${section === 'Labeling' ? 'selected' : ''}>Labeling</option>
                         <option value="Dispatch" ${section === 'Dispatch' ? 'selected' : ''}>Dispatch</option>
-                        <option value="General" ${section === 'General' ? 'selected' : ''}>General</option>
                     </select>
                 </div>
                 <div>
