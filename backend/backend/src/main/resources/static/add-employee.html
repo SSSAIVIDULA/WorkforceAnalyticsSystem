@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add New Employee | Workforce Analytics</title>
+    <title>Add Workforce Member | Workforce Analytics</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -140,13 +140,16 @@
 
     <div class="page">
         <div class="card premium-card premium-form-container">
+            <div style="text-align: left; margin-bottom: 20px;">
+                <button onclick="goSupervisor()" class="back-btn" style="width: auto; padding: 8px 16px; background: #f1f5f9; color: #475569; box-shadow: none; border: 1px solid #e2e8f0; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;">← Back to Menu</button>
+            </div>
             <div style="text-align: center; margin-bottom: 30px;">
                 <div
                     style="width: 60px; height: 60px; background: linear-gradient(135deg, #6366f1, #a855f7); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; color: white; font-size: 24px; box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);">
                     <i class="fas fa-user-plus"></i>
                 </div>
-                <h2 style="margin: 0;">Add New Employee</h2>
-                <p style="color: #64748b; font-size: 14px; margin-top: 8px;">Onboard a new member to the workforce
+                <h2 style="margin: 0;">Add Workforce Member</h2>
+                <p style="color: #64748b; font-size: 14px; margin-top: 8px;">Onboard a new member to the textile production
                     system</p>
             </div>
 
@@ -163,7 +166,7 @@
 
                 <div class="input-group">
                     <label for="employeeId">Employee ID</label>
-                    <input type="text" id="employeeId" value="(Auto Generated)" readonly style="background-color: #f1f5f9; color: #94a3b8; cursor: not-allowed;">
+                    <input type="text" id="employeeId" placeholder="e.g. EMP-101">
                     <i class="fas fa-hashtag"></i>
                 </div>
             </div>
@@ -192,113 +195,134 @@
             </div>
 
             <div class="form-section-title">
-                <i class="fas fa-star"></i> Skills & Expertise
+                <i class="fas fa-star"></i> Primary Skills (At least one)
             </div>
 
-            <div class="skills-grid-modern" id="skillsGrid">
-                <!-- Raw Material Prep -->
+            <div class="skills-grid-modern" id="primarySkillsGrid">
                 <label class="skill-option">
-                    <input type="checkbox" name="empSkill" value="Cleaning">
-                    <span>Cleaning</span>
+                    <input type="checkbox" name="primarySkill" value="Knitting Machine Operation">
+                    <span>Knitting Machine Operation</span>
                 </label>
                 <label class="skill-option">
-                    <input type="checkbox" name="empSkill" value="Sorting">
-                    <span>Sorting</span>
+                    <input type="checkbox" name="primarySkill" value="Yarn Handling">
+                    <span>Yarn Handling</span>
                 </label>
                 <label class="skill-option">
-                    <input type="checkbox" name="empSkill" value="Basic Handling">
-                    <span>Basic Handling</span>
-                </label>
-                <!-- Processing -->
-                <label class="skill-option">
-                    <input type="checkbox" name="empSkill" value="Cutting">
-                    <span>Cutting</span>
+                    <input type="checkbox" name="primarySkill" value="Dyeing Process">
+                    <span>Dyeing Process</span>
                 </label>
                 <label class="skill-option">
-                    <input type="checkbox" name="empSkill" value="Machine Handling">
-                    <span>Machine Handling</span>
+                    <input type="checkbox" name="primarySkill" value="Drying Operation">
+                    <span>Drying Operation</span>
                 </label>
                 <label class="skill-option">
-                    <input type="checkbox" name="empSkill" value="Food Processing">
-                    <span>Food Processing</span>
-                </label>
-                <!-- Production -->
-                <label class="skill-option">
-                    <input type="checkbox" name="empSkill" value="Cooking">
-                    <span>Cooking</span>
+                    <input type="checkbox" name="primarySkill" value="Quality Inspection">
+                    <span>Quality Inspection</span>
                 </label>
                 <label class="skill-option">
-                    <input type="checkbox" name="empSkill" value="Equipment Operation">
-                    <span>Equipment Operation</span>
+                    <input type="checkbox" name="primarySkill" value="Packaging">
+                    <span>Packaging</span>
                 </label>
                 <label class="skill-option">
-                    <input type="checkbox" name="empSkill" value="Batch Processing">
-                    <span>Batch Processing</span>
-                </label>
-                <!-- Quality Control -->
-                <label class="skill-option">
-                    <input type="checkbox" name="empSkill" value="Inspection">
-                    <span>Inspection</span>
+                    <input type="checkbox" name="primarySkill" value="Labeling">
+                    <span>Labeling</span>
                 </label>
                 <label class="skill-option">
-                    <input type="checkbox" name="empSkill" value="Food Safety">
-                    <span>Food Safety</span>
+                    <input type="checkbox" name="primarySkill" value="Dispatch Handling">
+                    <span>Dispatch Handling</span>
                 </label>
                 <label class="skill-option">
-                    <input type="checkbox" name="empSkill" value="Quality Assurance">
-                    <span>Quality Assurance</span>
+                    <input type="checkbox" name="primarySkill" value="Machine Maintenance">
+                    <span>Machine Maintenance</span>
                 </label>
-                <!-- Packaging -->
+            </div>
+
+            <div class="form-section-title">
+                <i class="fas fa-plus-circle"></i> Secondary Skills (Optional)
+            </div>
+
+            <div class="skills-grid-modern" id="secondarySkillsGrid">
                 <label class="skill-option">
-                    <input type="checkbox" name="empSkill" value="Packing">
-                    <span>Packing</span>
-                </label>
-                <label class="skill-option">
-                    <input type="checkbox" name="empSkill" value="Sealing">
-                    <span>Sealing</span>
-                </label>
-                <label class="skill-option">
-                    <input type="checkbox" name="empSkill" value="Handling">
-                    <span>Handling</span>
-                </label>
-                <!-- Labeling -->
-                <label class="skill-option">
-                    <input type="checkbox" name="empSkill" value="Label Handling">
-                    <span>Label Handling</span>
+                    <input type="checkbox" name="secondarySkill" value="Knitting Machine Operation">
+                    <span>Knitting Machine Operation</span>
                 </label>
                 <label class="skill-option">
-                    <input type="checkbox" name="empSkill" value="Barcode Processing">
-                    <span>Barcode Processing</span>
-                </label>
-                <!-- Dispatch -->
-                <label class="skill-option">
-                    <input type="checkbox" name="empSkill" value="Warehouse Handling">
-                    <span>Warehouse Handling</span>
+                    <input type="checkbox" name="secondarySkill" value="Yarn Handling">
+                    <span>Yarn Handling</span>
                 </label>
                 <label class="skill-option">
-                    <input type="checkbox" name="empSkill" value="Logistics Coordination">
-                    <span>Logistics Coordination</span>
+                    <input type="checkbox" name="secondarySkill" value="Dyeing Process">
+                    <span>Dyeing Process</span>
+                </label>
+                <label class="skill-option">
+                    <input type="checkbox" name="secondarySkill" value="Drying Operation">
+                    <span>Drying Operation</span>
+                </label>
+                <label class="skill-option">
+                    <input type="checkbox" name="secondarySkill" value="Quality Inspection">
+                    <span>Quality Inspection</span>
+                </label>
+                <label class="skill-option">
+                    <input type="checkbox" name="secondarySkill" value="Packaging">
+                    <span>Packaging</span>
+                </label>
+                <label class="skill-option">
+                    <input type="checkbox" name="secondarySkill" value="Labeling">
+                    <span>Labeling</span>
+                </label>
+                <label class="skill-option">
+                    <input type="checkbox" name="secondarySkill" value="Dispatch Handling">
+                    <span>Dispatch Handling</span>
+                </label>
+                <label class="skill-option">
+                    <input type="checkbox" name="secondarySkill" value="Machine Maintenance">
+                    <span>Machine Maintenance</span>
                 </label>
             </div>
 
             <div id="msg" style="margin-top: 15px; font-size: 14px;"></div>
 
-            <div class="btn-container">
-                <button onclick="addEmployee()" style="margin-top: 0;">Confirm & Add Employee</button>
-                <button onclick="goSupervisor()" class="back-btn" style="margin-top: 0;">Cancel</button>
+            <div class="btn-container" style="display: block;">
+                <button onclick="addEmployee()" style="margin-top: 0; width: 100%;">Confirm & Add Member</button>
             </div>
         </div>
     </div>
 
     <script src="script.js"></script>
     <script>
-        // Add visual feedback for selected skills
-        document.querySelectorAll('.skill-option input').forEach(checkbox => {
+        // Add visual feedback for selected skills + mutual exclusivity
+        const primaryCheckboxes = document.querySelectorAll('input[name="primarySkill"]');
+        const secondaryCheckboxes = document.querySelectorAll('input[name="secondarySkill"]');
+
+        function updateExclusivity(changedCheckbox, otherGroup) {
+            if (changedCheckbox.checked) {
+                const val = changedCheckbox.value;
+                otherGroup.forEach(cb => {
+                    if (cb.value === val) {
+                        cb.checked = false;
+                        cb.parentElement.classList.remove('selected');
+                    }
+                });
+            }
+        }
+
+        primaryCheckboxes.forEach(checkbox => {
             checkbox.addEventListener('change', function () {
                 if (this.checked) {
                     this.parentElement.classList.add('selected');
+                    updateExclusivity(this, secondaryCheckboxes);
                 } else {
+                    this.parentElement.classList.remove('selected');
+                }
+            });
+        });
+
+        secondaryCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function () {
+                if (this.checked) {
                     this.parentElement.classList.add('selected');
+                    updateExclusivity(this, primaryCheckboxes);
+                } else {
                     this.parentElement.classList.remove('selected');
                 }
             });

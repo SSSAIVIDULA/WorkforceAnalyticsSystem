@@ -61,6 +61,28 @@ h2 {
     letter-spacing: -0.5px;
 }
 
+.attendance-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 60px 20px;
+    box-sizing: border-box;
+}
+
+.attendance-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    padding: 50px;
+    width: 850px;
+    max-width: 100%;
+    border-radius: 24px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    text-align: center;
+}
+
 /* Subtitle */
 .subtitle {
     color: #666;
@@ -431,4 +453,138 @@ button:active {
 
 @keyframes fadeOut {
     to { opacity: 0; transform: translateY(-10px); }
+}
+
+/* Workload Status Colors */
+.status-available { color: #10b981; font-weight: 700; }
+.status-busy { color: #f59e0b; font-weight: 700; }
+.status-overloaded { color: #ef4444; font-weight: 700; }
+
+.badge-available { background: #dcfce7; color: #166534; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+.badge-busy { background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+.badge-overloaded { background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+
+/* Section History Card */
+.history-card {
+    background: white;
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 25px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Skill Badges */
+.skill-badge {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-right: 5px;
+    display: inline-block;
+}
+
+.skill-primary {
+    background: #dcfce7 !important;
+    color: #15803d !important;
+    border: 1px solid #bbf7d0;
+}
+
+.skill-secondary {
+    background: #dbeafe !important;
+    color: #1d4ed8 !important;
+    border: 1px solid #bfdbfe;
+}
+
+/* Status Badges */
+.status-badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    display: inline-block;
+    letter-spacing: 0.5px;
+}
+
+.status-overloaded {
+    background: #fee2e2 !important;
+    color: #b91c1c !important;
+    border: 1px solid #fecaca;
+}
+
+.status-busy {
+    background: #fef9c3 !important;
+    color: #854d0e !important;
+    border: 1px solid #fef08a;
+}
+
+.status-available {
+    background: #dcfce7 !important;
+    color: #15803d !important;
+    border: 1px solid #bbf7d0;
+}
+
+/* Info Labels */
+.info-label {
+    font-size: 12px;
+    color: #64748b;
+}
+
+.info-value {
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.warning-text {
+    color: #ef4444;
+    font-size: 12px;
+    font-weight: 600;
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.smart-suggestion {
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    color: #0369a1;
+    padding: 12px 15px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.history-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.history-item {
+    text-align: center;
+    padding: 10px;
+    background: #f8fafc;
+    border-radius: 10px;
+    border: 1px solid #f1f5f9;
+}
+
+.history-label {
+    font-size: 11px;
+    color: #64748b;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.history-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1e293b;
 }

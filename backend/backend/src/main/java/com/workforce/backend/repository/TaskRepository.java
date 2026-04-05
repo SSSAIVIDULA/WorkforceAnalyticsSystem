@@ -12,4 +12,8 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     List<Task> findByDate(LocalDate date);
 
     List<Task> findByAssignedEmployeesContaining(String assignedEmployees);
+
+    List<Task> findBySectionAndDate(String section, LocalDate date);
+
+    List<Task> findBySection(String section);
 }

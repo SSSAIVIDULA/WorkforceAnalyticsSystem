@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Manager Analytics Dashboard</title>
+    <title>Manager Dashboard | Textile Production Analytics</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -389,6 +389,70 @@
             color: #ef4444;
         }
 
+        /* Expanded Modal for Individual Page Experience */
+        .mgr-att-modal.full-screen {
+            width: 95% !important;
+            max-width: 1200px !important;
+            height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .mgr-att-modal-body.page-scroll {
+            overflow-y: auto;
+            padding: 30px;
+            background: #f8fafc;
+        }
+
+        .skill-category-title {
+            font-size: 11px;
+            font-weight: 800;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .skill-set-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 25px;
+        }
+
+        .skill-pill {
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .skill-pill.primary {
+            background: #eff6ff;
+            color: #1e40af;
+            border: 1px solid #bfdbfe;
+        }
+
+        .skill-pill.secondary {
+            background: #fdf2f8;
+            color: #9d174d;
+            border: 1px solid #fbcfe8;
+        }
+
+        .profile-header-grid {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
         .mgr-att-modal-body {
             padding: 16px 24px 24px;
             overflow-y: auto;
@@ -499,8 +563,13 @@
                     </div>
                     <div class="hub-card" onclick="switchTab('tab-order-analytics')">
                         <div class="icon-box">📦</div>
-                        <h3>Order Analytics</h3>
-                        <p>Track customer order fulfillment, trends, and completion metrics.</p>
+                        <h3>Production Order Analytics</h3>
+                        <p>Track customer production fulfillment, trends, and completion metrics.</p>
+                    </div>
+                    <div class="hub-card" onclick="switchTab('tab-order-history')">
+                        <div class="icon-box">📜</div>
+                        <h3>Production Order History</h3>
+                        <p>View complete history of all past and current production orders.</p>
                     </div>
                 </div>
 
@@ -520,15 +589,15 @@
                 <!-- Stat Cards -->
                 <div class="stats-row">
                     <div class="stat-card" style="background: linear-gradient(135deg, #667eea, #764ba2);">
-                        <h4>Total Tasks</h4>
+                        <h4>Total Production Tasks</h4>
                         <div class="num" id="totalTasks">0</div>
                     </div>
                     <div class="stat-card" style="background: linear-gradient(135deg, #10b981, #059669);">
-                        <h4>Completed</h4>
+                        <h4>Completed Operations</h4>
                         <div class="num" id="totalCompleted">0</div>
                     </div>
                     <div class="stat-card" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
-                        <h4>Pending</h4>
+                        <h4>Pending Operations</h4>
                         <div class="num" id="totalPending">0</div>
                     </div>
                     <div class="stat-card" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
@@ -551,6 +620,14 @@
                         <div style="font-size: 24px; font-weight: 700; color: #dc2626;" id="totalAbsent">0</div>
                         <div style="font-size: 13px; color: #dc2626; font-weight: 600;">Absent Today</div>
                     </div>
+                </div>
+
+                <div style="margin-top: 35px; margin-bottom: 15px;">
+                    <h3 style="margin: 0; font-size: 18px; color: #1e293b; border: none; padding: 0;">🏢 Production Workload Intelligence</h3>
+                    <p style="color: #64748b; font-size: 13px; margin: 5px 0 0 0;">Real-time resource utilization across production sections</p>
+                </div>
+                <div id="workloadList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-bottom: 25px;">
+                    <!-- Injected by script.js -->
                 </div>
 
                 <!-- Main Charts Grid -->
@@ -644,7 +721,7 @@
                             <thead>
                                 <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
                                     <th style="padding: 15px; color: #475569;">Task Name</th>
-                                    <th style="padding: 15px; color: #475569;">Section</th>
+                                    <th style="padding: 15px; color: #475569;">Production Section</th>
                                     <th style="padding: 15px; color: #475569;">Status</th>
                                     <th style="padding: 15px; color: #475569;">Assigned Staff</th>
                                     <th style="padding: 15px; color: #475569;">Priority</th>
@@ -654,15 +731,16 @@
                                 <tr><td colspan="5" style="padding: 20px; text-align: center; color: #94a3b8;">Please select a date to view task report...</td></tr>
                             </tbody>
                         </table>
-                    </div> <!-- CLOSE chart-box -->
-                </div> <!-- CLOSE tab-reports -->
+                    </div> <!-- CLOSE overflow-x:auto -->
+                </div> <!-- CLOSE chart-box -->
+            </div> <!-- CLOSE tab-reports -->
 
-                <!-- ORDER ANALYTICS SECTION -->
-                <div id="tab-order-analytics" class="tab-section">
+            <!-- ORDER ANALYTICS SECTION -->
+            <div id="tab-order-analytics" class="tab-section">
                     <button class="back-btn" onclick="switchTab('tab-hub')">← Back to Menu</button>
                     <div style="margin-bottom: 30px;">
-                        <h2 style="margin: 0; font-size: 28px;">Customer Order Analytics</h2>
-                        <p style="color: #64748b; margin: 5px 0 0 0;">Historical order trends and workforce fulfillment metrics</p>
+                        <h2 style="margin: 0; font-size: 28px;">Production Order Analytics</h2>
+                        <p style="color: #64748b; margin: 5px 0 0 0;">Historical production trends and workforce fulfillment metrics</p>
                     </div>
 
                     <div class="stats-row" style="grid-template-columns: repeat(4, 1fr);">
@@ -713,6 +791,39 @@
                             </table>
                         </div>
                     </div>
+                    </div>
+                </div>
+
+                <!-- NEW ORDER HISTORY SECTION -->
+                <div id="tab-order-history" class="tab-section">
+                    <div style="margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end;">
+                        <div>
+                            <h2 style="margin: 0; font-size: 28px;">Production Order History</h2>
+                            <p style="color: #64748b; margin: 5px 0 0 0;">View the complete log of all past and pending production orders</p>
+                        </div>
+                        <button onclick="loadAllOrderHistory()" class="back-btn" style="margin-bottom: 0; background: var(--primary); color: white; border: none;">↻ Refresh History</button>
+                    </div>
+
+                    <div class="mgr-calendar-section">
+                        <div style="overflow-x: auto;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 14px; text-align: left;">
+                                <thead>
+                                    <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                                        <th style="padding: 15px; color: #475569;">Order ID</th>
+                                        <th style="padding: 15px; color: #475569;">Customer</th>
+                                        <th style="padding: 15px; color: #475569;">Product Batch</th>
+                                        <th style="padding: 15px; color: #475569;">Units</th>
+                                        <th style="padding: 15px; color: #475569;">Status</th>
+                                        <th style="padding: 15px; color: #475569;">Priority</th>
+                                        <th style="padding: 15px; color: #475569;">Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="fullOrderHistoryList">
+                                    <tr><td colspan="7" style="padding: 20px; text-align: center; color: #94a3b8;">Loading complete order history...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div> <!-- CLOSE main-content -->
         </div> <!-- CLOSE dashboard-container -->
@@ -721,52 +832,78 @@
 
     <!-- 1. Employee Details Modal -->
     <div class="mgr-att-modal-overlay" id="empDetailsModal" onclick="closeEmpDetailsModal(event)">
-        <div class="mgr-att-modal" style="width: 850px; max-width: 95%; height: 85vh;" onclick="event.stopPropagation()">
-            <div class="mgr-att-modal-header">
-                <h4 id="empModalTitle">Employee Detailed Profile</h4>
-                <button class="close-btn" onclick="closeEmpDetailsModal()">&times;</button>
+        <div class="mgr-att-modal full-screen" id="empDetailsModal" onclick="event.stopPropagation()" style="background: white;">
+            <div class="mgr-att-modal-header" style="background: #fff; border-bottom: 1px solid #f1f5f9; padding: 20px 30px;">
+                <h4 id="empModalTitle" style="font-weight: 800; color: #1e293b; font-size: 20px;">Employee Profile</h4>
+                <button class="close-btn" onclick="closeEmpDetailsModal()" style="font-size: 28px;">&times;</button>
             </div>
-            <div class="mgr-att-modal-body" style="background: #f8fafc; padding: 25px; overflow-y: auto; max-height: 75vh;">
-                <div style="display: grid; grid-template-columns: 300px 1fr; gap: 25px;">
-                    <!-- Sidebar: Profile Info -->
+            <div class="mgr-att-modal-body page-scroll">
+                <div class="profile-header-grid">
+                    <!-- Sidebar: Basic Info & Skills -->
                     <div style="display: flex; flex-direction: column; gap: 20px;">
-                        <div class="chart-box" style="text-align: center;">
-                            <div id="empModalAvatar" style="width: 80px; height: 80px; border-radius: 20px; background: #6366f1; color: white; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 800; margin: 0 auto 15px;">?</div>
-                            <h3 id="empModalName" style="margin-bottom: 5px; border: none; padding: 0;">Name</h3>
-                            <p id="empModalContact" style="font-size: 13px; color: #64748b; margin: 0;">Email</p>
-                            <div style="margin-top: 20px; text-align: left;">
-                                <h4 style="font-size: 12px; color: #94a3b8; text-transform: uppercase;">Skills</h4>
-                                <div id="empModalSkills"></div>
+                        <div class="chart-box" style="text-align: center; border: 1px solid #e2e8f0; background: white;">
+                            <div id="empModalAvatar" style="width: 100px; height: 100px; border-radius: 25px; background: linear-gradient(135deg, #6366f1, #a855f7); color: white; display: flex; align-items: center; justify-content: center; font-size: 42px; font-weight: 800; margin: 0 auto 20px; box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.2);">?</div>
+                            <h2 id="empModalName" style="margin-bottom: 5px; font-weight: 800; font-size: 24px; color: #1e293b;">-</h2>
+                            <p id="empModalEmployeeId" style="font-size: 12px; color: #94a3b8; font-weight: 700; text-transform: uppercase;">EMP-XXXX</p>
+                            
+                            <div style="margin-top: 25px; text-align: left; background: #f8fafc; padding: 15px; border-radius: 12px;">
+                                <div style="margin-bottom: 15px;">
+                                    <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Contact</div>
+                                    <div id="empModalContact" style="font-size: 14px; font-weight: 600; color: #475569;">No contact info</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Role</div>
+                                    <div style="font-size: 14px; font-weight: 700; color: #6366f1;">Production Associate</div>
+                                </div>
                             </div>
                         </div>
-                        <div class="chart-box">
-                            <h3 style="font-size: 14px;">Attendance Rate</h3>
-                            <div id="empModalAttendanceRate" style="font-size: 32px; font-weight: 800; color: #10b981; text-align: center; padding: 10px;">0%</div>
+
+                        <div class="chart-box" style="background: white; border: 1px solid #e2e8f0;">
+                            <div class="skill-category-title">⭐ Primary Expertise</div>
+                            <div id="empModalPrimarySkills" class="skill-set-container">
+                                <span style="color:#94a3b8; font-size:12px;">Loading...</span>
+                            </div>
+
+                            <div class="skill-category-title">➕ Secondary Competencies</div>
+                            <div id="empModalSecondarySkills" class="skill-set-container">
+                                <span style="color:#94a3b8; font-size:12px;">Loading...</span>
+                            </div>
                         </div>
                     </div>
-                    <!-- Main: Charts & History -->
+
+                    <!-- Main: Stats & History -->
                     <div style="display: flex; flex-direction: column; gap: 25px;">
-                        <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px;">
-                            <div class="chart-box">
-                                <h3 style="font-size: 14px;">Split</h3>
-                                <canvas id="empModalAttendanceChart"></canvas>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+                            <div class="chart-box" style="background: white; border: 1px solid #e2e8f0; text-align: center;">
+                                <h3 style="font-size: 13px; color: #64748b; font-weight: 600; text-transform: uppercase;">Attendance Score</h3>
+                                <div id="empModalAttendanceRate" style="font-size: 36px; font-weight: 800; color: #10b981; margin: 10px 0;">0%</div>
+                                <div style="font-size: 11px; color: #94a3b8;">Reliability Index</div>
                             </div>
-                            <div class="chart-box">
-                                <h3 style="font-size: 14px;">Progress</h3>
-                                <canvas id="empModalTaskChart"></canvas>
+                            <div class="chart-box" style="background: white; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: center;">
+                                <canvas id="empModalAttendanceChart" style="max-height: 80px;"></canvas>
+                            </div>
+                            <div class="chart-box" style="background: white; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: center;">
+                                <canvas id="empModalTaskChart" style="max-height: 80px;"></canvas>
                             </div>
                         </div>
-                        <div class="chart-box">
-                            <h3 style="font-size: 14px;">Task History</h3>
-                            <div id="empModalTaskList" style="max-height: 150px; overflow-y: auto; margin-bottom: 15px;"></div>
+
+                        <div class="chart-box" style="background: white; border: 1px solid #e2e8f0; flex: 1;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #f1f5f9; padding-bottom: 15px;">
+                                <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: #1e293b;">Work History & Historical Performance</h3>
+                                <button style="background: #f1f5f9; color: #475569; border: none; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: default;">Current Month</button>
+                            </div>
                             
-                            <h3 style="font-size: 14px; border-top: 1px solid #f1f5f9; padding-top: 15px; margin-top: 15px;">📅 Daily History</h3>
-                            <div style="overflow-x: auto;">
-                                <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                            <h4 style="font-size: 12px; color: #64748b; text-transform: uppercase; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;"><i class="fas fa-tasks"></i> Recent Task Log</h4>
+                            <div id="empModalTaskList" style="max-height: 250px; overflow-y: auto; margin-bottom: 25px; border-radius: 12px; border: 1px solid #f1f5f9;"></div>
+                            
+                            <h4 style="font-size: 12px; color: #64748b; text-transform: uppercase; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;"><i class="fas fa-calendar-check"></i> Daily Punch Record</h4>
+                            <div style="overflow-x: auto; border: 1px solid #f1f5f9; border-radius: 12px;">
+                                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
                                     <thead>
-                                        <tr style="border-bottom: 1px solid #f1f5f9; color: #94a3b8;">
-                                            <th style="padding: 8px; text-align: left;">Date</th>
-                                            <th style="padding: 8px; text-align: left;">Status</th>
+                                        <tr style="background: #f8fafc; border-bottom: 1px solid #f1f5f9; color: #94a3b8;">
+                                            <th style="padding: 12px 15px; text-align: left; font-weight: 600;">Working Date</th>
+                                            <th style="padding: 12px 15px; text-align: left; font-weight: 600;">Presence Status</th>
+                                            <th style="padding: 12px 15px; text-align: left; font-weight: 600;">Department</th>
                                         </tr>
                                     </thead>
                                     <tbody id="empModalProgressBody"></tbody>
@@ -793,6 +930,6 @@
     <!-- Legacy ID for script compatibility if any -->
     <div id="teamDirectoryModal" style="display:none;"></div>
 
-    <script src="script.js"></script>
+    <script src="script.js?v=2"></script>
 </body>
 </html>

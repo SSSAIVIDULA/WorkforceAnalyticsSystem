@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Task Management | Workforce Analytics</title>
+  <title>Production Task Management | Workforce Analytics</title>
   <link rel="stylesheet" href="style.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
@@ -367,104 +367,238 @@
       border-radius: 50%;
       margin-right: 6px;
     }
+
+    /* Tabs System Styles */
+    .tabs-container {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 25px;
+      padding: 5px;
+      background: rgba(255, 255, 255, 0.5);
+      border-radius: 15px;
+      border: 1px solid var(--glass-border);
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 12px 20px;
+      border-radius: 12px;
+      border: none;
+      background: transparent;
+      color: var(--secondary);
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .tab-btn:hover {
+      background: rgba(99, 102, 241, 0.05);
+      color: var(--primary);
+    }
+
+    .tab-btn.active {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+    }
+
+    .dashboard-section {
+      display: none;
+      animation: slideIn 0.4s ease-out;
+    }
+
+    .dashboard-section.active {
+      display: block;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(15px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Side-by-Side Execution Layout */
+    .dashboard-row {
+      display: flex;
+      gap: 25px;
+      margin-top: 10px;
+      height: calc(100vh - 350px);
+      min-height: 550px;
+    }
+
+    .left-panel {
+      flex: 1.8;
+      background: white;
+      border-radius: 20px;
+      border: 1px solid #e2e8f0;
+      padding: 25px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .right-panel {
+      flex: 1.2;
+      background: white;
+      border-radius: 20px;
+      border: 1px solid #e2e8f0;
+      padding: 25px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      border-left: 1px solid #e2e8f0;
+    }
+
+    @media (max-width: 1024px) {
+      .dashboard-row {
+        flex-direction: column;
+        height: auto;
+      }
+      .left-panel, .right-panel {
+        height: 600px;
+      }
+    }
   </style>
 </head>
 
 <body onload="loadTasks()">
   <div class="container">
     <div class="premium-card">
+      <div style="text-align: left; margin-bottom: 20px;">
+        <button onclick="goSupervisor()" class="btn-premium btn-secondary" style="width: auto; padding: 8px 16px; background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0;">← Back to Menu</button>
+      </div>
+
       <div class="header-section">
-        <h2>Manage Daily Tasks</h2>
-        <button onclick="goSupervisor()" class="btn-premium btn-secondary">Dashboard</button>
+        <h2>Production Management System</h2>
       </div>
 
-      <div class="section-title">1. Create New Task</div>
-      <div class="grid-layout">
-        <div class="form-group">
-          <label>Task Name</label>
-          <select id="taskName" class="form-control" onchange="autoFillTaskDetails()">
-            <option value="">Select Task...</option>
-            <option value="Raw Material Intake">Raw Material Intake</option>
-            <option value="Cleaning & Preparation">Cleaning & Preparation</option>
-            <option value="Processing / Cutting">Processing / Cutting</option>
-            <option value="Production / Cooking">Production / Cooking</option>
-            <option value="Quality Check">Quality Check</option>
-            <option value="Packaging">Packaging</option>
-            <option value="Labeling">Labeling</option>
-            <option value="Dispatch">Dispatch</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Section</label>
-          <select id="taskSection" class="form-control" onchange="autoFillSkillsBySection()">
-            <option value="Raw Material Prep">Raw Material Prep</option>
-            <option value="Processing">Processing</option>
-            <option value="Production">Production</option>
-            <option value="Quality Control">Quality Control</option>
-            <option value="Packaging">Packaging</option>
-            <option value="Labeling">Labeling</option>
-            <option value="Dispatch">Dispatch</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Priority</label>
-          <select id="taskPriority" class="form-control">
-            <option value="High">High Priority</option>
-            <option value="Medium" selected>Medium Priority</option>
-            <option value="Low">Low Priority</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Employees Needed</label>
-          <input type="number" id="employeesNeeded" class="form-control" min="1" value="1">
-        </div>
-        <div class="form-group">
-          <label>Deadline</label>
-          <input type="date" id="taskDeadline" class="form-control">
-        </div>
-        <div class="form-group">
-          <label>Required Skills (Auto-filled)</label>
-          <input type="text" id="taskSkill" class="form-control" readonly style="background: #f1f5f9;">
-        </div>
+      <!-- Tab Navigation -->
+      <div class="tabs-container">
+        <button class="tab-btn active" id="btn-create" onclick="showDashboardSection('create')">
+          <span>📝</span> 1. Production Planning
+        </button>
+        <button class="tab-btn" id="btn-execution" onclick="showDashboardSection('execution')">
+          <span>⚙️</span> 2. Production Execution & Assignment
+        </button>
       </div>
-      <button onclick="createTask()" class="btn-premium btn-primary" style="width: 100%; margin-top: 10px;">Create
-        Task</button>
-    </div>
 
-    <div class="grid-layout">
-      <div class="premium-card">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid var(--primary); padding-bottom: 10px;">
-          <h3 class="section-title" style="margin: 0; border: none;">2. Task Audit</h3>
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <label for="taskFilterDate" style="font-size: 13px; font-weight: 600; color: var(--secondary);">View Date:</label>
-            <input type="date" id="taskFilterDate" class="form-control" style="width: auto; padding: 6px 12px; font-size: 13px;" onchange="loadTasks()">
+      <!-- 1. Create Task Section -->
+      <div id="create" class="dashboard-section active">
+        <div class="section-title">1. New Task Configuration</div>
+        <div class="grid-layout" style="grid-template-columns: 1fr 1fr; gap: 20px;">
+          <div class="form-group">
+            <label>Task Description</label>
+            <input type="text" id="taskName" class="form-control" placeholder="Generated based on section/order" onkeyup="autoFillSkillsBySection()">
+          </div>
+          <div class="form-group">
+            <label>Production Section</label>
+            <select id="taskSection" class="form-control" onchange="autoFillTaskDetails()">
+              <option value="Yarn Preparation">Yarn Preparation</option>
+              <option value="Knitting">Knitting</option>
+              <option value="Dyeing">Dyeing</option>
+              <option value="Drying">Drying</option>
+              <option value="Quality Check">Quality Check</option>
+              <option value="Packaging">Packaging</option>
+              <option value="Labeling">Labeling</option>
+              <option value="Dispatch">Dispatch</option>
+              <option value="Maintenance">Maintenance</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Priority Level</label>
+            <select id="taskPriority" class="form-control">
+              <option value="High">High Priority</option>
+              <option value="Medium" selected>Medium Priority</option>
+              <option value="Low">Low Priority</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Employees Needed</label>
+            <input type="number" id="employeesNeeded" class="form-control" min="1" value="1">
+          </div>
+          <div class="form-group">
+            <label>Deadline Date</label>
+            <input type="date" id="taskDeadline" class="form-control">
+          </div>
+          <div class="form-group">
+            <label>Required Skills (Auto-identified)</label>
+            <input type="text" id="taskSkill" class="form-control" readonly style="background: #f1f5f9;">
           </div>
         </div>
-        <div id="taskList" class="task-list-container">
-          <!-- Tasks will be injected here -->
-        </div>
+        <button onclick="createTask()" class="btn-premium btn-primary" style="width: 100%; margin-top: 20px; font-size: 16px;">
+          Deploy Production Task
+        </button>
       </div>
 
-      <div class="premium-card">
-        <div class="premium-card" style="padding: 25px; min-height: 400px; display: flex; flex-direction: column;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h3 class="section-title" style="margin: 0;">3. Smart Suggestions</h3>
-            <div id="selectionCounter"
-              style="display: none; background: #6366f1; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">
-              0 Selected
+      <!-- 2. Execution & Assignment Combined Section -->
+      <div id="execution" class="dashboard-section">
+        <div class="dashboard-row">
+          
+          <!-- Left Panel: Audit -->
+          <div class="left-panel">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid var(--primary); padding-bottom: 12px;">
+              <h3 style="margin: 0; font-size: 18px; color: #1e293b; font-weight: 800;">Production Task Audit</h3>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <label style="font-size: 12px; font-weight: 600; color: var(--secondary);">Filter:</label>
+                <input type="date" id="taskFilterDate" class="form-control" style="width: auto; padding: 6px 10px; font-size: 12px;" onchange="loadTasks()">
+              </div>
+            </div>
+
+            <div id="sectionHistoryContainer" style="display: none; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px; margin-bottom: 20px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h4 id="historySectionName" style="margin: 0; font-size: 14px; color: #1e293b;">Section Performance</h4>
+                <div id="sectionInsightText" style="font-size: 11px; color: #6366f1; font-weight: 700;"></div>
+              </div>
+              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                <div style="text-align: center;">
+                  <div style="font-size: 9px; color: #94a3b8; text-transform: uppercase;">Pending</div>
+                  <div id="histPending" style="font-size: 16px; font-weight: 800;">0</div>
+                </div>
+                <div style="text-align: center;">
+                  <div style="font-size: 9px; color: #94a3b8; text-transform: uppercase;">Assigned</div>
+                  <div id="histEmployees" style="font-size: 16px; font-weight: 800;">0</div>
+                </div>
+                <div style="text-align: center;">
+                  <div style="font-size: 9px; color: #94a3b8; text-transform: uppercase;">Done</div>
+                  <div id="histCompleted" style="font-size: 16px; font-weight: 800; color: #10b981;">0</div>
+                </div>
+              </div>
+            </div>
+
+            <div id="taskList" class="task-list-container" style="max-height: none; flex: 1;">
+              <!-- Items injected here -->
             </div>
           </div>
 
-          <p id="selectionHint" class="hint-text">Select a task on the left to see matching staff members.</p>
-          <div id="suggestedEmployees" style="flex: 1;"></div>
+          <!-- Right Panel: Intelligence -->
+          <div class="right-panel">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+              <h3 style="margin: 0; font-size: 18px; color: #1e293b; font-weight: 800;">Assign Staff</h3>
+              <div id="selectionCounter" style="display: none; background: #6366f1; color: white; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;">
+                0 Selected
+              </div>
+            </div>
 
-          <!-- Assignment Actions -->
-          <div id="assignmentActions"
-            style="display: none; padding-top: 20px; border-top: 1px dashed #e2e8f0; margin-top: 20px;">
-            <button onclick="confirmTaskAssignment()" class="btn-premium" style="width: 100%; justify-content: center;">
-              Confirm Assignment
-            </button>
+            <p id="selectionHint" class="hint-text" style="color: #94a3b8; font-size: 13px;">Select a task on the left to see staff recommendations.</p>
+            <div id="suggestedEmployees" style="flex: 1;"></div>
+            
+            <div id="assignmentActions" style="display: none; padding-top: 20px; border-top: 1px dashed #e2e8f0; margin-top: 15px;">
+              <button onclick="confirmTaskAssignment()" class="btn-premium btn-primary" style="width: 100%; border-radius: 12px; font-size: 15px;">
+                Confirm & Deploy Staff
+              </button>
+            </div>
           </div>
+
         </div>
       </div>
       <!-- Task Detail Modal -->
@@ -480,7 +614,7 @@
               <div class="task-info-panel" id="modalInfoPanel">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                   <div class="info-item">
-                    <div class="info-label">Section</div>
+                    <div class="info-label">Production Stage</div>
                     <div id="modalSection" class="info-value">-</div>
                   </div>
                   <div class="info-item">
@@ -538,6 +672,28 @@
       </div>
 
       <script src="script.js"></script>
+      <script>
+        function showDashboardSection(id) {
+          // Hide all sections
+          document.querySelectorAll('.dashboard-section').forEach(sec => {
+            sec.classList.remove('active');
+          });
+
+          // Deactivate all buttons
+          document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+          });
+
+          // Show selected section and activate its button
+          document.getElementById(id).classList.add('active');
+          document.getElementById('btn-' + id).classList.add('active');
+        }
+
+        // Initialize view
+        window.addEventListener('load', () => {
+          showDashboardSection('create');
+        });
+      </script>
 </body>
 
 </html>

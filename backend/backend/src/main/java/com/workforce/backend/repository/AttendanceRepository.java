@@ -16,4 +16,7 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
     List<Attendance> findByEmployeeName(String employeeName);
 
     List<Attendance> findByDateBetween(LocalDate startDate, LocalDate endDate);
+
+    @org.springframework.transaction.annotation.Transactional
+    void deleteByEmployeeName(String employeeName);
 }

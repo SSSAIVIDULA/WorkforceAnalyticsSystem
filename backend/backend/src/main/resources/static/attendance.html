@@ -12,30 +12,37 @@
 
 <div class="attendance-card">
 
-<h2>Attendance</h2>
+<div style="text-align: left; margin-bottom: 25px;">
+    <button onclick="goSupervisor()" class="back-btn" style="width: auto; padding: 10px 20px; background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; font-size: 14px; font-weight: 600; border-radius: 10px; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">← Back to Menu</button>
+</div>
 
-<div class="date-section">
+<h2 style="font-size: 28px; margin-bottom: 30px; font-weight: 800; color: #1e293b;">Production Attendance</h2>
 
-<label>Attendance Date</label>
+<div class="date-section" style="max-width: 300px; margin: 0 auto 25px auto;">
+
+<label style="text-align: center; font-size: 13px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Select Production Date</label>
 
 <input 
 type="date"
 id="selectedDate"
+style="text-align: center; font-weight: 700; font-size: 18px; border-radius: 15px; border: 2px solid #e2e8f0; padding: 15px; margin-top: 10px;"
 onchange="loadEmployees()">
 
 </div>
 
-<div class="summary-box">
+<div class="summary-box" style="background: linear-gradient(135deg, #f0fdf4, #ecfdf5); border: 1px solid #bbf7d0; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.05); padding: 25px; border-radius: 20px;">
 
-<p id="todayDate"></p>
+<div style="flex: 1; text-align: center;">
+    <div style="color: #059669; font-size: 12px; font-weight: 700; text-transform: uppercase; margin-bottom: 5px;">Present</div>
+    <div id="presentCount" style="font-size: 32px; font-weight: 800; color: #065f46;">0</div>
+</div>
 
-<b>Total Present:</b>
-<span id="presentCount">0</span>
+<div style="width: 2px; height: 40px; background: #bbf7d0;"></div>
 
-&nbsp;&nbsp;&nbsp;
-
-<b>Total Absent:</b>
-<span id="absentCount">0</span>
+<div style="flex: 1; text-align: center;">
+    <div style="color: #dc2626; font-size: 12px; font-weight: 700; text-transform: uppercase; margin-bottom: 5px;">Absent</div>
+    <div id="absentCount" style="font-size: 32px; font-weight: 800; color: #991b1b;">0</div>
+</div>
 
 </div>
 
@@ -45,9 +52,7 @@ onchange="loadEmployees()">
 
 </div>
 
-<br>
-
-<button onclick="goSupervisor()">Back</button>
+</div>
 
 <p id="attMsg"></p>
 

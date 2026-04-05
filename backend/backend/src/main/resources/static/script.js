@@ -58,6 +58,8 @@ function switchTab(tabId, element) {
         if (typeof loadOrders === 'function') loadOrders();
     } else if (tabId === 'tab-order-analytics') {
         if (typeof loadOrderAnalytics === 'function') loadOrderAnalytics();
+    } else if (tabId === 'tab-order-history') {
+        if (typeof loadAllOrderHistory === 'function') loadAllOrderHistory();
     }
 }
 
@@ -94,10 +96,11 @@ function addEmployee() {
     let password = document.getElementById("password").value.trim();
     let role = document.getElementById("role").value;
 
-    let selectedSkills = [];
-    let skillCheckboxes = document.querySelectorAll('input[name="empSkill"]:checked');
-    skillCheckboxes.forEach(cb => selectedSkills.push(cb.value));
-    let skill = selectedSkills.join(", ");
+    let primarySkills = [];
+    document.querySelectorAll('input[name="primarySkill"]:checked').forEach(cb => primarySkills.push(cb.value));
+    
+    let secondarySkills = [];
+    document.querySelectorAll('input[name="secondarySkill"]:checked').forEach(cb => secondarySkills.push(cb.value));
 
     let employeeId = document.getElementById("employeeId").value.trim();
     let phoneNumber = document.getElementById("phoneNumber").value.trim();
@@ -107,10 +110,27 @@ function addEmployee() {
         return;
     }
 
+    if (primarySkills.length === 0) {
+        document.getElementById("msg").style.color = "red";
+        document.getElementById("msg").innerHTML = "At least one Primary Skill is required";
+        return;
+    }
+
+    const payload = {
+        username,
+        password,
+        role,
+        primarySkills: primarySkills.join(", "),
+        secondarySkills: secondarySkills.join(", "),
+        skill: primarySkills.concat(secondarySkills).join(", "), // Keep legacy field for compatibility
+        employeeId,
+        phoneNumber
+    };
+
     fetch("/api/addEmployee", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password, role, skill, employeeId, phoneNumber })
+        body: JSON.stringify(payload)
     })
         .then(async res => {
             if (res.ok) {
@@ -120,22 +140,23 @@ function addEmployee() {
                 throw new Error(errorData.message || "Registration failed");
             }
         })
-        .then(data => {
+        .then(() => {
             document.getElementById("msg").style.color = "lightgreen";
-            document.getElementById("msg").innerHTML = `Employee added successfully ✓<br><span style="color:#10b981; font-size:16px; font-weight:bold;">Assigned Employee ID: ${data.employeeId}</span>`;
+            document.getElementById("msg").innerHTML = "Employee added successfully ✓";
 
             document.getElementById("username").value = "";
             document.getElementById("password").value = "";
+            document.getElementById("employeeId").value = "";
             document.getElementById("phoneNumber").value = "";
 
-            document.querySelectorAll('input[name="empSkill"]').forEach(cb => {
+            document.querySelectorAll('input[name="primarySkill"], input[name="secondarySkill"]').forEach(cb => {
                 cb.checked = false;
                 cb.parentElement.classList.remove('selected');
             });
 
             setTimeout(() => {
                 window.location = "attendance.html";
-            }, 3000);
+            }, 1000);
         })
         .catch((err) => {
             console.error("Add Employee Error:", err);
@@ -168,16 +189,26 @@ function login() {
         .then(res => res.json())
         .then(result => {
 
-            if (result) {
+            if (result && result.username) {
                 localStorage.setItem("username", result.username);
-                window.location = "employee-dashboard.html";
+                
+                let role = result.role ? result.role.toLowerCase() : 'employee';
+                localStorage.setItem("role", role);
+                
+                if (role === 'manager') {
+                    window.location = "manager-dashboard.html";
+                } else if (role === 'supervisor') {
+                    window.location = "task-management.html";
+                } else {
+                    window.location = "employee-dashboard.html";
+                }
             } else {
-                document.getElementById("msg").innerHTML = "Invalid login";
+                document.getElementById("msg").innerHTML = "Invalid login credentials";
             }
 
         })
         .catch(() => {
-            document.getElementById("msg").innerHTML = "Server error";
+            document.getElementById("msg").innerHTML = "Invalid login or server error";
         });
 
 }
@@ -191,6 +222,7 @@ function loadEmployees() {
 
     let today = new Date().toISOString().split('T')[0];
     let dateInput = document.getElementById("selectedDate");
+    if (!dateInput) return;
 
     if (dateInput.value === "") {
         dateInput.value = today;
@@ -272,7 +304,7 @@ function markAttendance(name, status) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
             employeeName: name,
-            date: today,
+            date: (document.getElementById('selectedDate') ? document.getElementById('selectedDate').value : new Date().toISOString().split('T')[0]),
             status: status
         })
     })
@@ -288,25 +320,161 @@ function markAttendance(name, status) {
 let selectedTaskId = null;
 
 const FACTORY_TASKS = {
-    "Raw Material Intake": { section: "Raw Material Prep", skills: "Cleaning, Sorting, Basic Handling" },
-    "Cleaning & Preparation": { section: "Raw Material Prep", skills: "Cleaning, Sorting, Basic Handling" },
-    "Processing / Cutting": { section: "Processing", skills: "Cutting, Machine Handling, Food Processing" },
-    "Production / Cooking": { section: "Production", skills: "Cooking, Equipment Operation, Batch Processing" },
-    "Quality Check": { section: "Quality Control", skills: "Inspection, Food Safety, Quality Assurance" },
-    "Packaging": { section: "Packaging", skills: "Packing, Sealing, Handling" },
-    "Labeling": { section: "Labeling", skills: "Label Handling, Barcode Processing" },
-    "Dispatch": { section: "Dispatch", skills: "Warehouse Handling, Logistics Coordination" }
+    "Yarn Prep": { section: "Yarn Preparation", skills: "Yarn Handling" },
+    "Knitting": { section: "Knitting", skills: "Knitting Machine Operation" },
+    "Dyeing": { section: "Dyeing", skills: "Dyeing Process" },
+    "Drying": { section: "Drying", skills: "Drying Operation" },
+    "Quality Check": { section: "Quality Check", skills: "Quality Inspection" },
+        "Packaging": { section: "Packaging", skills: "Packaging" },
+    "Labeling": { section: "Labeling", skills: "Labeling & Tagging" },
+    "Dispatch": { section: "Dispatch", skills: "Dispatch Handling" },
+    "Machine Maintenance": { section: "Maintenance", skills: "Machine Maintenance" }
 };
 
 const SECTION_SKILLS = {
-    "Raw Material Prep": "Cleaning, Sorting, Basic Handling",
-    "Processing": "Cutting, Machine Handling, Food Processing",
-    "Production": "Cooking, Equipment Operation, Batch Processing",
-    "Quality Control": "Inspection, Food Safety, Quality Assurance",
-    "Packaging": "Packing, Sealing, Handling",
-    "Labeling": "Label Handling, Barcode Processing",
-    "Dispatch": "Warehouse Handling, Logistics Coordination"
+    "Yarn Preparation": "Yarn Handling",
+    "Knitting": "Knitting Machine Operation",
+    "Dyeing": "Dyeing Process",
+    "Drying": "Drying Operation",
+    "Quality Check": "Quality Inspection",
+    "Packaging": "Packaging",
+    "Labeling": "Labeling & Tagging",
+    "Dispatch": "Dispatch Handling",
+    "Maintenance": "Machine Maintenance"
 };
+
+let currentOrderInModal = null; // Store for task generation
+
+function generateTaskName(section, order) {
+  if (!order) return `Task for ${section}`;
+  
+  const productType = order.productType || "Socks";
+  const units = order.units || 0;
+
+  switch(section) {
+    case "Yarn Preparation":
+      return `Prepare yarn for ${units} units of ${productType}`;
+
+    case "Knitting":
+      return `Produce ${units} units of ${productType} (Knitting)`;
+
+    case "Dyeing":
+      return `Dye ${units} units of ${productType}`;
+
+    case "Drying":
+      return `Dry ${units} units of ${productType}`;
+
+    case "Quality Check":
+      return `Inspect quality of ${units} units of ${productType}`;
+
+    case "Packaging":
+      return `Package ${units} units of ${productType}`;
+
+    case "Labeling":
+      return `Label and tag ${units} units`;
+
+    case "Dispatch":
+      return `Dispatch ${units} units to client`;
+
+    case "Maintenance":
+      return `Perform machine maintenance for production line`;
+
+    default:
+      return `Task for ${section}`;
+  }
+}
+
+// ======================
+// SECTION WORKLOAD DATA (NEW)
+// ======================
+const sectionData = {
+  "Yarn Preparation": { assigned: 600, completed: 450 },
+  "Knitting": { assigned: 500, completed: 320 },
+  "Dyeing": { assigned: 400, completed: 300 },
+  "Drying": { assigned: 300, completed: 250 },
+  "Quality Check": { assigned: 280, completed: 150 },
+  "Packaging": { assigned: 350, completed: 200 },
+  "Labeling": { assigned: 420, completed: 380 },
+  "Dispatch": { assigned: 200, completed: 50 },
+  "Maintenance": { assigned: 150, completed: 120 }
+};
+
+const sectionHistory = {
+  "Yarn Preparation": { pending: 50, employees: 2, completed: 550 },
+  "Knitting": { pending: 80, employees: 4, completed: 420 },
+  "Dyeing": { pending: 90, employees: 3, completed: 310 },
+  "Drying": { pending: 40, employees: 2, completed: 410 },
+  "Quality Check": { pending: 130, employees: 3, completed: 150 },
+  "Packaging": { pending: 120, employees: 3, completed: 300 },
+  "Labeling": { pending: 40, employees: 2, completed: 380 },
+  "Dispatch": { pending: 150, employees: 2, completed: 50 },
+  "Maintenance": { pending: 30, employees: 2, completed: 120 }
+};
+
+const employeeWorkload = {
+  Ravi: { todayTasks: 2, yesterdayPending: 1 },
+  Meena: { todayTasks: 0, yesterdayPending: 0 },
+  Arjun: { todayTasks: 3, yesterdayPending: 0 },
+  Sita: { todayTasks: 1, yesterdayPending: 0 },
+  Somu: { todayTasks: 0, yesterdayPending: 2 }
+};
+
+function getSectionInsight(section) {
+  let data = sectionHistory[section];
+  if (!data) return "Yesterday's data unavailable for this section.";
+  return `Yesterday ${section} had ${data.pending} pending units with ${data.employees} employees. Consider assigning more workers today.`;
+}
+
+function getEmployeeStatus(emp) {
+    if (emp.todayTasks >= 3) return "Overloaded";
+    if (emp.todayTasks > 0) return "Busy";
+    return "Available";
+}
+
+const historyData = {
+  "Yarn Preparation": [
+    { day: "Yesterday", assigned: 450, completed: 400 },
+    { day: "2 Days Ago", assigned: 500, completed: 480 }
+  ],
+  "Knitting": [
+    { day: "Yesterday", assigned: 450, completed: 400 },
+    { day: "2 Days Ago", assigned: 500, completed: 480 }
+  ],
+  "Dyeing": [
+    { day: "Yesterday", assigned: 380, completed: 360 },
+    { day: "2 Days Ago", assigned: 420, completed: 390 }
+  ],
+  "Packaging": [
+    { day: "Yesterday", assigned: 300, completed: 250 },
+    { day: "2 Days Ago", assigned: 320, completed: 310 }
+  ]
+};
+
+function calculatePending(section) {
+    const data = sectionData[section];
+    if (!data) return 0;
+    return data.assigned - data.completed;
+}
+
+function getHistoricalStats(section) {
+    return historyData[section] || [];
+}
+
+function suggestEmployeeCount(section) {
+    const pending = calculatePending(section);
+    if (pending > 200) return "4-5";
+    if (pending > 100) return "3-4";
+    if (pending > 50) return "2-3";
+    return "1-2";
+}
+
+function getPerformanceThreshold(section) {
+    const history = getHistoricalStats(section);
+    if (history.length === 0) return 80;
+    const avgCompleted = history.reduce((sum, h) => sum + h.completed, 0) / history.length;
+    const avgAssigned = history.reduce((sum, h) => sum + h.assigned, 0) / history.length;
+    return Math.round((avgCompleted / avgAssigned) * 100);
+}
 
 function autoFillSkillsBySection() {
     let section = document.getElementById("taskSection").value;
@@ -318,6 +486,11 @@ function autoFillSkillsBySection() {
 }
 
 function autoFillTaskDetails() {
+    let section = document.getElementById("taskSection")?.value;
+    if (section && currentOrderInModal) {
+        document.getElementById("taskName").value = generateTaskName(section, currentOrderInModal);
+    }
+    
     let taskName = document.getElementById("taskName").value.trim().toLowerCase();
     let match = Object.keys(FACTORY_TASKS).find(k => k.toLowerCase() === taskName);
     if (match) {
@@ -394,16 +567,17 @@ function loadTasks() {
                 let manualTasks = [];
 
                 tasks.forEach(task => {
-                    if (task.orderId && task.orderCode) {
-                        if (!orderGroups[task.orderCode]) {
-                            orderGroups[task.orderCode] = {
-                                orderCode: task.orderCode,
-                                customerName: task.customerName,
-                                orderDescription: task.orderDescription,
+                    let groupKey = task.orderCode || task.orderId; 
+                    if (groupKey) {
+                        if (!orderGroups[groupKey]) {
+                            orderGroups[groupKey] = {
+                                orderCode: task.orderCode || ("Order ID: " + task.orderId),
+                                customerName: task.customerName || "N/A",
+                                orderDescription: task.orderDescription || "Task Breakdown",
                                 tasks: []
                             };
                         }
-                        orderGroups[task.orderCode].tasks.push(task);
+                        orderGroups[groupKey].tasks.push(task);
                     } else {
                         manualTasks.push(task);
                     }
@@ -438,7 +612,7 @@ function loadTasks() {
                     if (hasSkill) {
                         return `
                         <div class="employee-row" 
-                             onclick="openTaskModal(${task.id})" 
+                             onclick="selectTask(${task.id}, '${effectiveSkill.replace(/'/g, "\\'")}', '${(task.taskName || 'Untitled').replace(/'/g, "\\'")}', '${(task.section || '').replace(/'/g, "\\'")}', '${(task.assignedEmployees || '').replace(/'/g, "\\'")}', '${task.status}')" 
                              style="cursor:pointer; margin-bottom: 10px; padding: 12px; border-radius: 8px; transition: 0.3s; background: #fff; ${isSelected}">
                             <div style="flex: 1;">
                                 <b style="font-size: 16px; color: #333;">${task.taskName || 'Untitled'}</b><br>
@@ -448,16 +622,20 @@ function loadTasks() {
                             </div>
                             <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
                                 ${statusLabelHTML}
-                                <button onclick="deleteTask(event, ${task.id})" style="background: #fee2e2; color: #ef4444; border: none; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; transition: 0.2s;">Discard</button>
+                                <div style="display: flex; gap: 5px;">
+                                    ${task.status !== 'Completed' ? `<button onclick="markTaskDone(event, ${task.id})" style="background: #dcfce7; color: #166534; border: none; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer;">Mark Done</button>` : ''}
+                                    <button onclick="deleteTask(event, ${task.id})" style="background: #fee2e2; color: #ef4444; border: none; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer;">Discard</button>
+                                </div>
                             </div>
                         </div>`;
                     } else {
                         return `
                         <div class="employee-row" 
+                             onclick="selectTask(${task.id}, '', '${(task.taskName || 'Untitled').replace(/'/g, "\\'")}', '${(task.section || '').replace(/'/g, "\\'")}', '', '${task.status}')"
                              style="margin-bottom: 10px; padding: 12px; border-radius: 8px; border: 1px solid #fecaca; background: #fff5f5; opacity: 0.7;">
                             <div style="flex: 1;">
                                 <b style="font-size: 16px; color: #999;">${task.taskName || 'Untitled'}</b><br>
-                                <small onclick="openTaskModal(${task.id})" style="cursor:pointer; color: #ef4444;">⚠ No skills set — click to assign section/skills</small>
+                                <small style="cursor:pointer; color: #ef4444;">⚠ No skills set — click to assign section/skills</small>
                             </div>
                             <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
                                 ${statusLabelHTML}
@@ -475,10 +653,10 @@ function loadTasks() {
                             <div>
                                 <strong style="color: #4338ca; font-size: 16px; display:flex; align-items:center; gap:8px;">
                                     <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
-                                    Order: ${group.orderCode}
+                                    Production Order: ${group.orderCode}
                                 </strong>
                                 <div style="font-size: 13px; color: #475569; margin-top: 6px;">
-                                    <b>Customer:</b> ${group.customerName || 'N/A'} &nbsp;|&nbsp; <b>Item:</b> ${group.orderDescription || 'N/A'}
+                                    <b>Customer:</b> ${group.customerName || 'N/A'} &nbsp;|&nbsp; <b>Batch Desc:</b> ${group.orderDescription || 'N/A'}
                                 </div>
                             </div>
                             <div style="color: #4338ca; font-weight: bold; font-size: 14px; background: rgba(255,255,255,0.5); padding: 4px 10px; border-radius: 20px;">
@@ -511,73 +689,89 @@ function loadTasks() {
 
 
 let selectedEmployeesForTask = new Set(); // Global selection state
+let currentTaskAssignedNames = new Set(); // Employees already in the task
 let currentSuggestions = []; // Cache to allow re-rendering
+let selectedSection = null; // Store section to show workload
+let selectedSkill = null;   // Store for real-time refreshes
 
-function selectTask(taskId, skill, name) {
+function selectTask(taskId, skill, name, section, alreadyAssignedString, status) {
     selectedTaskId = taskId;
+    selectedSection = section;
+    selectedSkill = skill; 
     selectedEmployeesForTask.clear();
+
+    const hint = document.getElementById("selectionHint");
+    const suggestedDiv = document.getElementById("suggestedEmployees");
+
+    if (status === 'Completed') {
+        currentSuggestions = [];
+        if (suggestedDiv) suggestedDiv.innerHTML = `
+            <div style="text-align: center; padding: 40px 20px;">
+                <div style="font-size: 48px; margin-bottom: 10px;">✅</div>
+                <p style="color: #10b981; font-weight: 700; margin: 0;">Task Already Completed</p>
+                <p style="color: #64748b; font-size: 13px; margin-top: 5px;">No further staff assignment needed for this production stage.</p>
+            </div>
+        `;
+        if (hint) hint.style.display = "none";
+        document.getElementById("assignmentActions").style.display = "none";
+        return;
+    }
+    
+    currentTaskAssignedNames.clear();
+    if (alreadyAssignedString) {
+        alreadyAssignedString.split(",").forEach(e => {
+            let n = e.trim();
+            if (n) currentTaskAssignedNames.add(n);
+        });
+    }
+
     updateSelectionUI();
 
-    document.getElementById("selectionHint").innerText = "Suggesting employees for: " + name;
+    if (hint) {
+        hint.style.display = "block";
+        hint.innerText = "Suggesting employees for: " + name;
+    }
+    
+    // 1. Fetch Real Section History (Yesterday)
+    fetch(`/api/sectionHistory?section=${encodeURIComponent(section)}`)
+        .then(res => res.json())
+        .then(hist => {
+            const historyPanel = document.getElementById("sectionHistoryContainer");
+            if (historyPanel) {
+                historyPanel.style.display = "block";
+                document.getElementById("historySectionName").innerText = "Yesterday: " + section;
+                document.getElementById("sectionInsightText").innerText = hist.insight || `Yesterday ${section} had ${hist.pendingUnits} units with ${hist.employeesAssigned} employees.`;
+                
+                document.getElementById("histPending").innerText = hist.pendingUnits;
+                document.getElementById("histEmployees").innerText = hist.employeesAssigned;
+                document.getElementById("histCompleted").innerText = hist.unitsCompleted;
+            }
+        });
+
+    // 2. Fetch Real Today stats for the load panel
+    fetch(`/api/sectionStats?section=${encodeURIComponent(section)}`)
+        .then(res => res.json())
+        .then(stats => {
+            // We'll use this in renderSuggestedEmployees if we want, 
+            // or just update global sectionData for that section.
+            sectionData[section] = { assigned: stats.assigned, completed: stats.completed };
+            renderSuggestedEmployees();
+        });
+
     loadTasks();
 
-    // Note: selectTask seems unused in the new modal-based UI, but updated for consistency.
-    // We would need the date passed here if this function were ever revived.
     fetch(`/api/employeesBySkill?skill=${encodeURIComponent(skill)}`)
         .then(res => res.json())
         .then(data => {
             currentSuggestions = data;
             renderSuggestedEmployees();
-            document.getElementById("selectionHint").style.display = "none";
+            if (hint) hint.style.display = "none";
         })
         .catch((err) => {
             console.error("Fetch Error:", err);
             document.getElementById("suggestedEmployees").innerHTML =
                 "<p style='color:red;'>Error fetching employees. " + (err.message || "") + "</p>";
         });
-}
-
-function renderSuggestedEmployees() {
-    let html = "";
-    if (currentSuggestions.length === 0) {
-        html = `
-            <div style="text-align: center; padding: 40px 20px;">
-                <div style="font-size: 48px; margin-bottom: 10px;">👤</div>
-                <p style="color: #ef4444; font-weight: 600; margin: 0;">No matching employees found.</p>
-                <p style="color: #64748b; font-size: 13px; margin-top: 5px;">Adjust required skills in the task form.</p>
-            </div>`;
-    } else {
-        html = '<p style="font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 15px; padding-left: 5px;">Click to select staff members:</p>';
-
-        // Sort: selected ones first
-        let sorted = [...currentSuggestions].sort((a, b) => {
-            let aSel = selectedEmployeesForTask.has(a.username);
-            let bSel = selectedEmployeesForTask.has(b.username);
-            return bSel - aSel;
-        });
-
-        sorted.forEach(emp => {
-            let isSelected = selectedEmployeesForTask.has(emp.username);
-            let initial = emp.username.charAt(0).toUpperCase();
-            html += `
-                <div class="emp-card ${isSelected ? 'selected' : ''}" 
-                     onclick="toggleEmployeeSelection('${emp.username}')"
-                     style="${isSelected ? 'border-color: #6366f1; background: #f5f7ff;' : ''}">
-                    <div class="emp-avatar" style="${isSelected ? 'background: #6366f1;' : ''}">${initial}</div>
-                    <div style="flex: 1;">
-                        <div style="font-weight: 700; color: #1e293b; font-size: 15px;">${emp.username}</div>
-                        <div style="color: #64748b; font-size: 12px; margin-top: 2px;">
-                            <span style="display: inline-block; width: 8px; height: 8px; background: #10b981; border-radius: 50%; margin-right: 5px;"></span>
-                            Qualified Staff
-                        </div>
-                    </div>
-                    <div style="color: #6366f1; font-weight: 800; font-size: 18px;">
-                        ${isSelected ? '✓' : '+'}
-                    </div>
-                </div>`;
-        });
-    }
-    document.getElementById("suggestedEmployees").innerHTML = html;
 }
 
 function toggleEmployeeSelection(username) {
@@ -627,6 +821,34 @@ function confirmTaskAssignment() {
         .catch(() => alert("Error assigning employees."));
 }
 
+function markTaskDone(event, taskId) {
+    if (event) event.stopPropagation();
+    
+    fetch(`/api/updateTaskStatus?taskId=${taskId}&status=Completed`, {
+        method: "POST"
+    })
+        .then(res => res.json())
+        .then(() => {
+            loadTasks();
+            if (typeof loadSupervisorDashboard === "function") {
+                loadSupervisorDashboard();
+            }
+            if (selectedTaskId && selectedSkill) {
+                // Real-time workload & availability refresh
+                fetch(`/api/employeesBySkill?skill=${encodeURIComponent(selectedSkill)}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        currentSuggestions = data;
+                        renderSuggestedEmployees();
+                    });
+            }
+        })
+        .catch(err => {
+            console.error("Error marking task as done:", err);
+            alert("Failed to update task status.");
+        });
+}
+
 function unassignEmployee(event, taskId, employeeName) {
     event.stopPropagation(); // Prevent row click
     if (!confirm(`Are you sure you want to remove ${employeeName} from this task?`)) {
@@ -640,12 +862,21 @@ function unassignEmployee(event, taskId, employeeName) {
         .then(() => {
             loadTasks();
             // If the currently selected task was updated, refresh suggestions
-            if (selectedTaskId === taskId) {
-                // We don't have the skill easily here, but we can clear the selection for safety
-                selectedTaskId = null;
-                document.getElementById("suggestedEmployees").innerHTML = "";
-                document.getElementById("selectionHint").style.display = "block";
-                document.getElementById("selectionHint").innerText = "Select a task on the left to see matching staff members.";
+            if (selectedTaskId === taskId && selectedSkill) {
+                fetch(`/api/employeesBySkill?skill=${encodeURIComponent(selectedSkill)}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        currentSuggestions = data;
+                        renderSuggestedEmployees();
+                    });
+            } else if (selectedTaskId && selectedSkill) {
+               // Even if it wasn't the selected task, workload might have changed
+               fetch(`/api/employeesBySkill?skill=${encodeURIComponent(selectedSkill)}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        currentSuggestions = data;
+                        renderSuggestedEmployees();
+                    });
             }
         })
         .catch(err => {
@@ -763,6 +994,12 @@ function renderModalAssigned(task) {
     `).join("");
 }
 
+function getEmployeeStatus(emp) {
+    if (emp.todayTasks >= 3) return "Overloaded";
+    if (emp.todayTasks > 0) return "Busy";
+    return "Available";
+}
+
 function renderModalSuggestions(employees, task) {
     const container = document.getElementById("modalSuggestionsList");
     const actions = document.getElementById("modalSelectionActions");
@@ -783,19 +1020,64 @@ function renderModalSuggestions(employees, task) {
         return;
     }
 
-    container.innerHTML = available.map(emp => {
+    // Smart Suggestion Logic
+    let primaryCount = available.filter(e => e.matchType === 'Primary').length;
+    let secondaryCount = available.filter(e => e.matchType === 'Secondary').length;
+    let recommendation = "";
+    if (primaryCount > 0) {
+        recommendation = `<div class="smart-suggestion">
+            <i class="fas fa-lightbulb"></i>
+            <span>${primaryCount} employees have primary skills, ${secondaryCount} have secondary. Recommend assigning primary-skilled employees.</span>
+        </div>`;
+    } else if (secondaryCount > 0) {
+        recommendation = `<div class="smart-suggestion" style="background:#fff7ed; border-color:#fed7aa; color:#943412;">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span>No primary-skilled staff available. Using secondary-skilled employees.</span>
+        </div>`;
+    }
+
+    let itemsHTML = recommendation;
+
+    available.forEach(emp => {
         const isSelected = modalSelectedEmployees.has(emp.username);
-        return `
-            <div class="suggestion-item ${isSelected ? 'selected' : ''}" onclick="toggleModalEmpSelection('${emp.username}')">
-                <div style="display: flex; align-items: center;">
-                    <div class="status-active-badge"></div>
-                    <span style="font-weight:600; color:#1e293b;">${emp.username}</span>
+        const status = getEmployeeStatus(emp);
+        const statusClass = "status-" + status.toLowerCase();
+        
+        const skillBadge = emp.matchType === 'Primary' 
+            ? `<span class="skill-badge skill-primary">Primary</span>`
+            : (emp.matchType === 'Secondary' ? `<span class="skill-badge skill-secondary">Secondary</span>` : "");
+
+        const pendingWarning = emp.yesterdayPending > 0 
+            ? `<div class="warning-text"><i class="fas fa-clock"></i> Has ${emp.yesterdayPending} unfinished task from yesterday</div>`
+            : "";
+
+        itemsHTML += `
+            <div class="suggestion-item ${isSelected ? 'selected' : ''}" onclick="toggleModalEmpSelection('${emp.username}')" 
+                 style="display: flex; flex-direction: column; align-items: stretch; padding: 15px; border-bottom: 1px solid #f1f5f9; position: relative;">
+                
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-weight:700; color:#1e293b; font-size: 15px;">${emp.username}</span>
+                        ${skillBadge}
+                    </div>
+                    <span class="status-badge ${statusClass}">${status}</span>
                 </div>
-                <div style="color:var(--primary); font-weight:800;">${isSelected ? '✓' : '+'}</div>
+
+                <div style="display: flex; gap: 15px; margin-bottom: 5px;">
+                    <div class="info-label">Today Tasks: <span class="info-value">${emp.todayTasks}</span></div>
+                    <div class="info-label">Skills: <span class="info-value" style="font-size:11px;">${emp.primarySkills || 'None'}</span></div>
+                </div>
+
+                ${pendingWarning}
+
+                <div style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color:var(--primary); font-weight:800; font-size: 20px;">
+                    ${isSelected ? '✓' : ''}
+                </div>
             </div>
         `;
-    }).join("");
+    });
 
+    container.innerHTML = itemsHTML;
     actions.style.display = modalSelectedEmployees.size > 0 ? "block" : "none";
 }
 
@@ -904,16 +1186,11 @@ function loadEmployeeStats() {
         .then(res => res.json())
         .then(profile => {
 
-            let deptText = "";
-            if (profile && profile.employeeId) {
-                deptText += "ID: " + profile.employeeId + "  |  ";
-            }
             if (profile && profile.phoneNumber) {
-                deptText += "📞 " + profile.phoneNumber;
+                document.getElementById("empDept").innerText = "📞 " + profile.phoneNumber;
             } else if (profile && profile.department) {
-                deptText += "🏢 " + profile.department;
+                document.getElementById("empDept").innerText = "🏢 " + profile.department;
             }
-            document.getElementById("empDept").innerText = deptText || "Department Information Loading...";
 
             // Display skills as badges
             if (profile && profile.skill) {
@@ -974,8 +1251,6 @@ function loadEmployeeStats() {
             document.getElementById("absentDays").innerText = "?";
         });
 }
-
-
 function loadEmployeeTasks() {
 
     let username = localStorage.getItem("username");
@@ -983,11 +1258,15 @@ function loadEmployeeTasks() {
 
     fetch("/api/tasksByEmployee?employeeName=" + encodeURIComponent(username), { cache: "no-store" })
         .then(res => res.json())
-        .then(tasks => {
+        .then(allTasks => {
+            let tasks = allTasks;
+            const searchDateElem = document.getElementById("empTaskSearchDate");
+            if (searchDateElem && searchDateElem.value) {
+                const searchDate = searchDateElem.value;
+                // Filter by creation date or deadline
+                tasks = allTasks.filter(t => t.date === searchDate || (t.deadline && t.deadline === searchDate));
+            }
 
-            document.getElementById("totalTaskCount").innerText = tasks.length;
-
-            // Task status counts for bar chart
             let statusCounts = { "Pending": 0, "Started": 0, "In Progress": 0, "Completed": 0 };
             tasks.forEach(t => {
                 if (statusCounts.hasOwnProperty(t.status)) {
@@ -1033,23 +1312,59 @@ function loadEmployeeTasks() {
             tasks.forEach(task => {
                 assignedTasks.push(task);
                 let statusColor = "#f59e0b"; // Pending/Default
-                if (task.status === "Completed") statusColor = "#10b981";
-                if (task.status === "In Progress") statusColor = "#8b5cf6";
-                if (task.status === "Started") statusColor = "#3b82f6";
+                let actionBtnHtml = "";
+                
+                if (task.status === "Pending") {
+                    statusColor = "#f59e0b";
+                    actionBtnHtml = `<button onclick="updateTaskStatusFromDashboard(${task.id}, 'In Progress')" 
+                                     style="background: #6366f1; color: white; border: none; padding: 10px 20px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 14px;">
+                                     🚀 Start Operation
+                                     </button>`;
+                } else if (task.status === "In Progress" || task.status === "Started") {
+                    statusColor = "#3b82f6";
+                    actionBtnHtml = `<button onclick="updateTaskStatusFromDashboard(${task.id}, 'Completed')" 
+                                     style="background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 14px;">
+                                     ✅ Mark as Delivered
+                                     </button>`;
+                } else if (task.status === "Completed") {
+                    statusColor = "#10b981";
+                    actionBtnHtml = `<span style="color: #10b981; font-weight: 700; font-size: 14px;">🏁 Completed on ${task.completedDate || 'today'}</span>`;
+                }
 
                 html += `
-                <div class="task-item">
-                    <div style="flex: 1;">
-                        <div style="font-weight: 700; color: #1e293b;">${task.taskName}</div>
-                        <div style="font-size: 12px; color: #64748b; margin-top: 4px;">
-                            ${task.section} • Priority: ${task.priority}<br>
-                            Deadline: ${task.deadline ? task.deadline : task.date}
+                <div class="task-item" style="padding: 25px; border-radius: 20px; margin-bottom: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); background: white; border: 1px solid #e2e8f0; display: block;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
+                        <div style="flex: 1;">
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                                <span style="background: #e0e7ff; color: #4338ca; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 6px;">${task.orderCode || 'PROD-ORDER'}</span>
+                                <span style="color: #64748b; font-size: 12px; font-weight: 600;">Client: ${task.customerName || 'Internal Production'}</span>
+                            </div>
+                            <div style="font-size: 24px; font-weight: 800; color: #1e293b; line-height: 1.3;">📍 ${task.section} Operation</div>
                         </div>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 10px;">
                         <span class="status-badge" style="background: ${statusColor}15; color: ${statusColor}; border: 1px solid ${statusColor}30;">
                             ${task.status}
                         </span>
+                    </div>
+
+                    <div style="background: #f8fafc; border-radius: 12px; padding: 15px; margin-bottom: 20px;">
+                        <div style="font-size: 14px; font-weight: 700; color: #475569; margin-bottom: 6px;">Task Description:</div>
+                        <div style="font-size: 15px; color: #1e293b; line-height: 1.5; font-weight: 600; margin-bottom: 10px;">
+                            ${task.taskName}
+                        </div>
+                        <div style="font-size: 13px; color: #64748b; font-weight: 500; border-top: 1px solid #e2e8f0; padding-top: 10px;">
+                            <span style="font-weight:700;">Order Context:</span> ${task.orderDescription || 'Socks manufacturing production run for specified section.'}
+                        </div>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed #e2e8f0; padding-top: 20px;">
+                        <div style="display: grid; grid-template-columns: 1fr; gap: 20px;">
+                            <div style="font-size: 13px; color: #64748b; font-weight: 600;">
+                                📅 Deadline: <span style="color: #de3a3a;">${task.deadline || task.date || 'TBD'}</span>
+                            </div>
+                        </div>
+                        <div>
+                            ${actionBtnHtml}
+                        </div>
                     </div>
                 </div>`;
             });
@@ -1159,7 +1474,12 @@ function renderCalendar() {
                 if (t.status === "In Progress") badgeClass = "cal-task-progress";
                 if (t.status === "Completed") badgeClass = "cal-task-completed";
 
-                tasksHtml += `<div class="cal-task-pill ${badgeClass}" title="${t.taskName} - ${t.status}">${t.taskName}</div>`;
+                let nameStr = t.taskName || "Untitled";
+                let shortName = nameStr.split(" ").slice(0, 2).join(" ");
+                if (nameStr.split(" ").length > 2) {
+                    shortName += "...";
+                }
+                tasksHtml += `<div class="cal-task-pill ${badgeClass}" title="${nameStr} - ${t.status}">${shortName}</div>`;
             });
         }
 
@@ -1174,13 +1494,11 @@ function renderCalendar() {
     }
 }
 
-
 // ======================
 // MANAGER ANALYTICS
 // ======================
 
 function loadManagerAnalytics() {
-
     // Initialize attendance calendar
     loadMgrAttendanceCalendar();
     
@@ -1192,99 +1510,102 @@ function loadManagerAnalytics() {
         .then(res => res.json())
         .then(employees => {
             document.getElementById("totalEmployees").innerText = employees.length;
+            renderSkillsChart(employees);
         })
         .catch(() => { });
 
-    // Fetch main analytics
-    fetch("/api/managerAnalytics", { cache: "no-store" })
+    // Fetch main analytics from tasks
+    fetch("/api/tasks", { cache: "no-store" })
         .then(res => res.json())
-        .then(data => {
-
-            let total = data.totalTasks || 0;
-            let completed = data.completedTasks || 0;
-            let pending = data.pendingTasks || 0;
-            let present = data.presentEmployees || 0;
-            let absent = data.absentEmployees || 0;
-            let rate = total > 0 ? Math.round((completed / total) * 100) : 0;
+        .then(tasks => {
+            let total = tasks.length;
+            let completed = tasks.filter(t => t.status === "Completed").length;
+            let pending = total - completed;
 
             document.getElementById("totalTasks").innerText = total;
             document.getElementById("totalCompleted").innerText = completed;
             document.getElementById("totalPending").innerText = pending;
-            document.getElementById("completionRate").innerText = rate + "%";
+            document.getElementById("completionRate").innerText = total > 0 ? Math.round((completed / total) * 100) + "%" : "0%";
+
+            renderTaskChart(tasks);
+            loadWorkloadAnalysis();
+        });
+
+    fetch("/api/attendanceByDate?date=" + new Date().toISOString().split('T')[0])
+        .then(res => res.json())
+        .then(attendance => {
+            let present = attendance.filter(a => a.status === "Present").length;
+            let absent = attendance.filter(a => a.status === "Absent").length;
             document.getElementById("totalPresent").innerText = present;
             document.getElementById("totalAbsent").innerText = absent;
-
-            // Task Status Pie Chart
-            new Chart(document.getElementById("taskChart").getContext("2d"), {
-                type: "doughnut",
-                data: {
-                    labels: ["Completed", "Pending", "Other"],
-                    datasets: [{
-                        data: [completed, pending, Math.max(0, total - completed - pending)],
-                        backgroundColor: ["#10b981", "#f59e0b", "#8b5cf6"],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { position: "bottom" }
-                    }
-                }
-            });
-
-            // Attendance Doughnut Chart
-            new Chart(document.getElementById("attendanceChart").getContext("2d"), {
-                type: "doughnut",
-                data: {
-                    labels: ["Present", "Absent"],
-                    datasets: [{
-                        data: [present, absent],
-                        backgroundColor: ["#10b981", "#ef4444"],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { position: "bottom" }
-                    }
-                }
-            });
-
-            // Skills Demand Bar Chart
-            let skillsDemand = data.skillsDemand || {};
-            let skillLabels = Object.keys(skillsDemand);
-            let skillValues = Object.values(skillsDemand);
-
-            let barColors = ["#667eea", "#764ba2", "#f59e0b", "#10b981", "#ef4444",
-                "#3b82f6", "#8b5cf6", "#ec4899", "#14b8a6", "#f97316"];
-
-            new Chart(document.getElementById("skillsChart").getContext("2d"), {
-                type: "bar",
-                data: {
-                    labels: skillLabels,
-                    datasets: [{
-                        label: "Demand Count",
-                        data: skillValues,
-                        backgroundColor: barColors.slice(0, skillLabels.length),
-                        borderRadius: 6,
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true, ticks: { stepSize: 1 } },
-                        x: { ticks: { maxRotation: 45 } }
-                    }
-                }
-            });
-
+            renderAttendanceChart(present, absent);
         })
         .catch(err => {
             console.error("Error loading manager analytics:", err);
+        });
+}
+
+function loadWorkloadAnalysis() {
+    const listEl = document.getElementById("workloadList");
+    if (!listEl) return;
+
+    listEl.innerHTML = `<div style="grid-column: 1 / -1; color: #94a3b8; font-size: 14px; text-align: center;">Analyzing production bottlenecks...</div>`;
+
+    const sections = [
+        "Yarn Preparation", "Knitting", "Dyeing", "Drying", 
+        "Quality Check", "Packaging", "Labeling", "Dispatch", "Maintenance"
+    ];
+
+    fetch(`/api/tasks`)
+        .then(res => res.json())
+        .then(tasks => {
+            let html = "";
+            sections.forEach(section => {
+                let sectionTasks = tasks.filter(t => t.section === section);
+                if (sectionTasks.length === 0) return; // Only show active sections
+
+                let totalAssigned = sectionTasks.length;
+                let totalCompleted = sectionTasks.filter(t => t.status === "Completed").length;
+                let pending = totalAssigned - totalCompleted;
+                let progressPct = totalAssigned > 0 ? Math.round((totalCompleted / totalAssigned) * 100) : 0;
+                
+                let loadStatusBadge = "";
+                if (pending > 5) {
+                    loadStatusBadge = `<span style="background: #fee2e2; color: #ef4444; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 700;">Critical Backlog</span>`;
+                } else if (pending > 0) {
+                    loadStatusBadge = `<span style="background: #fef3c7; color: #d97706; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 700;">In Operation</span>`;
+                } else {
+                    loadStatusBadge = `<span style="background: #dcfce7; color: #16a34a; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 700;">Optimal</span>`;
+                }
+
+                html += `
+                    <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); transition: 0.3s;" onmouseover="this.style.transform='translateY(-2px)';" onmouseout="this.style.transform='translateY(0)';">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <h4 style="margin: 0; font-size: 15px; color: #1e293b; font-weight: 800;">⚙️ ${section}</h4>
+                            ${loadStatusBadge}
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; font-size: 13px;">
+                            <div style="background: #f8fafc; padding: 10px; border-radius: 8px; text-align: center;">
+                                <div style="color: #64748b; margin-bottom: 4px; font-weight: 600;">Assigned Orders</div>
+                                <div style="font-weight: 800; color: #1e293b; font-size: 18px;">${totalAssigned}</div>
+                            </div>
+                            <div style="background: #f8fafc; padding: 10px; border-radius: 8px; text-align: center;">
+                                <div style="color: #64748b; margin-bottom: 4px; font-weight: 600;">Pending</div>
+                                <div style="font-weight: 800; color: #ef4444; font-size: 18px;">${pending}</div>
+                            </div>
+                        </div>
+                        <div style="width: 100%; background: #e2e8f0; height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 8px;">
+                            <div style="height: 100%; background: #10b981; width: ${progressPct}%; box-shadow: 0 0 5px rgba(16,185,129,0.5);"></div>
+                        </div>
+                        <div style="font-size: 12px; color: #64748b; text-align: right; font-weight: 600;">${progressPct}% Throughput</div>
+                    </div>
+                `;
+            });
+            
+            if (html === "") {
+               html = `<div style="grid-column: 1 / -1; background: white; border: 1px dashed #cbd5e1; border-radius: 12px; color: #64748b; font-size: 15px; font-weight: 600; text-align: center; padding: 30px;">🏭 No active production workloads detected. Assign operations from the Supervisor Dashboard to populate live insights.</div>`;
+            }
+            listEl.innerHTML = html;
         });
 }
 
@@ -1451,6 +1772,9 @@ function loadSupervisorDashboard() {
 
     // 3. Start Order Polling for Notifications
     startSupervisorOrderPolling();
+    if (document.getElementById("employeeList")) {
+        loadEmployees();
+    }
 }
 
 function openTeamDirectory() {
@@ -1496,22 +1820,97 @@ function renderEmployeeDirectory(containerId, employees) {
 
     container.innerHTML = employees.map(emp => {
         const initial = emp.username.charAt(0).toUpperCase();
+        
+        let skillsList = (emp.skill || '').split(',').map(s => s.trim()).filter(s => s);
+        let displaySkills = skillsList.slice(0, 2);
+        let extraCount = skillsList.length - 2;
+        
+        let skillsHtml = displaySkills.map(s => 
+            `<span style="background: #e0e7ff; color: #4338ca; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-right: 4px; border: 1px solid #c7d2fe; display: inline-block; white-space: nowrap;">${s}</span>`
+        ).join("");
+        
+        if (extraCount > 0) {
+            skillsHtml += `<span style="background: #f1f5f9; color: #64748b; padding: 2px 6px; border-radius: 4px; font-size: 10px; border: 1px solid #e2e8f0; display: inline-block; white-space: nowrap;">+${extraCount}</span>`;
+        }
+        if (skillsList.length === 0) {
+            skillsHtml = `<span style="color:#94a3b8; font-size:10px;">No skills added</span>`;
+        }
+
+        const dept = emp.department || 'General Staff';
+
         return `
-            <div class="chart-box" onclick="openEmpDetailsModal('${emp.username}')" style="cursor: pointer; transition: all 0.2s; border: 1px solid #eef2ff;" 
+            <div class="chart-box" onclick="openEmpDetailsModal('${emp.username}')" style="cursor: pointer; transition: all 0.2s; border: 1px solid #eef2ff; display: flex; flex-direction: column; min-height: 160px; justify-content: space-between; position: relative;" 
                  onmouseover="this.style.borderColor='#6366f1'; this.style.transform='translateY(-3px)'" 
                  onmouseout="this.style.borderColor='#eef2ff'; this.style.transform='translateY(0)'">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <div style="width: 40px; height: 40px; border-radius: 12px; background: #6366f1; color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 16px;">
-                        ${initial}
+                
+                <div>
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px; border-bottom: 1px dashed #e2e8f0; padding-bottom: 12px;">
+                        <div style="width: 44px; height: 44px; border-radius: 12px; background: #6366f1; color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px;">
+                            ${initial}
+                        </div>
+                        <div style="flex: 1; overflow: hidden;">
+                            <div style="font-weight: 800; color: #1e293b; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${emp.username}</div>
+                            <div style="font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase;">${dept}</div>
+                        </div>
                     </div>
-                    <div>
-                        <div style="font-weight: 700; color: #1e293b; font-size: 14px;">${emp.username}</div>
-                        <div style="font-size: 11px; color: #64748b; text-transform: uppercase; font-weight: 600;">Staff Member</div>
+                    
+                    <div style="margin-bottom: 10px;">
+                        <div style="font-size: 10px; color: #94a3b8; margin-bottom: 4px; text-transform: uppercase; font-weight: 700;">Skills</div>
+                        <div style="display: flex; flex-wrap: wrap; gap: 4px;">${skillsHtml}</div>
+                    </div>
+                </div>
+
+                <div style="margin-top: auto; background: #f8fafc; border-radius: 8px; padding: 8px; display: flex; justify-content: space-between; align-items: center; min-height: 40px;">
+                    <div id="prog_${containerId}_${emp.username.replace(/\s+/g, '')}" style="font-size: 11px; color: #64748b; font-weight: 600; width: 100%; text-align: center;">
+                        <span style="opacity: 0.6;">Loading progress...</span>
                     </div>
                 </div>
             </div>
         `;
     }).join("");
+
+    employees.forEach(emp => {
+        let safeUsername = emp.username.replace(/\s+/g, '');
+        fetch('/api/employeeStats?employeeName=' + encodeURIComponent(emp.username))
+            .then(res => res.json())
+            .then(stats => {
+                let p = stats.present || 0;
+                let a = stats.absent || 0;
+                let total = p + a;
+                let rate = total > 0 ? Math.round((p / total) * 100) : 0;
+                let attdColor = rate >= 75 ? '#10b981' : (rate >= 50 ? '#f59e0b' : '#ef4444');
+                
+                fetch('/api/tasksByEmployee?employeeName=' + encodeURIComponent(emp.username))
+                    .then(res => res.json())
+                    .then(tasks => {
+                        let totalTasks = tasks.length;
+                        let completed = tasks.filter(t => t.status === 'Completed').length;
+                        
+                        const progressEl = document.getElementById(`prog_${containerId}_${safeUsername}`);
+                        if (progressEl) {
+                            progressEl.innerHTML = `
+                                <div style="display: flex; justify-content: space-around; width: 100%; align-items: center;">
+                                    <div style="display: flex; flex-direction: column; align-items: center;">
+                                        <span style="color: ${attdColor}; font-size: 14px; font-weight: 800;">${rate}%</span>
+                                        <span style="font-size: 9px; text-transform: uppercase;">Attd</span>
+                                    </div>
+                                    <div style="width: 1px; height: 20px; background: #e2e8f0;"></div>
+                                    <div style="display: flex; flex-direction: column; align-items: center;">
+                                        <span style="color: #6366f1; font-size: 14px; font-weight: 800;">${completed}/${totalTasks}</span>
+                                        <span style="font-size: 9px; text-transform: uppercase;">Tasks</span>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    });
+            })
+            .catch(() => {
+                const progressEl = document.getElementById(`prog_${containerId}_${safeUsername}`);
+                if (progressEl) {
+                    progressEl.innerHTML = '<span style="color: #ef4444;">Metrics error</span>';
+                }
+            });
+    });
 }
 
 function filterEmployeeDirectory(inputId, containerId) {
@@ -1525,7 +1924,7 @@ let empModalAttChartObj = null;
 let empModalTaskChartObj = null;
 
 function openEmpDetailsModal(username) {
-    document.getElementById("empModalTitle").innerText = `Employee Insights: ${username}`;
+    document.getElementById("empModalTitle").innerText = `Employee Profile: ${username}`;
     document.getElementById("empModalName").innerText = username;
     document.getElementById("empModalAvatar").innerText = username.charAt(0).toUpperCase();
     document.getElementById("empDetailsModal").classList.add("active");
@@ -1535,25 +1934,36 @@ function openEmpDetailsModal(username) {
     if (dirModal) dirModal.classList.remove("active");
 
     // Show loading states
-    document.getElementById("empModalContact").innerText = "Loading profile...";
-    document.getElementById("empModalSkills").innerHTML = "Loading...";
+    document.getElementById("empModalContact").innerText = "Loading...";
+    document.getElementById("empModalEmployeeId").innerText = "EMP-XXXX";
+    document.getElementById("empModalPrimarySkills").innerHTML = "Loading...";
+    document.getElementById("empModalSecondarySkills").innerHTML = "Loading...";
     document.getElementById("empModalAttendanceRate").innerText = "-%";
-    document.getElementById("empModalTaskList").innerHTML = '<p style="color: #94a3b8; font-size: 13px;">Syncing task history...</p>';
-    document.getElementById("empModalProgressBody").innerHTML = '<tr><td colspan="3" style="padding: 15px; text-align: center; color: #94a3b8;">Fetching records...</td></tr>';
+    document.getElementById("empModalTaskList").innerHTML = '<p style="text-align: center; padding: 20px; color: #94a3b8;">Syncing records...</p>';
+    document.getElementById("empModalProgressBody").innerHTML = '<tr><td colspan="3" style="padding: 20px; text-align: center; color: #94a3b8;">Fetching...</td></tr>';
 
     // 1. Fetch Profile
     fetch(`/api/employeeProfile?username=${username}`)
         .then(res => res.json())
         .then(data => {
-            document.getElementById("empModalContact").innerText = data.email || 'No email provided';
-            let skillsHtml = (data.skills || "").split(",").map(skill => skill.trim()).filter(s => s).map(skill => 
-                `<span class="skill-badge" style="margin: 2px; font-size: 10px; padding: 3px 8px;">${skill}</span>`
-            ).join("");
-            document.getElementById("empModalSkills").innerHTML = skillsHtml || '<span style="color:#94a3b8; font-size:11px;">No skills added</span>';
+            document.getElementById("empModalContact").innerText = data.phoneNumber || 'No contact found';
+            document.getElementById("empModalEmployeeId").innerText = data.employeeId || `EMP-${data.id || '???'}`;
+            
+            const renderSkills = (skillsStr, isPrimary) => {
+                if (!skillsStr) return '<span style="color:#94a3b8; font-size:11px;">Not specified</span>';
+                return skillsStr.split(",").map(skill => skill.trim()).filter(s => s).map(skill => 
+                    `<span class="skill-pill ${isPrimary ? 'primary' : 'secondary'}">
+                        ${isPrimary ? '⚡' : '✨'} ${skill}
+                    </span>`
+                ).join("");
+            };
+
+            document.getElementById("empModalPrimarySkills").innerHTML = renderSkills(data.primarySkills || data.skill, true);
+            document.getElementById("empModalSecondarySkills").innerHTML = renderSkills(data.secondarySkills, false);
         });
 
     // 2. Fetch Attendance Stats
-    fetch(`/api/employeeStats?username=${username}`)
+    fetch(`/api/employeeStats?employeeName=${username}`)
         .then(res => res.json())
         .then(data => {
             let p = data.present || 0;
@@ -1578,28 +1988,35 @@ function openEmpDetailsModal(username) {
                             borderWidth: 0
                         }]
                     },
-                    options: { responsive: true, plugins: { legend: { display: false } } }
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } } 
+                    }
                 });
             }
         });
 
     // 3. Fetch Tasks
-    fetch(`/api/tasksByEmployee?username=${username}`)
+    fetch(`/api/tasksByEmployee?employeeName=${username}`)
         .then(res => res.json())
         .then(tasks => {
             let stats = { "Pending": 0, "Started": 0, "In Progress": 0, "Completed": 0 };
             let listHtml = "";
 
-            if (tasks.length === 0) {
-                listHtml = '<p style="color: #94a3b8; font-size: 13px; text-align: center; padding: 20px;">No tasks assigned yet.</p>';
+            if (!tasks || tasks.length === 0) {
+                listHtml = '<p style="color: #94a3b8; font-size: 13px; text-align: center; padding: 30px;">No task assignments found in history.</p>';
             } else {
                 tasks.forEach(t => {
                     if (stats[t.status] !== undefined) stats[t.status]++;
                     let statusColor = t.status === 'Completed' ? '#10b981' : (t.status === 'Pending' ? '#f59e0b' : '#6366f1');
                     listHtml += `
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #f1f5f9;">
-                            <div style="font-size: 13px; font-weight: 500;">${t.taskName}</div>
-                            <span style="font-size: 10px; color: ${statusColor}; background: ${statusColor}10; padding: 2px 8px; border-radius: 10px; border: 1px solid ${statusColor}30;">${t.status}</span>
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid #f8fafc;">
+                            <div>
+                                <div style="font-size: 14px; font-weight: 700; color: #1e293b;">${t.taskName}</div>
+                                <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">ID: ${t.id} • ${t.section || 'General'}</div>
+                            </div>
+                            <span style="font-size: 11px; font-weight: 700; color: ${statusColor}; background: ${statusColor}15; padding: 4px 10px; border-radius: 8px;">${t.status}</span>
                         </div>
                     `;
                 });
@@ -1623,8 +2040,9 @@ function openEmpDetailsModal(username) {
                     },
                     options: { 
                         responsive: true, 
+                        maintainAspectRatio: false,
                         plugins: { legend: { display: false } },
-                        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                        scales: { y: { display: false, beginAtZero: true } }
                     }
                 });
             }
@@ -1636,7 +2054,7 @@ function openEmpDetailsModal(username) {
         .then(records => {
             const body = document.getElementById("empModalProgressBody");
             if (!records || records.length === 0) {
-                body.innerHTML = '<tr><td colspan="3" style="padding: 20px; text-align: center; color: #94a3b8;">No historical records found.</td></tr>';
+                body.innerHTML = '<tr><td colspan="3" style="padding: 30px; text-align: center; color: #94a3b8;">No historical logs available for this period.</td></tr>';
                 return;
             }
 
@@ -1646,19 +2064,22 @@ function openEmpDetailsModal(username) {
             body.innerHTML = records.map(r => {
                 const statusColor = r.status === 'Present' ? '#10b981' : '#ef4444';
                 return `
-                    <tr style="border-bottom: 1px solid #f8fafc;">
-                        <td style="padding: 10px; font-weight: 500; color: #1e293b;">${r.date}</td>
-                        <td style="padding: 10px;">
-                            <span style="color: ${statusColor}; font-weight: 700;">${r.status}</span>
+                    <tr style="border-bottom: 1px solid #f8fafc; transition: background 0.2s;">
+                        <td style="padding: 12px 15px; font-weight: 700; color: #1e293b;">${r.date}</td>
+                        <td style="padding: 12px 15px;">
+                            <span style="display: inline-flex; align-items: center; gap: 6px; color: ${statusColor}; font-weight: 800; font-size: 12px; text-transform: uppercase;">
+                                <div style="width: 8px; height: 8px; border-radius: 50%; background: ${statusColor};"></div>
+                                ${r.status}
+                            </span>
                         </td>
-                        <td style="padding: 10px; color: #64748b;">General</td>
+                        <td style="padding: 12px 15px; color: #64748b; font-weight: 600;">Textile Production</td>
                     </tr>
                 `;
             }).join("");
         })
         .catch(err => {
-            console.error("Error fetching attendance history:", err);
-            document.getElementById("empModalProgressBody").innerHTML = '<tr><td colspan="3" style="padding: 20px; text-align: center; color: #ef4444;">Error loading history.</td></tr>';
+            console.error("Error fetching history:", err);
+            document.getElementById("empModalProgressBody").innerHTML = '<tr><td colspan="3" style="padding: 20px; text-align: center; color: #ef4444;">Access error. Try again.</td></tr>';
         });
 }
 
@@ -1746,7 +2167,7 @@ function loadOrders() {
                         <p style="margin: 10px 0; font-size: 13px; color: #64748b; line-height: 1.5;">${o.orderDescription}</p>
                         <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
                             <div>
-                                <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase;">Qty</div>
+                                <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase;">Units Produced</div>
                                 <div style="font-size: 13px; font-weight: 600; color: #475569;">${o.quantity}</div>
                             </div>
                             <button onclick="openConvertOrderModal(${o.id}, '${safeName}', '${safeSkill}', '${safeDesc}', ${o.quantity}, '${o.priority}')" 
@@ -1789,6 +2210,13 @@ function openConvertOrderModal(id, cust, skill, desc, qty, prio) {
     const modal = document.getElementById("convertOrderModal");
     if (!modal) return;
 
+    // Store for dynamic generation
+    currentOrderInModal = {
+        productType: desc,
+        units: qty,
+        orderId: id
+    };
+
     document.getElementById("convOrderId").value = id;
     document.getElementById("convCustName").innerText = cust;
     document.getElementById("convOrderDesc").innerText = desc || '';
@@ -1799,8 +2227,9 @@ function openConvertOrderModal(id, cust, skill, desc, qty, prio) {
     if (list) list.innerHTML = '';
 
     // Pre-fill first task based on order
-    const defaultName = skill ? skill : 'Production Task';
-    addSubTask(defaultName, 'Manufacturing', skill || '');
+    const section = 'Yarn Preparation';
+    const autoName = generateTaskName(section, currentOrderInModal);
+    addSubTask(autoName, section, skill || '');
 
     modal.classList.add("active");
 }
@@ -1812,9 +2241,10 @@ function addSubTask(name = '', section = '', skill = '') {
 
     // If name is one of FACTORY_TASKS or section is in SECTION_SKILLS, auto-fill skill
     if (!skill) {
-        if (FACTORY_TASKS[name]) {
-            skill = FACTORY_TASKS[name].skills;
-            if (!section) section = FACTORY_TASKS[name].section;
+        let match = Object.keys(FACTORY_TASKS).find(k => k.toLowerCase() === (name || '').trim().toLowerCase());
+        if (match) {
+            skill = FACTORY_TASKS[match].skills;
+            if (!section) section = FACTORY_TASKS[match].section;
         } else if (SECTION_SKILLS[section]) {
             skill = SECTION_SKILLS[section];
         }
@@ -1831,18 +2261,20 @@ function addSubTask(name = '', section = '', skill = '') {
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                 <div style="grid-column: 1 / -1;">
                     <label class="subtask-label">Task Name *</label>
-                    <input type="text" id="st_name_${idx}" class="subtask-input" value="${name}" placeholder="e.g. Raw Material Intake" onchange="autoFillSubTaskSkill(${idx})">
+                    <input type="text" id="st_name_${idx}" class="subtask-input" value="${name}" placeholder="Task name will be auto-generated based on section and order" onchange="autoFillSubTaskSkill(${idx})">
                 </div>
                 <div>
                     <label class="subtask-label">Section</label>
                     <select id="st_section_${idx}" class="subtask-input" onchange="autoFillSubTaskSkill(${idx})">
-                        <option value="Raw Material Prep" ${section === 'Raw Material Prep' ? 'selected' : ''}>Raw Material Prep</option>
-                        <option value="Processing" ${section === 'Processing' ? 'selected' : ''}>Processing</option>
-                        <option value="Production" ${section === 'Production' ? 'selected' : ''}>Production</option>
-                        <option value="Quality Control" ${section === 'Quality Control' ? 'selected' : ''}>Quality Control</option>
+                        <option value="Yarn Preparation" ${section === 'Yarn Preparation' ? 'selected' : ''}>Yarn Preparation</option>
+                        <option value="Knitting" ${section === 'Knitting' ? 'selected' : ''}>Knitting</option>
+                        <option value="Dyeing" ${section === 'Dyeing' ? 'selected' : ''}>Dyeing</option>
+                        <option value="Drying" ${section === 'Drying' ? 'selected' : ''}>Drying</option>
+                        <option value="Quality Check" ${section === 'Quality Check' ? 'selected' : ''}>Quality Check</option>
                         <option value="Packaging" ${section === 'Packaging' ? 'selected' : ''}>Packaging</option>
                         <option value="Labeling" ${section === 'Labeling' ? 'selected' : ''}>Labeling</option>
                         <option value="Dispatch" ${section === 'Dispatch' ? 'selected' : ''}>Dispatch</option>
+                        <option value="Maintenance" ${section === 'Maintenance' ? 'selected' : ''}>Maintenance</option>
                     </select>
                 </div>
                 <div>
@@ -1855,7 +2287,7 @@ function addSubTask(name = '', section = '', skill = '') {
                 </div>
                 <div style="grid-column: 1 / -1;">
                     <label class="subtask-label">Required Skills *</label>
-                    <input type="text" id="st_skill_${idx}" class="subtask-input" value="${skill}" placeholder="e.g. Cutting, Food Processing">
+                    <input type="text" id="st_skill_${idx}" class="subtask-input" value="${skill}" placeholder="e.g. Knitting, Dyeing Process">
                 </div>
             </div>
         </div>
@@ -1869,15 +2301,23 @@ function addSubTask(name = '', section = '', skill = '') {
 }
 
 function autoFillSubTaskSkill(idx) {
-    const nameInput = document.getElementById(`st_name_${idx}`);
-    const name = nameInput ? nameInput.value : '';
     const sectionInput = document.getElementById(`st_section_${idx}`);
     const section = sectionInput ? sectionInput.value : '';
+    const nameInput = document.getElementById(`st_name_${idx}`);
+    
+    // Auto-generate name based on section if order exists
+    if (currentOrderInModal && nameInput && section) {
+        nameInput.value = generateTaskName(section, currentOrderInModal);
+    }
+
+    const name = nameInput ? nameInput.value.trim().toLowerCase() : '';
     const skillInput = document.getElementById(`st_skill_${idx}`);
 
-    if (FACTORY_TASKS[name]) {
-        if (skillInput) skillInput.value = FACTORY_TASKS[name].skills;
-        if (sectionInput) sectionInput.value = FACTORY_TASKS[name].section;
+    let match = Object.keys(FACTORY_TASKS).find(k => k.toLowerCase() === name);
+
+    if (match) {
+        if (skillInput) skillInput.value = FACTORY_TASKS[match].skills;
+        if (sectionInput) sectionInput.value = FACTORY_TASKS[match].section;
     } else if (SECTION_SKILLS[section]) {
         if (skillInput) skillInput.value = SECTION_SKILLS[section];
     }
@@ -2112,3 +2552,172 @@ function showOrderNotification(order) {
         }
     }, 8000);
 }
+
+function loadAllOrderHistory() {
+    fetch(API_BASE_URL + '/api/orders')
+        .then(res => res.json())
+        .then(data => {
+            const renderTable = (listId) => {
+                const list = document.getElementById(listId);
+                if (!list) return;
+                if (!data || data.length === 0) {
+                    list.innerHTML = '<tr><td colspan="7" style="padding: 20px; text-align: center; color: #94a3b8;">No orders found.</td></tr>';
+                    return;
+                }
+                list.innerHTML = data.map(o => {
+                    let statusColor = '#f59e0b';
+                    if (o.status === 'Completed') statusColor = '#10b981';
+                    if (o.status === 'In Progress') statusColor = '#3b82f6';
+                    if (o.status === 'Cancelled') statusColor = '#ef4444';
+                    
+                    const priorityColor = o.priority === 'Urgent' ? '#ef4444' : (o.priority === 'High' ? '#f59e0b' : '#3b82f6');
+                    
+                    return `
+                        <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='white'">
+                            <td style="padding: 15px; font-weight: 700; color: #1e293b;">${o.orderId}</td>
+                            <td style="padding: 15px; font-weight: 600; color: #475569;">${o.customerName}</td>
+                            <td style="padding: 15px; color: #64748b;">${o.orderDescription}</td>
+                            <td style="padding: 15px; font-weight: 700; color: #1e293b;">${o.quantity}</td>
+                            <td style="padding: 15px;">
+                                <span style="background: ${statusColor}15; color: ${statusColor}; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; border: 1px solid ${statusColor}30;">${o.status}</span>
+                            </td>
+                            <td style="padding: 15px;">
+                                <span style="background: ${priorityColor}; color: white; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700;">${o.priority}</span>
+                            </td>
+                            <td style="padding: 15px; color: #94a3b8; font-size: 12px;">${o.createdAt || 'N/A'}</td>
+                        </tr>
+                    `;
+                }).join('');
+            };
+
+            renderTable('fullOrderHistoryList');
+            renderTable('supFullOrderHistoryList');
+        })
+        .catch(err => {
+            console.error('Error loading complete order history', err);
+            const errStr = '<tr><td colspan="7" style="padding: 20px; text-align: center; color: #ef4444;">Error loading history.</td></tr>';
+            const table1 = document.getElementById('fullOrderHistoryList');
+            const table2 = document.getElementById('supFullOrderHistoryList');
+            if (table1) table1.innerHTML = errStr;
+            if (table2) table2.innerHTML = errStr;
+        });
+}
+
+function renderSuggestedEmployees() {
+    let listEl = document.getElementById("suggestedEmployees");
+    if (!listEl) return;
+
+    let html = "";
+    
+    // Panel title handling
+    const sidebarTitle = listEl.parentElement.querySelector(".section-title");
+    if (sidebarTitle) {
+        sidebarTitle.innerText = "Workforce Insights & Assignment Intelligence";
+    }
+
+    // Today's Load Stats Panel
+    if (selectedSection) {
+        const data = sectionData[selectedSection] || { assigned: 0, completed: 0 };
+        const pending = data.assigned - data.completed;
+        
+        html += `
+            <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+                <h4 style="margin: 0 0 12px 0; font-size: 14px; color: #1e293b;">📊 Today's ${selectedSection} Load</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; font-size: 12px;">
+                    <div>
+                        <div style="color: #64748b;">Assigned Today</div>
+                        <div style="font-weight: 700; color: #1e293b;">${data.assigned} units</div>
+                    </div>
+                    <div>
+                        <div style="color: #64748b;">Pending Right Now</div>
+                        <div style="font-weight: 800; color: #ef4444;">${pending} units</div>
+                    </div>
+                </div>
+            </div>
+            <p style="font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 15px; padding-left: 5px;">
+                ${currentSuggestions.length > 0 ? 'Click to select staff members (Sorted by Load):' : ''}
+            </p>
+        `;
+    }
+
+    if (currentSuggestions.length === 0) {
+        html += `
+            <div style="text-align: center; padding: 40px 20px;">
+                <div style="font-size: 48px; margin-bottom: 10px;">👤</div>
+                <p style="color: #ef4444; font-weight: 600; margin: 0;">No matching staff found.</p>
+                <p style="color: #64748b; font-size: 13px; margin-top: 5px;">Ensure employees are marked <b>Present</b> in attendance and have the required skills.</p>
+            </div>`;
+    } else {
+        // Filter out already assigned employees
+        let filtered = currentSuggestions.filter(emp => !currentTaskAssignedNames.has(emp.username));
+        
+        if (filtered.length === 0) {
+            html += `
+                <div style="text-align: center; padding: 40px 20px;">
+                    <div style="font-size: 48px; margin-bottom: 10px;">👤</div>
+                    <p style="color: #64748b; font-weight: 600; margin: 0;">All qualified employees are already assigned.</p>
+                </div>`;
+            listEl.innerHTML = html;
+            return;
+        }
+
+        // Sort: Already selected first, then Match Type (Primary > Secondary), then by load
+        let sorted = [...filtered];
+        sorted.sort((a, b) => {
+            let aSel = selectedEmployeesForTask.has(a.username);
+            let bSel = selectedEmployeesForTask.has(b.username);
+            if (aSel !== bSel) return bSel - aSel;
+
+            // Primary > Secondary
+            const p1 = a.matchType === 'Primary' ? 1 : (a.matchType === 'Secondary' ? 2 : 3);
+            const p2 = b.matchType === 'Primary' ? 1 : (b.matchType === 'Secondary' ? 2 : 3);
+            if (p1 !== p2) return p1 - p2;
+
+            const totalA = (a.todayTasks || 0) + (a.yesterdayPending || 0);
+            const totalB = (b.todayTasks || 0) + (b.yesterdayPending || 0);
+            return totalA - totalB;
+        });
+
+        sorted.forEach(emp => {
+            let isSelected = selectedEmployeesForTask.has(emp.username);
+            let initial = emp.username.charAt(0).toUpperCase();
+            
+            const todayTasks = emp.todayTasks || 0;
+            const yesterdayPending = emp.yesterdayPending || 0;
+            
+            let status = "Available";
+            let badgeClass = "badge-available";
+            if (todayTasks >= 3) {
+                status = "Overloaded";
+                badgeClass = "badge-overloaded";
+            } else if (todayTasks > 0) {
+                status = "Busy";
+                badgeClass = "badge-busy";
+            }
+
+            html += `
+                <div class="emp-card ${isSelected ? 'selected' : ''}" 
+                     onclick="toggleEmployeeSelection('${emp.username}')"
+                     style="${isSelected ? 'border-color: #6366f1; background: #f5f7ff; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);' : ''}">
+                    <div class="emp-avatar" style="${isSelected ? 'background: #6366f1;' : ''}">${initial}</div>
+                    <div style="flex: 1;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="font-weight: 700; color: #1e293b; font-size: 15px;">${emp.username}</div>
+                            <span class="badge ${badgeClass}">${status}</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 5px; margin-top: 4px;">
+                            <span style="font-size: 9px; font-weight: 800; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; border: 1px solid ${emp.matchType === 'Primary' ? '#6366f1' : '#ec4899'}; color: ${emp.matchType === 'Primary' ? '#6366f1' : '#ec4899'}; background: ${emp.matchType === 'Primary' ? '#6366f1' : '#ec4899'}10;">
+                                ${emp.matchType} Match
+                            </span>
+                        </div>
+                        <div style="color: #64748b; font-size: 11px; margin-top: 8px;">
+                            → Load: <b>${todayTasks} tasks</b> today
+                        </div>
+                    </div>
+                </div>`;
+        });
+    }
+    
+    listEl.innerHTML = html;
+}
+

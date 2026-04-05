@@ -255,7 +255,7 @@
             Workforce Analytics
         </div>
         <div style="display: flex; align-items: center; gap: 20px;">
-            <span style="font-weight: 600; font-size: 14px; color: #64748b;" id="navUsername">Staff Portal</span>
+            <span style="font-weight: 600; font-size: 14px; color: #64748b;" id="navUsername">Workforce Portal</span>
             <button onclick="logout()"
                 style="background: #fef2f2; color: #ef4444; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer;">Logout</button>
         </div>
@@ -263,7 +263,7 @@
 
     <div class="content-container">
         <!-- Header -->
-        <div class="premium-card" style="display: flex; align-items: center; gap: 25px;">
+        <div class="premium-card" style="display: flex; align-items: center; gap: 25px; margin-bottom: 20px;">
             <div class="avatar" id="avatarLetter"
                 style="width: 70px; height: 70px; border-radius: 20px; background: #6366f1; color: white; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 800;">
                 E</div>
@@ -274,58 +274,80 @@
             </div>
         </div>
 
-        <!-- Quick Stats Row -->
-        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px;">
-            <div class="stat-card" style="background: linear-gradient(135deg, #10b981, #059669);">
-                <div class="stat-value" id="presentDays">0</div>
-                <div class="stat-label">Days Present</div>
-            </div>
-            <div class="stat-card" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
-                <div class="stat-value" id="absentDays">0</div>
-                <div class="stat-label">Days Absent</div>
-            </div>
-            <div class="stat-card" style="background: linear-gradient(135deg, #6366f1, #4f46e5);">
-                <div class="stat-value" id="productivity">0%</div>
-                <div class="stat-label">Attendance Rate</div>
-            </div>
-            <div class="stat-card" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
-                <div class="stat-value" id="totalTaskCount">0</div>
-                <div class="stat-label">Tasks Assigned</div>
+        <!-- Custom Tabs -->
+        <div style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;">
+            <button id="tabTasksBtn" onclick="switchEmpTab('tasks')" style="background: #6366f1; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-size: 16px; font-weight: 700; cursor: pointer; transition: 0.3s;">My Operations</button>
+            <button id="tabStatsBtn" onclick="switchEmpTab('stats')" style="background: transparent; color: #64748b; border: none; padding: 12px 24px; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.3s;">My Attendance & Stats</button>
+        </div>
+
+        <!-- TASKS TAB -->
+        <div id="tabTasks" style="display: block;">
+            <div class="premium-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
+                    <h2 style="margin: 0; font-size: 22px; color: #1e293b;">
+                        Assigned Operations
+                    </h2>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <label for="empTaskSearchDate" style="font-size: 14px; font-weight: 600; color: #475569;">Operation Date:</label>
+                        <input type="date" id="empTaskSearchDate" onchange="loadEmployeeTasks()" style="padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-family: inherit; font-size: 14px; color: #1e293b;">
+                    </div>
+                </div>
+                <!-- Make the task items big using CSS in script.js or inline if possible -->
+                <div id="employeeTaskList" style="margin-top: 20px; font-size: 18px;">
+                    <p style="color: #94a3b8; font-size: 16px;">Loading tasks...</p>
+                </div>
             </div>
         </div>
 
-        <div class="dashboard-grid">
-            <!-- Left Column: Skills & Charts -->
-            <div style="display: flex; flex-direction: column; gap: 25px;">
-                <div class="premium-card" style="margin-bottom: 0;">
-                    <h3 style="margin-top: 0; font-size: 16px;">My Professional Skills</h3>
-                    <div id="employeeSkills" style="margin-top: 15px;"></div>
+        <!-- STATS TAB -->
+        <div id="tabStats" style="display: none;">
+            <!-- Quick Stats Row -->
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px;">
+                <div class="stat-card" style="background: linear-gradient(135deg, #10b981, #059669);">
+                    <div class="stat-value" id="presentDays">0</div>
+                    <div class="stat-label">Days Present</div>
+                </div>
+                <div class="stat-card" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
+                    <div class="stat-value" id="absentDays">0</div>
+                    <div class="stat-label">Days Absent</div>
+                </div>
+                <div class="stat-card" style="background: linear-gradient(135deg, #6366f1, #4f46e5);">
+                    <div class="stat-value" id="productivity">0%</div>
+                    <div class="stat-label">Attendance Rate</div>
+                </div>
+                <div class="stat-card" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                    <div class="stat-value" id="totalTaskCount">0</div>
+                    <div class="stat-label">Tasks Assigned</div>
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <!-- Left Column: Skills & Charts -->
+                <div style="display: flex; flex-direction: column; gap: 25px;">
+                    <div class="premium-card" style="margin-bottom: 0;">
+                        <h3 style="margin-top: 0; font-size: 16px;">My Professional Skills</h3>
+                        <div id="employeeSkills" style="margin-top: 15px;"></div>
+                    </div>
+
+                    <div class="premium-card">
+                        <h3 style="margin-top: 0; font-size: 16px;">Attendance Overview</h3>
+                        <div style="height: 250px; display: flex; justify-content: center;">
+                            <canvas id="attendancePieChart"></canvas>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="premium-card">
-                    <h3 style="margin-top: 0; font-size: 16px;">Attendance Overview</h3>
-                    <div style="height: 250px; display: flex; justify-content: center;">
-                        <canvas id="attendancePieChart"></canvas>
+                <!-- Right Column: Analytics -->
+                <div style="display: flex; flex-direction: column; gap: 25px;">
+                    <div class="premium-card">
+                        <h3 style="margin-top: 0; font-size: 16px;">Progress Analytics</h3>
+                        <div style="height: 250px;">
+                            <canvas id="taskBarChart"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
-
-            <!-- Right Column: Tasks -->
-            <div style="display: flex; flex-direction: column; gap: 25px;">
-                <div class="premium-card" style="flex: 1;">
-                    <h3 style="margin-top: 0; font-size: 16px;">Assigned Tasks</h3>
-                    <div id="employeeTaskList" style="margin-top: 20px;">
-                        <p style="color: #94a3b8; font-size: 14px;">Loading tasks...</p>
-                    </div>
-                </div>
-
-                <div class="premium-card">
-                    <h3 style="margin-top: 0; font-size: 16px;">Progress Analytics</h3>
-                    <div style="height: 200px;">
-                        <canvas id="taskBarChart"></canvas>
-                    </div>
-                </div>
-            </div>
+            
             <!-- Calendar Section -->
             <div class="premium-card" style="margin-top: 25px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -357,11 +379,37 @@
 
         <script src="script.js"></script>
         <script>
+            function switchEmpTab(tab) {
+                if (tab === 'tasks') {
+                    document.getElementById('tabTasks').style.display = 'block';
+                    document.getElementById('tabStats').style.display = 'none';
+                    document.getElementById('tabTasksBtn').style.background = '#6366f1';
+                    document.getElementById('tabTasksBtn').style.color = 'white';
+                    document.getElementById('tabStatsBtn').style.background = 'transparent';
+                    document.getElementById('tabStatsBtn').style.color = '#64748b';
+                } else {
+                    document.getElementById('tabTasks').style.display = 'none';
+                    document.getElementById('tabStats').style.display = 'block';
+                    document.getElementById('tabTasksBtn').style.background = 'transparent';
+                    document.getElementById('tabTasksBtn').style.color = '#64748b';
+                    document.getElementById('tabStatsBtn').style.background = '#6366f1';
+                    document.getElementById('tabStatsBtn').style.color = 'white';
+                }
+            }
+
             document.addEventListener('DOMContentLoaded', () => {
                 const username = localStorage.getItem("username");
                 if (username) {
                     document.getElementById("navUsername").innerText = "Logged in as " + username;
                 }
+                
+                // Set default search date to today
+                const todayBtn = document.getElementById("empTaskSearchDate");
+                if (todayBtn) {
+                    const localToday = new Date().toLocaleDateString('en-CA'); // Gets YYYY-MM-DD
+                    todayBtn.value = localToday;
+                }
+
                 loadEmployeeStats();
                 loadEmployeeTasks();
             });

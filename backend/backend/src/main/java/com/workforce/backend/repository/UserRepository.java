@@ -20,4 +20,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     // GET EMPLOYEES BY SKILL (for task assignment)
     List<User> findByRoleAndSkillContaining(String role, String skill);
+
+    @org.springframework.transaction.annotation.Transactional
+    void deleteByUsername(String username);
+
+    @org.springframework.transaction.annotation.Transactional
+    void deleteByRole(String role);
 }

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Place Order | Workforce Analytics</title>
+    <title>Place Production Order | Workforce Analytics</title>
     <link rel="stylesheet" href="style.css">
     <style>
         body {
@@ -34,6 +34,7 @@
             margin-bottom: 10px;
             background: linear-gradient(to right, #818cf8, #c084fc);
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
         }
         .header p {
@@ -107,8 +108,8 @@
 <body>
     <div class="order-card" id="orderContent">
         <div class="header">
-            <h1>Customer Order Portal</h1>
-            <p>Place your manufacturing order online</p>
+            <h1>Production Order Portal</h1>
+            <p>Place your textile manufacturing order online</p>
         </div>
         
         <div class="form-group">
@@ -138,13 +139,13 @@
         </div>
 
         <div class="form-group">
-            <label>Order Description</label>
-            <textarea id="orderDesc" rows="3" placeholder="Describe your order requirements..."></textarea>
+            <label>Production Batch Description</label>
+            <textarea id="orderDesc" rows="3" placeholder="Describe your production requirements..."></textarea>
         </div>
 
         <div style="display: flex; gap: 15px;">
             <div class="form-group" style="flex: 1;">
-                <label>Quantity</label>
+                <label>Units Produced</label>
                 <input type="number" id="orderQty" value="100">
             </div>
             <div class="form-group" style="flex: 1;">
@@ -158,11 +159,11 @@
             </div>
         </div>
 
-        <button class="btn-order" onclick="submitOrder()">Place Your Order</button>
+        <button class="btn-order" onclick="submitOrder()">Place Production Order</button>
         <div id="msg" class="msg"></div>
 
         <div style="text-align: center; margin-top: 30px;">
-            <a href="index.html" style="color: #94a3b8; text-decoration: none; font-size: 14px;">← Back to Home</a>
+            <button onclick="goHome()" class="back-btn" style="width: auto; padding: 10px 20px;">← Back to Home</button>
         </div>
     </div>
 
@@ -203,13 +204,13 @@
                 container.innerHTML = `
                     <div class="order-success">
                         <div style="font-size: 60px; margin-bottom: 20px;">✅</div>
-                        <h2>Order Placed Successfully!</h2>
-                        <p style="color:#94a3b8; margin-bottom: 10px;">Your Order ID is:</p>
+                        <h2>Production Order Placed Successfully!</h2>
+                        <p style="color:#94a3b8; margin-bottom: 10px;">Your Production Order ID is:</p>
                         <div class="order-id">${order.orderId}</div>
                         <p style="color:#cbd5e1; line-height: 1.6;">Our team will review your order and convert it into manufacturing tasks shortly.</p>
                         <button class="btn-order" onclick="location.reload()" style="background:#334155; margin-top: 30px;">Place Another Order</button>
                         <div style="margin-top: 20px;">
-                            <a href="index.html" style="color: #94a3b8; text-decoration: none; font-size: 14px;">← Back to Home</a>
+                            <button onclick="goHome()" class="back-btn" style="width: auto; padding: 10px 20px;">← Back to Home</button>
                         </div>
                     </div>
                 `;

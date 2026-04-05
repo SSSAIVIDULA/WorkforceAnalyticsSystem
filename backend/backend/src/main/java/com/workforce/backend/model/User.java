@@ -25,7 +25,29 @@ public class User {
     @Column(name = "phone_number")
     private String phoneNumber;
 
+    @Column(name = "primary_skills", length = 1000)
+    private String primarySkills;
+
+    @Column(name = "secondary_skills", length = 1000)
+    private String secondarySkills;
+
     // getters and setters
+
+    public String getPrimarySkills() {
+        return primarySkills;
+    }
+
+    public void setPrimarySkills(String primarySkills) {
+        this.primarySkills = primarySkills;
+    }
+
+    public String getSecondarySkills() {
+        return secondarySkills;
+    }
+
+    public void setSecondarySkills(String secondarySkills) {
+        this.secondarySkills = secondarySkills;
+    }
 
     public String getSkill() {
         return skill;

@@ -1,0 +1,22 @@
+﻿[INFO] Scanning for projects...
+[INFO] 
+[INFO] -----------------------< com.workforce:backend >------------------------
+[INFO] Building backend 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ backend ---
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] Copying 11 resources from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.14.1:compile (default-compile) @ backend ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 10 source files with javac [debug parameters release 17] to target\classes
+[INFO] /C:/Users/SAI VIDULA/OneDrive/Desktop/Workforce-Analytics-System/backend/backend/src/main/java/com/workforce/backend/controller/LoginController.java: C:\Users\SAI VIDULA\OneDrive\Desktop\Workforce-Analytics-System\backend\backend\src\main\java\com\workforce\backend\controller\LoginController.java uses unchecked or unsafe operations.
+[INFO] /C:/Users/SAI VIDULA/OneDrive/Desktop/Workforce-Analytics-System/backend/backend/src/main/java/com/workforce/backend/controller/LoginController.java: Recompile with -Xlint:unchecked for details.
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  2.847 s
+[INFO] Finished at: 2026-04-06T02:13:47+05:30
+[INFO] ------------------------------------------------------------------------
