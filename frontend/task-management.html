@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Task Management | Workforce Analytics</title>
+  <title>Production Task Management | Workforce Analytics</title>
   <link rel="stylesheet" href="style.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
@@ -374,7 +374,7 @@
   <div class="container">
     <div class="premium-card">
       <div class="header-section">
-        <h2>Manage Daily Tasks</h2>
+        <h2>Production Task Management</h2>
         <button onclick="goSupervisor()" class="btn-premium btn-secondary">Dashboard</button>
       </div>
 
@@ -383,26 +383,28 @@
         <div class="form-group">
           <label>Task Name</label>
           <select id="taskName" class="form-control" onchange="autoFillTaskDetails()">
-            <option value="">Select Task...</option>
-            <option value="Wash Vegetables">Wash Vegetables</option>
-            <option value="Cut Vegetables">Cut Vegetables</option>
-            <option value="Cook Food">Cook Food</option>
-            <option value="Quality Inspection">Quality Inspection</option>
-            <option value="Pack Food">Pack Food</option>
-            <option value="Label Packages">Label Packages</option>
-            <option value="Load Products">Load Products</option>
+            <option value="">Select Activity...</option>
+            <option value="Yarn Cleaning">Yarn Cleaning</option>
+            <option value="Yarn Preparation">Yarn Preparation</option>
+            <option value="Socks Knitting">Socks Knitting</option>
+            <option value="Quality Inspection">Socks Quality Inspection</option>
+            <option value="Socks Packaging">Socks Packaging</option>
+            <option value="Socks Labeling">Socks Labeling</option>
+            <option value="Inventory Dispatch">Inventory Dispatch</option>
           </select>
         </div>
         <div class="form-group">
           <label>Section</label>
-          <select id="taskSection" class="form-control">
-            <option value="Cleaning">Cleaning</option>
-            <option value="Processing">Processing</option>
-            <option value="Cooking">Cooking</option>
+          <select id="taskSection" class="form-control" onchange="autoFillSkillsBySection()">
+            <option value="Machine Maintenance / Cleaning">Machine Maintenance / Cleaning</option>
+            <option value="Yarn Preparation">Yarn Preparation</option>
+            <option value="Knitting">Knitting</option>
+            <option value="Dyeing">Dyeing</option>
+            <option value="Drying">Drying</option>
             <option value="Quality Check">Quality Check</option>
             <option value="Packaging">Packaging</option>
-            <option value="Labeling">Labeling</option>
-            <option value="Dispatch">Dispatch</option>
+            <option value="Labeling & Tagging">Labeling & Tagging</option>
+            <option value="Dispatch / Logistics">Dispatch / Logistics</option>
           </select>
         </div>
         <div class="form-group">
@@ -447,7 +449,7 @@
       <div class="premium-card">
         <div class="premium-card" style="padding: 25px; min-height: 400px; display: flex; flex-direction: column;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h3 class="section-title" style="margin: 0;">3. Smart Suggestions</h3>
+            <h3 class="section-title" style="margin: 0;">3. Workforce Suggestions</h3>
             <div id="selectionCounter"
               style="display: none; background: #6366f1; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">
               0 Selected

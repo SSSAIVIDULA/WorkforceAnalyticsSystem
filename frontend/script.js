@@ -58,6 +58,8 @@ function switchTab(tabId, element) {
         if (typeof loadOrders === 'function') loadOrders();
     } else if (tabId === 'tab-order-analytics') {
         if (typeof loadOrderAnalytics === 'function') loadOrderAnalytics();
+    } else if (tabId === 'tab-order-history') {
+        if (typeof loadAllOrderHistory === 'function') loadAllOrderHistory();
     }
 }
 
@@ -72,6 +74,17 @@ function goTaskManagement() {
     window.location = "task-management.html";
 }
 
+function toggleOrderGroup(orderCode) {
+    let el = document.getElementById("order-tasks-" + orderCode);
+    if (el) {
+        if (el.style.display === "none") {
+            el.style.display = "block";
+        } else {
+            el.style.display = "none";
+        }
+    }
+}
+
 
 // ======================
 // ADD EMPLOYEE
@@ -83,10 +96,11 @@ function addEmployee() {
     let password = document.getElementById("password").value.trim();
     let role = document.getElementById("role").value;
 
-    let selectedSkills = [];
-    let skillCheckboxes = document.querySelectorAll('input[name="empSkill"]:checked');
-    skillCheckboxes.forEach(cb => selectedSkills.push(cb.value));
-    let skill = selectedSkills.join(", ");
+    let primarySkills = [];
+    document.querySelectorAll('input[name="primarySkill"]:checked').forEach(cb => primarySkills.push(cb.value));
+    
+    let secondarySkills = [];
+    document.querySelectorAll('input[name="secondarySkill"]:checked').forEach(cb => secondarySkills.push(cb.value));
 
     let employeeId = document.getElementById("employeeId").value.trim();
     let phoneNumber = document.getElementById("phoneNumber").value.trim();
@@ -96,10 +110,27 @@ function addEmployee() {
         return;
     }
 
+    if (primarySkills.length === 0) {
+        document.getElementById("msg").style.color = "red";
+        document.getElementById("msg").innerHTML = "At least one Primary Skill is required";
+        return;
+    }
+
+    const payload = {
+        username,
+        password,
+        role,
+        primarySkills: primarySkills.join(", "),
+        secondarySkills: secondarySkills.join(", "),
+        skill: primarySkills.concat(secondarySkills).join(", "), // Keep legacy field for compatibility
+        employeeId,
+        phoneNumber
+    };
+
     fetch("/api/addEmployee", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password, role, skill, employeeId, phoneNumber })
+        body: JSON.stringify(payload)
     })
         .then(async res => {
             if (res.ok) {
@@ -118,7 +149,7 @@ function addEmployee() {
             document.getElementById("employeeId").value = "";
             document.getElementById("phoneNumber").value = "";
 
-            document.querySelectorAll('input[name="empSkill"]').forEach(cb => {
+            document.querySelectorAll('input[name="primarySkill"], input[name="secondarySkill"]').forEach(cb => {
                 cb.checked = false;
                 cb.parentElement.classList.remove('selected');
             });
@@ -278,25 +309,45 @@ function markAttendance(name, status) {
 let selectedTaskId = null;
 
 const FACTORY_TASKS = {
-    "Wash Vegetables": { section: "Cleaning", skills: "Cleaning, Basic Handling" },
-    "Cut Vegetables": { section: "Processing", skills: "Cutting, Food Processing" },
-    "Cook Food": { section: "Cooking", skills: "Cooking, Food Processing" },
-    "Quality Inspection": { section: "Quality Check", skills: "Inspection, Food Safety" },
-    "Pack Food": { section: "Packaging", skills: "Packing, Basic Handling" },
-    "Label Packages": { section: "Labeling", skills: "Packing, Label Handling" },
-    "Load Products": { section: "Dispatch", skills: "Warehouse Handling, Packing" }
+    "Yarn Cleaning": { section: "Machine Maintenance / Cleaning", skills: "Machine Maintenance, Yarn Handling" },
+    "Yarn Preparation": { section: "Yarn Preparation", skills: "Yarn Handling" },
+    "Socks Knitting": { section: "Knitting", skills: "Knitting Machine Operation" },
+    "Quality Inspection": { section: "Quality Check", skills: "Quality Inspection" },
+    "Socks Packaging": { section: "Packaging", skills: "Packaging" },
+    "Socks Labeling": { section: "Labeling & Tagging", skills: "Labeling & Tagging" },
+    "Inventory Dispatch": { section: "Dispatch / Logistics", skills: "Dispatch Handling" }
 };
 
+const SECTION_SKILLS = {
+    "Machine Maintenance / Cleaning": "Machine Maintenance, Yarn Handling",
+    "Yarn Preparation": "Yarn Handling",
+    "Knitting": "Knitting Machine Operation",
+    "Dyeing": "Dyeing Process",
+    "Drying": "Drying Operation",
+    "Quality Check": "Quality Inspection",
+    "Packaging": "Packaging",
+    "Labeling & Tagging": "Labeling & Tagging",
+    "Dispatch / Logistics": "Dispatch Handling",
+    "General": "Basic Labor, Handling"
+};
+
+function autoFillSkillsBySection() {
+    let section = document.getElementById("taskSection").value;
+    if (SECTION_SKILLS[section]) {
+        document.getElementById("taskSkill").value = SECTION_SKILLS[section];
+    } else {
+        document.getElementById("taskSkill").value = ""; // Clear if no specific skills for section
+    }
+}
 
 function autoFillTaskDetails() {
-
-    let taskName = document.getElementById("taskName").value;
-
-    if (FACTORY_TASKS[taskName]) {
-
-        document.getElementById("taskSection").value = FACTORY_TASKS[taskName].section;
-        document.getElementById("taskSkill").value = FACTORY_TASKS[taskName].skills;
-
+    let taskName = document.getElementById("taskName").value.trim().toLowerCase();
+    let match = Object.keys(FACTORY_TASKS).find(k => k.toLowerCase() === taskName);
+    if (match) {
+        document.getElementById("taskSection").value = FACTORY_TASKS[match].section;
+        document.getElementById("taskSkill").value = FACTORY_TASKS[match].skills;
+    } else {
+        autoFillSkillsBySection();
     }
 }
 
@@ -361,65 +412,117 @@ function loadTasks() {
             let html = "";
             if (tasks.length === 0) {
                 html = "<p style='color:#999;'>No tasks created today.</p>";
+            } else {
+                let orderGroups = {};
+                let manualTasks = [];
+
+                tasks.forEach(task => {
+                    let groupKey = task.orderCode || task.orderId; 
+                    if (groupKey) {
+                        if (!orderGroups[groupKey]) {
+                            orderGroups[groupKey] = {
+                                orderCode: task.orderCode || ("Order ID: " + task.orderId),
+                                customerName: task.customerName || "N/A",
+                                orderDescription: task.orderDescription || "Task Breakdown",
+                                tasks: []
+                            };
+                        }
+                        orderGroups[groupKey].tasks.push(task);
+                    } else {
+                        manualTasks.push(task);
+                    }
+                });
+
+                const renderTaskHTML = (task) => {
+                    let isSelected = selectedTaskId === task.id ? "border: 2px solid #2196f3; background: #e3f2fd;" : "border: 1px solid #ddd;";
+
+                    let assignedListHTML = "<span style='color:red;'>Not Assigned</span>";
+                    if (task.assignedEmployees && task.assignedEmployees.trim() !== "") {
+                        let emps = task.assignedEmployees.split(",");
+                        let badges = emps.map(emp => {
+                            let eName = emp.trim();
+                            return `<span style="display:inline-block; background:#e0e7ff; color:#4338ca; padding:2px 8px; border-radius:12px; margin:2px; font-size:12px;">
+                                        ${eName} 
+                                        <span onclick="unassignEmployee(event, ${task.id}, '${eName}')" style="cursor:pointer; color:#ef4444; font-weight:bold; margin-left:4px;">&times;</span>
+                                    </span>`;
+                        });
+                        assignedListHTML = badges.join("");
+                    }
+
+                    let effectiveSkill = task.requiredSkill;
+                    if (!effectiveSkill || effectiveSkill.trim() === "" || (typeof effectiveSkill === 'string' && effectiveSkill.includes("No skills set"))) {
+                        effectiveSkill = SECTION_SKILLS[task.section] || "";
+                    }
+                    let hasSkill = effectiveSkill && effectiveSkill.trim() !== "";
+
+                    let statusBg = task.status === 'Completed' ? '#d1fae5' : '#fef3c7';
+                    let statusColor = task.status === 'Completed' ? '#065f46' : '#92400e';
+                    let statusLabelHTML = `<span style="background: ${statusBg}; color: ${statusColor}; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">${task.status}</span>`;
+
+                    if (hasSkill) {
+                        return `
+                        <div class="employee-row" 
+                             onclick="openTaskModal(${task.id})" 
+                             style="cursor:pointer; margin-bottom: 10px; padding: 12px; border-radius: 8px; transition: 0.3s; background: #fff; ${isSelected}">
+                            <div style="flex: 1;">
+                                <b style="font-size: 16px; color: #333;">${task.taskName || 'Untitled'}</b><br>
+                                <small style="color: #666;">Section: ${task.section} | Priority: ${task.priority}</small><br>
+                                <small style="color: #667eea;">Skills: ${effectiveSkill}</small><br>
+                                <div style="font-size: 13px; margin-top:5px;"><b>Assigned:</b> ${assignedListHTML}</div>
+                            </div>
+                            <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
+                                ${statusLabelHTML}
+                                <button onclick="deleteTask(event, ${task.id})" style="background: #fee2e2; color: #ef4444; border: none; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; transition: 0.2s;">Discard</button>
+                            </div>
+                        </div>`;
+                    } else {
+                        return `
+                        <div class="employee-row" 
+                             style="margin-bottom: 10px; padding: 12px; border-radius: 8px; border: 1px solid #fecaca; background: #fff5f5; opacity: 0.7;">
+                            <div style="flex: 1;">
+                                <b style="font-size: 16px; color: #999;">${task.taskName || 'Untitled'}</b><br>
+                                <small onclick="openTaskModal(${task.id})" style="cursor:pointer; color: #ef4444;">⚠ No skills set — click to assign section/skills</small>
+                            </div>
+                            <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
+                                ${statusLabelHTML}
+                                <button onclick="deleteTask(event, ${task.id})" style="background: #fee2e2; color: #ef4444; border: none; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; transition: 0.2s;">Discard</button>
+                            </div>
+                        </div>`;
+                    }
+                };
+
+                Object.values(orderGroups).forEach(group => {
+                    html += `
+                    <div style="margin-bottom: 15px; border: 1px solid #c7d2fe; border-radius: 12px; overflow: hidden; background: #fff; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+                        <div style="background: #e0e7ff; padding: 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s;" 
+                             onclick="toggleOrderGroup('${group.orderCode}')" onmouseover="this.style.background='#c7d2fe'" onmouseout="this.style.background='#e0e7ff'">
+                            <div>
+                                <strong style="color: #4338ca; font-size: 16px; display:flex; align-items:center; gap:8px;">
+                                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+                                    Production Order: ${group.orderCode}
+                                </strong>
+                                <div style="font-size: 13px; color: #475569; margin-top: 6px;">
+                                    <b>Customer:</b> ${group.customerName || 'N/A'} &nbsp;|&nbsp; <b>Batch Desc:</b> ${group.orderDescription || 'N/A'}
+                                </div>
+                            </div>
+                            <div style="color: #4338ca; font-weight: bold; font-size: 14px; background: rgba(255,255,255,0.5); padding: 4px 10px; border-radius: 20px;">
+                                ${group.tasks.length} Task(s)
+                            </div>
+                        </div>
+                        <div id="order-tasks-${group.orderCode}" style="display: none; padding: 15px; background: #f8fafc; border-top: 1px solid #e2e8f0;">
+                            ${group.tasks.map(t => renderTaskHTML(t)).join('')}
+                        </div>
+                    </div>`;
+                });
+
+                if (manualTasks.length > 0) {
+                    html += `
+                    <div style="margin-bottom: 15px;">
+                        <h4 style="color: #64748b; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #e2e8f0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;">Independent Tasks</h4>
+                        ${manualTasks.map(t => renderTaskHTML(t)).join('')}
+                    </div>`;
+                }
             }
-
-            tasks.forEach(task => {
-                let isSelected = selectedTaskId === task.id ? "border: 2px solid #2196f3; background: #e3f2fd;" : "border: 1px solid #ddd;";
-
-                let assignedListHTML = "<span style='color:red;'>Not Assigned</span>";
-                if (task.assignedEmployees && task.assignedEmployees.trim() !== "") {
-                    let emps = task.assignedEmployees.split(",");
-                    let badges = emps.map(emp => {
-                        let eName = emp.trim();
-                        return `<span style="display:inline-block; background:#e0e7ff; color:#4338ca; padding:2px 8px; border-radius:12px; margin:2px; font-size:12px;">
-                                    ${eName} 
-                                    <span onclick="unassignEmployee(event, ${task.id}, '${eName}')" style="cursor:pointer; color:#ef4444; font-weight:bold; margin-left:4px;">&times;</span>
-                                </span>`;
-                    });
-                    assignedListHTML = badges.join("");
-                }
-
-                let hasSkill = task.requiredSkill && task.requiredSkill.trim() !== "";
-                let safeSkill = hasSkill ? task.requiredSkill.replace(/'/g, "\\'") : "";
-                let safeName = task.taskName ? task.taskName.replace(/'/g, "\\'") : "Untitled";
-
-                let statusBg = task.status === 'Completed' ? '#d1fae5' : '#fef3c7';
-                let statusColor = task.status === 'Completed' ? '#065f46' : '#92400e';
-                let statusLabelHTML = `<span style="background: ${statusBg}; color: ${statusColor}; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">${task.status}</span>`;
-
-                if (hasSkill) {
-                    html += `
-<div class="employee-row" 
-     onclick="openTaskModal(${task.id})" 
-     style="cursor:pointer; margin-bottom: 10px; padding: 12px; border-radius: 8px; transition: 0.3s; ${isSelected}">
-    <div style="flex: 1;">
-        <b style="font-size: 16px; color: #333;">${task.taskName || 'Untitled'}</b><br>
-        <small style="color: #666;">Section: ${task.section} | Priority: ${task.priority}</small><br>
-        <small style="color: #667eea;">Skills: ${task.requiredSkill}</small><br>
-        <div style="font-size: 13px; margin-top:5px;"><b>Assigned:</b> ${assignedListHTML}</div>
-    </div>
-    <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
-        ${statusLabelHTML}
-        <button onclick="deleteTask(event, ${task.id})" style="background: #fee2e2; color: #ef4444; border: none; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; transition: 0.2s;">Discard</button>
-    </div>
-</div>
-`;
-                } else {
-                    html += `
-<div class="employee-row" 
-     style="margin-bottom: 10px; padding: 12px; border-radius: 8px; border: 1px solid #fecaca; background: #fff5f5; opacity: 0.7;">
-    <div style="flex: 1;">
-        <b style="font-size: 16px; color: #999;">${task.taskName || 'Untitled'}</b><br>
-        <small style="color: #ef4444;">⚠ No skills set — cannot suggest employees</small>
-    </div>
-    <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
-        ${statusLabelHTML}
-        <button onclick="deleteTask(event, ${task.id})" style="background: #fee2e2; color: #ef4444; border: none; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; transition: 0.2s;">Discard</button>
-    </div>
-</div>
-`;
-                }
-            });
 
             let taskListEl = document.getElementById("taskList");
             if (taskListEl) {
@@ -684,6 +787,12 @@ function renderModalAssigned(task) {
     `).join("");
 }
 
+function getEmployeeStatus(emp) {
+    if (emp.todayTasks >= 3) return "Overloaded";
+    if (emp.todayTasks > 0) return "Busy";
+    return "Available";
+}
+
 function renderModalSuggestions(employees, task) {
     const container = document.getElementById("modalSuggestionsList");
     const actions = document.getElementById("modalSelectionActions");
@@ -704,19 +813,64 @@ function renderModalSuggestions(employees, task) {
         return;
     }
 
-    container.innerHTML = available.map(emp => {
+    // Smart Suggestion Logic
+    let primaryCount = available.filter(e => e.matchType === 'Primary').length;
+    let secondaryCount = available.filter(e => e.matchType === 'Secondary').length;
+    let recommendation = "";
+    if (primaryCount > 0) {
+        recommendation = `<div class="smart-suggestion">
+            <i class="fas fa-lightbulb"></i>
+            <span>${primaryCount} employees have primary skills, ${secondaryCount} have secondary. Recommend assigning primary-skilled employees.</span>
+        </div>`;
+    } else if (secondaryCount > 0) {
+        recommendation = `<div class="smart-suggestion" style="background:#fff7ed; border-color:#fed7aa; color:#943412;">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span>No primary-skilled staff available. Using secondary-skilled employees.</span>
+        </div>`;
+    }
+
+    let itemsHTML = recommendation;
+
+    available.forEach(emp => {
         const isSelected = modalSelectedEmployees.has(emp.username);
-        return `
-            <div class="suggestion-item ${isSelected ? 'selected' : ''}" onclick="toggleModalEmpSelection('${emp.username}')">
-                <div style="display: flex; align-items: center;">
-                    <div class="status-active-badge"></div>
-                    <span style="font-weight:600; color:#1e293b;">${emp.username}</span>
+        const status = getEmployeeStatus(emp);
+        const statusClass = "status-" + status.toLowerCase();
+        
+        const skillBadge = emp.matchType === 'Primary' 
+            ? `<span class="skill-badge skill-primary">Primary</span>`
+            : (emp.matchType === 'Secondary' ? `<span class="skill-badge skill-secondary">Secondary</span>` : "");
+
+        const pendingWarning = emp.yesterdayPending > 0 
+            ? `<div class="warning-text"><i class="fas fa-clock"></i> Has ${emp.yesterdayPending} unfinished task from yesterday</div>`
+            : "";
+
+        itemsHTML += `
+            <div class="suggestion-item ${isSelected ? 'selected' : ''}" onclick="toggleModalEmpSelection('${emp.username}')" 
+                 style="display: flex; flex-direction: column; align-items: stretch; padding: 15px; border-bottom: 1px solid #f1f5f9; position: relative;">
+                
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-weight:700; color:#1e293b; font-size: 15px;">${emp.username}</span>
+                        ${skillBadge}
+                    </div>
+                    <span class="status-badge ${statusClass}">${status}</span>
                 </div>
-                <div style="color:var(--primary); font-weight:800;">${isSelected ? '✓' : '+'}</div>
+
+                <div style="display: flex; gap: 15px; margin-bottom: 5px;">
+                    <div class="info-label">Today Tasks: <span class="info-value">${emp.todayTasks}</span></div>
+                    <div class="info-label">Skills: <span class="info-value" style="font-size:11px;">${emp.primarySkills || 'None'}</span></div>
+                </div>
+
+                ${pendingWarning}
+
+                <div style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color:var(--primary); font-weight:800; font-size: 20px;">
+                    ${isSelected ? '✓' : ''}
+                </div>
             </div>
         `;
-    }).join("");
+    });
 
+    container.innerHTML = itemsHTML;
     actions.style.display = modalSelectedEmployees.size > 0 ? "block" : "none";
 }
 
@@ -954,24 +1108,19 @@ function loadEmployeeTasks() {
                 if (task.status === "Started") statusColor = "#3b82f6";
 
                 html += `
-                <div class="task-item">
+                <div class="task-item" style="padding: 25px; border-radius: 16px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); background: white;">
                     <div style="flex: 1;">
-                        <div style="font-weight: 700; color: #1e293b;">${task.taskName}</div>
-                        <div style="font-size: 12px; color: #64748b; margin-top: 4px;">
-                            ${task.section} • Priority: ${task.priority}<br>
-                            Deadline: ${task.deadline ? task.deadline : task.date}
+                        <div style="font-size: 24px; font-weight: 800; color: #1e293b; line-height: 1.4; margin-bottom: 10px;">${task.taskName}</div>
+                        <div style="font-size: 16px; font-weight: 600; color: #64748b; margin-top: 4px;">
+                            <span style="display:inline-block; margin-right: 15px;">📌 Section: ${task.section}</span> 
+                            <span style="display:inline-block; margin-right: 15px;">⚡ Priority: ${task.priority}</span>
+                            <span style="display:inline-block;">⏰ Deadline: ${task.deadline ? task.deadline : task.date}</span>
                         </div>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <span class="status-badge" style="background: ${statusColor}15; color: ${statusColor}; border: 1px solid ${statusColor}30;">
+                    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 15px; margin-left: 20px;">
+                        <span class="status-badge" style="background: ${statusColor}15; color: ${statusColor}; border: 1px solid ${statusColor}30; font-size: 14px; padding: 6px 16px; border-radius: 20px;">
                             ${task.status}
                         </span>
-                        ${task.status !== 'Completed' ? `
-                            <button onclick="updateTaskStatusFromDashboard(${task.id}, 'Completed')" 
-                                    style="background: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; transition: 0.2s;">
-                                Complete
-                            </button>
-                        ` : ''}
                     </div>
                 </div>`;
             });
@@ -1081,7 +1230,12 @@ function renderCalendar() {
                 if (t.status === "In Progress") badgeClass = "cal-task-progress";
                 if (t.status === "Completed") badgeClass = "cal-task-completed";
 
-                tasksHtml += `<div class="cal-task-pill ${badgeClass}" title="${t.taskName} - ${t.status}">${t.taskName}</div>`;
+                let nameStr = t.taskName || "Untitled";
+                let shortName = nameStr.split(" ").slice(0, 2).join(" ");
+                if (nameStr.split(" ").length > 2) {
+                    shortName += "...";
+                }
+                tasksHtml += `<div class="cal-task-pill ${badgeClass}" title="${nameStr} - ${t.status}">${shortName}</div>`;
             });
         }
 
@@ -1418,22 +1572,97 @@ function renderEmployeeDirectory(containerId, employees) {
 
     container.innerHTML = employees.map(emp => {
         const initial = emp.username.charAt(0).toUpperCase();
+        
+        let skillsList = (emp.skill || '').split(',').map(s => s.trim()).filter(s => s);
+        let displaySkills = skillsList.slice(0, 2);
+        let extraCount = skillsList.length - 2;
+        
+        let skillsHtml = displaySkills.map(s => 
+            `<span style="background: #e0e7ff; color: #4338ca; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-right: 4px; border: 1px solid #c7d2fe; display: inline-block; white-space: nowrap;">${s}</span>`
+        ).join("");
+        
+        if (extraCount > 0) {
+            skillsHtml += `<span style="background: #f1f5f9; color: #64748b; padding: 2px 6px; border-radius: 4px; font-size: 10px; border: 1px solid #e2e8f0; display: inline-block; white-space: nowrap;">+${extraCount}</span>`;
+        }
+        if (skillsList.length === 0) {
+            skillsHtml = `<span style="color:#94a3b8; font-size:10px;">No skills added</span>`;
+        }
+
+        const dept = emp.department || 'General Staff';
+
         return `
-            <div class="chart-box" onclick="openEmpDetailsModal('${emp.username}')" style="cursor: pointer; transition: all 0.2s; border: 1px solid #eef2ff;" 
+            <div class="chart-box" onclick="openEmpDetailsModal('${emp.username}')" style="cursor: pointer; transition: all 0.2s; border: 1px solid #eef2ff; display: flex; flex-direction: column; min-height: 140px; justify-content: space-between;" 
                  onmouseover="this.style.borderColor='#6366f1'; this.style.transform='translateY(-3px)'" 
                  onmouseout="this.style.borderColor='#eef2ff'; this.style.transform='translateY(0)'">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <div style="width: 40px; height: 40px; border-radius: 12px; background: #6366f1; color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 16px;">
-                        ${initial}
+                
+                <div>
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px; border-bottom: 1px dashed #e2e8f0; padding-bottom: 12px;">
+                        <div style="width: 44px; height: 44px; border-radius: 12px; background: #6366f1; color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px;">
+                            ${initial}
+                        </div>
+                        <div style="flex: 1; overflow: hidden;">
+                            <div style="font-weight: 800; color: #1e293b; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${emp.username}</div>
+                            <div style="font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase;">${dept}</div>
+                        </div>
                     </div>
-                    <div>
-                        <div style="font-weight: 700; color: #1e293b; font-size: 14px;">${emp.username}</div>
-                        <div style="font-size: 11px; color: #64748b; text-transform: uppercase; font-weight: 600;">Staff Member</div>
+                    
+                    <div style="margin-bottom: 10px;">
+                        <div style="font-size: 10px; color: #94a3b8; margin-bottom: 4px; text-transform: uppercase; font-weight: 700;">Skills</div>
+                        <div style="display: flex; flex-wrap: wrap; gap: 4px;">${skillsHtml}</div>
+                    </div>
+                </div>
+
+                <div style="margin-top: auto; background: #f8fafc; border-radius: 8px; padding: 8px; display: flex; justify-content: space-between; align-items: center; min-height: 40px;">
+                    <div id="prog_${containerId}_${emp.username.replace(/\s+/g, '')}" style="font-size: 11px; color: #64748b; font-weight: 600; width: 100%; text-align: center;">
+                        <span style="opacity: 0.6;">Loading progress...</span>
                     </div>
                 </div>
             </div>
         `;
     }).join("");
+
+    employees.forEach(emp => {
+        let safeUsername = emp.username.replace(/\s+/g, '');
+        fetch('/api/employeeStats?employeeName=' + encodeURIComponent(emp.username))
+            .then(res => res.json())
+            .then(stats => {
+                let p = stats.present || 0;
+                let a = stats.absent || 0;
+                let total = p + a;
+                let rate = total > 0 ? Math.round((p / total) * 100) : 0;
+                let attdColor = rate >= 75 ? '#10b981' : (rate >= 50 ? '#f59e0b' : '#ef4444');
+                
+                fetch('/api/tasksByEmployee?employeeName=' + encodeURIComponent(emp.username))
+                    .then(res => res.json())
+                    .then(tasks => {
+                        let totalTasks = tasks.length;
+                        let completed = tasks.filter(t => t.status === 'Completed').length;
+                        
+                        const progressEl = document.getElementById(`prog_${containerId}_${safeUsername}`);
+                        if (progressEl) {
+                            progressEl.innerHTML = `
+                                <div style="display: flex; justify-content: space-around; width: 100%; align-items: center;">
+                                    <div style="display: flex; flex-direction: column; align-items: center;">
+                                        <span style="color: ${attdColor}; font-size: 14px; font-weight: 800;">${rate}%</span>
+                                        <span style="font-size: 9px; text-transform: uppercase;">Attd</span>
+                                    </div>
+                                    <div style="width: 1px; height: 20px; background: #e2e8f0;"></div>
+                                    <div style="display: flex; flex-direction: column; align-items: center;">
+                                        <span style="color: #6366f1; font-size: 14px; font-weight: 800;">${completed}/${totalTasks}</span>
+                                        <span style="font-size: 9px; text-transform: uppercase;">Tasks</span>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    });
+            })
+            .catch(() => {
+                const progressEl = document.getElementById(`prog_${containerId}_${safeUsername}`);
+                if (progressEl) {
+                    progressEl.innerHTML = '<span style="color: #ef4444;">Metrics error</span>';
+                }
+            });
+    });
 }
 
 function filterEmployeeDirectory(inputId, containerId) {
@@ -1475,7 +1704,7 @@ function openEmpDetailsModal(username) {
         });
 
     // 2. Fetch Attendance Stats
-    fetch(`/api/employeeStats?username=${username}`)
+    fetch(`/api/employeeStats?employeeName=${username}`)
         .then(res => res.json())
         .then(data => {
             let p = data.present || 0;
@@ -1506,7 +1735,7 @@ function openEmpDetailsModal(username) {
         });
 
     // 3. Fetch Tasks
-    fetch(`/api/tasksByEmployee?username=${username}`)
+    fetch(`/api/tasksByEmployee?employeeName=${username}`)
         .then(res => res.json())
         .then(tasks => {
             let stats = { "Pending": 0, "Started": 0, "In Progress": 0, "Completed": 0 };
@@ -1627,7 +1856,6 @@ function closeMgrAttModal(event) {
     document.getElementById("mgrAttModal").classList.remove("active");
 }
 
-
 // ===================================
 // ORDER MANAGEMENT (SUPERVISOR)
 // ===================================
@@ -1649,6 +1877,12 @@ function loadOrders() {
 
             container.innerHTML = orders.map(o => {
                 const priorityColor = o.priority === 'Urgent' ? '#ef4444' : (o.priority === 'High' ? '#f59e0b' : '#3b82f6');
+                const skill = o.requiredSkill || '';
+                const phone = o.customerPhone || 'N/A';
+                const address = o.customerAddress || 'N/A';
+                const safeDesc = (o.orderDescription || '').replace(/'/g, "\\'").replace(/\n/g, " ");
+                const safeName = (o.customerName || '').replace(/'/g, "\\'");
+                const safeSkill = skill.replace(/'/g, "\\'");
                 return `
                     <div class="hub-card" style="text-align: left; padding: 25px; border-radius: 16px; cursor: default;">
                         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
@@ -1656,32 +1890,29 @@ function loadOrders() {
                             <span style="font-size: 11px; font-weight: 800; color: white; background: ${priorityColor}; padding: 4px 10px; border-radius: 6px;">${o.priority}</span>
                         </div>
                         <h4 style="margin: 0; font-size: 18px; color: #1e293b;">${o.customerName}</h4>
+                        <div style="margin: 8px 0; display: flex; flex-direction: column; gap: 4px;">
+                            <div style="font-size: 12px; color: #475569;">📞 ${phone}</div>
+                            <div style="font-size: 12px; color: #475569;">📍 ${address}</div>
+                        </div>
                         <p style="margin: 10px 0; font-size: 13px; color: #64748b; line-height: 1.5;">${o.orderDescription}</p>
                         <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
-                            <div style="display: flex; gap: 20px;">
-                                <div>
-                                    <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase;">Product Type</div>
-                                    <div style="font-size: 13px; font-weight: 600; color: #475569;">${o.requiredSkill}</div>
-                                </div>
-                                <div>
-                                    <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase;">Quantity</div>
-                                    <div style="font-size: 13px; font-weight: 600; color: #475569;">${o.quantity} units</div>
-                                </div>
+                            <div>
+                                <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase;">Units Produced</div>
+                                <div style="font-size: 13px; font-weight: 600; color: #475569;">${o.quantity}</div>
                             </div>
-                            <div style="display: flex; gap: 10px;">
-                                <button onclick="rejectOrder(${o.id})" 
-                                        style="background: #fee2e2; color: #ef4444; border: none; padding: 8px 15px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer;">
-                                    Reject
-                                </button>
-                                <button onclick="openConvertOrderModal(${o.id}, '${o.customerName.replace(/'/g, "\\'")}', '${o.requiredSkill.replace(/'/g, "\\'")}', '${o.orderDescription.replace(/'/g, "\\'").replace(/\n/g, " ")}', ${o.quantity}, '${o.priority}')" 
-                                        style="background: #6366f1; color: white; border: none; padding: 8px 15px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer;">
-                                    Convert to Task
-                                </button>
-                            </div>
+                            <button onclick="openConvertOrderModal(${o.id}, '${safeName}', '${safeSkill}', '${safeDesc}', ${o.quantity}, '${o.priority}')" 
+                                    style="background: #6366f1; color: white; border: none; padding: 8px 15px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer;">
+                                Convert to Task
+                            </button>
                         </div>
                     </div>
                 `;
             }).join("");
+        })
+        .catch(err => {
+            console.error("Error loading orders:", err);
+            const container = document.getElementById("orderList");
+            if (container) container.innerHTML = '<p style="text-align:center; padding:40px; color:#ef4444;">Error loading orders.</p>';
         });
 }
 
@@ -1699,50 +1930,192 @@ function rejectOrder(orderId) {
     .catch(err => alert("Error rejecting order."));
 }
 
+// ===================================
+// MULTI-TASK BREAKDOWN BUILDER
+// ===================================
+
+let _subTaskCounter = 0;
+
 function openConvertOrderModal(id, cust, skill, desc, qty, prio) {
+    const modal = document.getElementById("convertOrderModal");
+    if (!modal) return;
+
     document.getElementById("convOrderId").value = id;
     document.getElementById("convCustName").innerText = cust;
-    document.getElementById("convTaskName").value = "Production: " + skill;
-    document.getElementById("convSection").value = "Manufacturing";
-    document.getElementById("convSkill").value = skill;
-    document.getElementById("convPriority").value = prio;
-    document.getElementById("convEmployees").value = Math.ceil(qty / 100); // Rough estimate
+    document.getElementById("convOrderDesc").innerText = desc || '';
 
-    document.getElementById("convertOrderModal").classList.add("active");
+    // Reset builder
+    _subTaskCounter = 0;
+    const list = document.getElementById("subTasksList");
+    if (list) list.innerHTML = '';
+
+    // Pre-fill first task based on order
+    const defaultName = skill ? skill : 'Production Task';
+    addSubTask(defaultName, 'Raw Material Prep', skill || '');
+
+    modal.classList.add("active");
 }
 
-function confirmOrderToTask() {
-    const orderId = document.getElementById("convOrderId").value;
-    const taskName = document.getElementById("convTaskName").value.trim();
-    const section = document.getElementById("convSection").value.trim();
-    const skill = document.getElementById("convSkill").value.trim();
-    const employees = document.getElementById("convEmployees").value;
-    const priority = document.getElementById("convPriority").value;
+function addSubTask(name = '', section = '', skill = '') {
+    _subTaskCounter++;
+    const idx = _subTaskCounter;
+    const isFirst = idx === 1;
 
-    if (!taskName || !section || !skill) {
-        alert("Please fill all task details.");
+    // If name is one of FACTORY_TASKS or section is in SECTION_SKILLS, auto-fill skill
+    if (!skill) {
+        let match = Object.keys(FACTORY_TASKS).find(k => k.toLowerCase() === (name || '').trim().toLowerCase());
+        if (match) {
+            skill = FACTORY_TASKS[match].skills;
+            if (!section) section = FACTORY_TASKS[match].section;
+        } else if (SECTION_SKILLS[section]) {
+            skill = SECTION_SKILLS[section];
+        }
+    }
+
+    const badge = document.getElementById('taskCountBadge');
+
+    const html = `
+        <div id="subTask_${idx}" class="subtask-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <span style="font-size: 11px; font-weight: 700; color: #6366f1; background: #eef2ff; padding: 3px 10px; border-radius: 20px;">Task #${idx}</span>
+                ${!isFirst ? `<button onclick="removeSubTask(${idx})" style="background: #fee2e2; color: #ef4444; border: none; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;">✕ Remove</button>` : '<span style="font-size:11px; color:#94a3b8;">Primary task</span>'}
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div style="grid-column: 1 / -1;">
+                    <label class="subtask-label">Task Name *</label>
+                    <input type="text" id="st_name_${idx}" class="subtask-input" value="${name}" placeholder="e.g. Wash Vegetables" onchange="autoFillSubTaskSkill(${idx})">
+                </div>
+                <div>
+                    <label class="subtask-label">Section</label>
+                    <select id="st_section_${idx}" class="subtask-input" onchange="autoFillSubTaskSkill(${idx})">
+                        <option value="Manufacturing" ${section === 'Manufacturing' ? 'selected' : ''}>Manufacturing</option>
+                        <option value="Processing" ${section === 'Processing' ? 'selected' : ''}>Processing</option>
+                        <option value="Cleaning" ${section === 'Cleaning' ? 'selected' : ''}>Cleaning</option>
+                        <option value="Packaging" ${section === 'Packaging' ? 'selected' : ''}>Packaging</option>
+                        <option value="Quality Control" ${section === 'Quality Control' ? 'selected' : ''}>Quality Control</option>
+                        <option value="Dispatch" ${section === 'Dispatch' ? 'selected' : ''}>Dispatch</option>
+                        <option value="General" ${section === 'General' ? 'selected' : ''}>General</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="subtask-label">Priority</label>
+                    <select id="st_priority_${idx}" class="subtask-input">
+                        <option value="High">High</option>
+                        <option value="Medium" selected>Medium</option>
+                        <option value="Low">Low</option>
+                    </select>
+                </div>
+                <div style="grid-column: 1 / -1;">
+                    <label class="subtask-label">Required Skills *</label>
+                    <input type="text" id="st_skill_${idx}" class="subtask-input" value="${skill}" placeholder="e.g. Knitting, Dyeing Process">
+                </div>
+            </div>
+        </div>
+    `;
+    const container = document.getElementById('subTasksList');
+    if (container) container.insertAdjacentHTML('beforeend', html);
+
+    // Update badge count
+    const count = document.querySelectorAll('#subTasksList .subtask-card').length;
+    if (badge) badge.innerText = count;
+}
+
+function autoFillSubTaskSkill(idx) {
+    const nameInput = document.getElementById(`st_name_${idx}`);
+    const name = nameInput ? nameInput.value.trim().toLowerCase() : '';
+    const sectionInput = document.getElementById(`st_section_${idx}`);
+    const section = sectionInput ? sectionInput.value : '';
+    const skillInput = document.getElementById(`st_skill_${idx}`);
+
+    let match = Object.keys(FACTORY_TASKS).find(k => k.toLowerCase() === name);
+
+    if (match) {
+        if (skillInput) skillInput.value = FACTORY_TASKS[match].skills;
+        if (sectionInput) sectionInput.value = FACTORY_TASKS[match].section;
+    } else if (SECTION_SKILLS[section]) {
+        if (skillInput) skillInput.value = SECTION_SKILLS[section];
+    }
+}
+
+function removeSubTask(idx) {
+    const el = document.getElementById('subTask_' + idx);
+    if (el) el.remove();
+    // Update badge with remaining count
+    const badge = document.getElementById('taskCountBadge');
+    const count = document.querySelectorAll('#subTasksList .subtask-card').length;
+    if (badge) badge.innerText = count;
+}
+
+async function confirmMultiTaskCreation() {
+    const orderId = document.getElementById('convOrderId').value;
+    const taskEls = document.querySelectorAll('#subTasksList .subtask-card');
+
+    if (taskEls.length === 0) {
+        alert('Please add at least one task.');
         return;
     }
 
-    fetch(API_BASE_URL + `/api/convertOrderToTask?orderId=${orderId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            taskName: taskName,
-            section: section,
-            requiredSkill: skill,
-            employeesNeeded: employees,
-            priority: priority,
-            status: "Pending"
-        })
-    })
-    .then(res => res.json())
-    .then(() => {
-        alert("Task Created & Order Updated!");
-        document.getElementById("convertOrderModal").classList.remove("active");
+    const tasks = [];
+    for (const el of taskEls) {
+        const idx = el.id.replace('subTask_', '');
+        const name = (document.getElementById(`st_name_${idx}`) || {}).value?.trim();
+        const section = (document.getElementById(`st_section_${idx}`) || {}).value?.trim() || 'General';
+        const skill = (document.getElementById(`st_skill_${idx}`) || {}).value?.trim();
+        const priority = (document.getElementById(`st_priority_${idx}`) || {}).value || 'Medium';
+
+        if (!name || !skill) {
+            alert(`Task #${idx}: Task Name and Required Skills are required.`);
+            return;
+        }
+        tasks.push({ name, section, skill, priority });
+    }
+
+    const btn = document.querySelector('#convertOrderModal button[onclick="confirmMultiTaskCreation()"]');
+    if (btn) { btn.disabled = true; btn.innerText = 'Creating Tasks...'; }
+
+    try {
+        // First task: uses convertOrderToTask — marks order as "In Progress"
+        const first = tasks[0];
+        await fetch(API_BASE_URL + `/api/convertOrderToTask?orderId=${orderId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                taskName: first.name,
+                section: first.section,
+                requiredSkill: first.skill,
+                employeesNeeded: 1,
+                priority: first.priority,
+                status: 'Pending'
+            })
+        });
+
+        // Remaining tasks: convertOrderToTask so they all link to the order
+        for (let i = 1; i < tasks.length; i++) {
+            const t = tasks[i];
+            await fetch(API_BASE_URL + `/api/convertOrderToTask?orderId=${orderId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    taskName: t.name,
+                    section: t.section,
+                    requiredSkill: t.skill,
+                    employeesNeeded: 1,
+                    priority: t.priority,
+                    status: 'Pending'
+                })
+            });
+        }
+
+        alert(`✅ ${tasks.length} task${tasks.length > 1 ? 's' : ''} created successfully!`);
+        document.getElementById('convertOrderModal').classList.remove('active');
         loadOrders();
-    })
-    .catch(err => alert("Error converting order."));
+
+    } catch (err) {
+        console.error('Error creating tasks:', err);
+        alert('Error creating tasks. Please try again.');
+    } finally {
+        if (btn) { btn.disabled = false; btn.innerText = '✓ Create All Tasks from This Order'; }
+    }
 }
 
 // ===================================
@@ -1760,29 +2133,33 @@ function loadOrderAnalytics() {
             document.getElementById("anaPendingOrders").innerText = data.pendingOrders;
             
             const rate = data.totalOrders > 0 ? Math.round((data.completedOrders / data.totalOrders) * 100) : 0;
-            document.getElementById("anaFulfillmentRate").innerText = rate + "%";
+            const rateEl = document.getElementById("anaFulfillmentRate");
+            if (rateEl) rateEl.innerText = rate + "%";
 
             // Render Chart
             if (orderFulfillmentChartObj) orderFulfillmentChartObj.destroy();
-            const ctx = document.getElementById("orderFulfillmentChart").getContext("2d");
-            orderFulfillmentChartObj = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Pending', 'In Progress', 'Completed', 'Cancelled'],
-                    datasets: [{
-                        data: [data.pendingOrders, data.inProgressOrders, data.completedOrders, data.cancelledOrders],
-                        backgroundColor: ['#f59e0b', '#3b82f6', '#10b981', '#ef4444'],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'bottom' }
+            const canvas = document.getElementById("orderFulfillmentChart");
+            if (canvas) {
+                const ctx = canvas.getContext("2d");
+                orderFulfillmentChartObj = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Pending', 'In Progress', 'Completed', 'Cancelled'],
+                        datasets: [{
+                            data: [data.pendingOrders, data.inProgressOrders, data.completedOrders, data.cancelledOrders],
+                            backgroundColor: ['#f59e0b', '#3b82f6', '#10b981', '#ef4444'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom' }
+                        }
                     }
-                }
-            });
+                });
+            }
 
             // Render Recent Orders Table
             const list = document.getElementById("managerOrderList");
@@ -1832,6 +2209,7 @@ function checkNewOrders() {
     fetch(API_BASE_URL + "/api/ordersByStatus?status=Pending")
         .then(res => res.json())
         .then(orders => {
+            if (!Array.isArray(orders)) return;
             const currentCount = orders.length;
             const badge = document.getElementById("order-badge");
             
@@ -1868,7 +2246,7 @@ function showOrderNotification(order) {
         <div class="toast-icon">📦</div>
         <div class="toast-content">
             <div class="toast-title">New Order Received!</div>
-            <div class="toast-desc">${order.customerName}: ${order.requiredSkill}</div>
+            <div class="toast-desc">${order.customerName}: ${order.requiredSkill || 'General'}</div>
         </div>
     `;
 
@@ -1887,5 +2265,55 @@ function showOrderNotification(order) {
             setTimeout(() => toast.remove(), 300);
         }
     }, 8000);
+}
+
+function loadAllOrderHistory() {
+    fetch(API_BASE_URL + '/api/orders')
+        .then(res => res.json())
+        .then(data => {
+            const renderTable = (listId) => {
+                const list = document.getElementById(listId);
+                if (!list) return;
+                if (!data || data.length === 0) {
+                    list.innerHTML = '<tr><td colspan="7" style="padding: 20px; text-align: center; color: #94a3b8;">No orders found.</td></tr>';
+                    return;
+                }
+                list.innerHTML = data.map(o => {
+                    let statusColor = '#f59e0b';
+                    if (o.status === 'Completed') statusColor = '#10b981';
+                    if (o.status === 'In Progress') statusColor = '#3b82f6';
+                    if (o.status === 'Cancelled') statusColor = '#ef4444';
+                    
+                    const priorityColor = o.priority === 'Urgent' ? '#ef4444' : (o.priority === 'High' ? '#f59e0b' : '#3b82f6');
+                    
+                    return `
+                        <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='white'">
+                            <td style="padding: 15px; font-weight: 700; color: #1e293b;">${o.orderId}</td>
+                            <td style="padding: 15px; font-weight: 600; color: #475569;">${o.customerName}</td>
+                            <td style="padding: 15px; color: #64748b;">${o.orderDescription}</td>
+                            <td style="padding: 15px; font-weight: 700; color: #1e293b;">${o.quantity}</td>
+                            <td style="padding: 15px;">
+                                <span style="background: ${statusColor}15; color: ${statusColor}; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; border: 1px solid ${statusColor}30;">${o.status}</span>
+                            </td>
+                            <td style="padding: 15px;">
+                                <span style="background: ${priorityColor}; color: white; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700;">${o.priority}</span>
+                            </td>
+                            <td style="padding: 15px; color: #94a3b8; font-size: 12px;">${o.createdAt || 'N/A'}</td>
+                        </tr>
+                    `;
+                }).join('');
+            };
+
+            renderTable('fullOrderHistoryList');
+            renderTable('supFullOrderHistoryList');
+        })
+        .catch(err => {
+            console.error('Error loading complete order history', err);
+            const errStr = '<tr><td colspan="7" style="padding: 20px; text-align: center; color: #ef4444;">Error loading history.</td></tr>';
+            const table1 = document.getElementById('fullOrderHistoryList');
+            const table2 = document.getElementById('supFullOrderHistoryList');
+            if (table1) table1.innerHTML = errStr;
+            if (table2) table2.innerHTML = errStr;
+        });
 }
 

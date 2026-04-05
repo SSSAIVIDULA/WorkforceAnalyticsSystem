@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Manager Analytics Dashboard</title>
+    <title>Manager Dashboard | Textile Production Analytics</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -499,8 +499,13 @@
                     </div>
                     <div class="hub-card" onclick="switchTab('tab-order-analytics')">
                         <div class="icon-box">📦</div>
-                        <h3>Order Analytics</h3>
-                        <p>Track customer order fulfillment, trends, and completion metrics.</p>
+                        <h3>Production Order Analytics</h3>
+                        <p>Track customer production fulfillment, trends, and completion metrics.</p>
+                    </div>
+                    <div class="hub-card" onclick="switchTab('tab-order-history')">
+                        <div class="icon-box">📜</div>
+                        <h3>Production Order History</h3>
+                        <p>View complete history of all past and current production orders.</p>
                     </div>
                 </div>
 
@@ -520,15 +525,15 @@
                 <!-- Stat Cards -->
                 <div class="stats-row">
                     <div class="stat-card" style="background: linear-gradient(135deg, #667eea, #764ba2);">
-                        <h4>Total Tasks</h4>
+                        <h4>Total Production Tasks</h4>
                         <div class="num" id="totalTasks">0</div>
                     </div>
                     <div class="stat-card" style="background: linear-gradient(135deg, #10b981, #059669);">
-                        <h4>Completed</h4>
+                        <h4>Completed Operations</h4>
                         <div class="num" id="totalCompleted">0</div>
                     </div>
                     <div class="stat-card" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
-                        <h4>Pending</h4>
+                        <h4>Pending Operations</h4>
                         <div class="num" id="totalPending">0</div>
                     </div>
                     <div class="stat-card" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
@@ -650,17 +655,20 @@
                                     <th style="padding: 15px; color: #475569;">Priority</th>
                                 </tr>
                             </thead>
+                            <tbody id="taskReportBody">
+                                <tr><td colspan="5" style="padding: 20px; text-align: center; color: #94a3b8;">Please select a date to view task report...</td></tr>
                             </tbody>
                         </table>
-                    </div> <!-- CLOSE chart-box -->
-                </div> <!-- CLOSE tab-reports -->
+                    </div> <!-- CLOSE overflow-x:auto -->
+                </div> <!-- CLOSE chart-box -->
+            </div> <!-- CLOSE tab-reports -->
 
-                <!-- ORDER ANALYTICS SECTION -->
-                <div id="tab-order-analytics" class="tab-section">
+            <!-- ORDER ANALYTICS SECTION -->
+            <div id="tab-order-analytics" class="tab-section">
                     <button class="back-btn" onclick="switchTab('tab-hub')">← Back to Menu</button>
                     <div style="margin-bottom: 30px;">
-                        <h2 style="margin: 0; font-size: 28px;">Customer Order Analytics</h2>
-                        <p style="color: #64748b; margin: 5px 0 0 0;">Historical order trends and workforce fulfillment metrics</p>
+                        <h2 style="margin: 0; font-size: 28px;">Production Order Analytics</h2>
+                        <p style="color: #64748b; margin: 5px 0 0 0;">Historical production trends and workforce fulfillment metrics</p>
                     </div>
 
                     <div class="stats-row" style="grid-template-columns: repeat(4, 1fr);">
@@ -707,6 +715,39 @@
                                 </thead>
                                 <tbody id="managerOrderList">
                                     <tr><td colspan="6" style="padding: 20px; text-align: center; color: #94a3b8;">Loading order history...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+
+                <!-- NEW ORDER HISTORY SECTION -->
+                <div id="tab-order-history" class="tab-section">
+                    <div style="margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end;">
+                        <div>
+                            <h2 style="margin: 0; font-size: 28px;">Production Order History</h2>
+                            <p style="color: #64748b; margin: 5px 0 0 0;">View the complete log of all past and pending production orders</p>
+                        </div>
+                        <button onclick="loadAllOrderHistory()" class="back-btn" style="margin-bottom: 0; background: var(--primary); color: white; border: none;">↻ Refresh History</button>
+                    </div>
+
+                    <div class="mgr-calendar-section">
+                        <div style="overflow-x: auto;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 14px; text-align: left;">
+                                <thead>
+                                    <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                                        <th style="padding: 15px; color: #475569;">Order ID</th>
+                                        <th style="padding: 15px; color: #475569;">Customer</th>
+                                        <th style="padding: 15px; color: #475569;">Product Batch</th>
+                                        <th style="padding: 15px; color: #475569;">Units</th>
+                                        <th style="padding: 15px; color: #475569;">Status</th>
+                                        <th style="padding: 15px; color: #475569;">Priority</th>
+                                        <th style="padding: 15px; color: #475569;">Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="fullOrderHistoryList">
+                                    <tr><td colspan="7" style="padding: 20px; text-align: center; color: #94a3b8;">Loading complete order history...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -791,6 +832,6 @@
     <!-- Legacy ID for script compatibility if any -->
     <div id="teamDirectoryModal" style="display:none;"></div>
 
-    <script src="script.js"></script>
+    <script src="script.js?v=2"></script>
 </body>
 </html>

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add New Employee | Workforce Analytics</title>
+    <title>Add Workforce Member | Workforce Analytics</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -145,8 +145,8 @@
                     style="width: 60px; height: 60px; background: linear-gradient(135deg, #6366f1, #a855f7); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; color: white; font-size: 24px; box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);">
                     <i class="fas fa-user-plus"></i>
                 </div>
-                <h2 style="margin: 0;">Add New Employee</h2>
-                <p style="color: #64748b; font-size: 14px; margin-top: 8px;">Onboard a new member to the workforce
+                <h2 style="margin: 0;">Add Workforce Member</h2>
+                <p style="color: #64748b; font-size: 14px; margin-top: 8px;">Onboard a new member to the textile production
                     system</p>
             </div>
 
@@ -192,56 +192,95 @@
             </div>
 
             <div class="form-section-title">
-                <i class="fas fa-star"></i> Skills & Expertise
+                <i class="fas fa-star"></i> Primary Skills (At least one)
             </div>
 
-            <div class="skills-grid-modern" id="skillsGrid">
+            <div class="skills-grid-modern" id="primarySkillsGrid">
                 <label class="skill-option">
-                    <input type="checkbox" name="empSkill" value="Cleaning">
-                    <span>Cleaning</span>
+                    <input type="checkbox" name="primarySkill" value="Knitting Machine Operation">
+                    <span>Knitting Machine Operation</span>
                 </label>
                 <label class="skill-option">
-                    <input type="checkbox" name="empSkill" value="Basic Handling">
-                    <span>Basic Handling</span>
+                    <input type="checkbox" name="primarySkill" value="Yarn Handling">
+                    <span>Yarn Handling</span>
                 </label>
                 <label class="skill-option">
-                    <input type="checkbox" name="empSkill" value="Cutting">
-                    <span>Cutting</span>
+                    <input type="checkbox" name="primarySkill" value="Dyeing Process">
+                    <span>Dyeing Process</span>
                 </label>
                 <label class="skill-option">
-                    <input type="checkbox" name="empSkill" value="Food Processing">
-                    <span>Food Processing</span>
+                    <input type="checkbox" name="primarySkill" value="Drying Operation">
+                    <span>Drying Operation</span>
                 </label>
                 <label class="skill-option">
-                    <input type="checkbox" name="empSkill" value="Cooking">
-                    <span>Cooking</span>
+                    <input type="checkbox" name="primarySkill" value="Quality Inspection">
+                    <span>Quality Inspection</span>
                 </label>
                 <label class="skill-option">
-                    <input type="checkbox" name="empSkill" value="Inspection">
-                    <span>Inspection</span>
+                    <input type="checkbox" name="primarySkill" value="Packaging">
+                    <span>Packaging</span>
                 </label>
                 <label class="skill-option">
-                    <input type="checkbox" name="empSkill" value="Food Safety">
-                    <span>Food Safety</span>
+                    <input type="checkbox" name="primarySkill" value="Labeling & Tagging">
+                    <span>Labeling & Tagging</span>
                 </label>
                 <label class="skill-option">
-                    <input type="checkbox" name="empSkill" value="Packing">
-                    <span>Packing</span>
+                    <input type="checkbox" name="primarySkill" value="Dispatch Handling">
+                    <span>Dispatch Handling</span>
                 </label>
                 <label class="skill-option">
-                    <input type="checkbox" name="empSkill" value="Label Handling">
-                    <span>Label Handling</span>
+                    <input type="checkbox" name="primarySkill" value="Machine Maintenance">
+                    <span>Machine Maintenance</span>
+                </label>
+            </div>
+
+            <div class="form-section-title">
+                <i class="fas fa-plus-circle"></i> Secondary Skills (Optional)
+            </div>
+
+            <div class="skills-grid-modern" id="secondarySkillsGrid">
+                <label class="skill-option">
+                    <input type="checkbox" name="secondarySkill" value="Knitting Machine Operation">
+                    <span>Knitting Machine Operation</span>
                 </label>
                 <label class="skill-option">
-                    <input type="checkbox" name="empSkill" value="Warehouse Handling">
-                    <span>Warehouse Handling</span>
+                    <input type="checkbox" name="secondarySkill" value="Yarn Handling">
+                    <span>Yarn Handling</span>
+                </label>
+                <label class="skill-option">
+                    <input type="checkbox" name="secondarySkill" value="Dyeing Process">
+                    <span>Dyeing Process</span>
+                </label>
+                <label class="skill-option">
+                    <input type="checkbox" name="secondarySkill" value="Drying Operation">
+                    <span>Drying Operation</span>
+                </label>
+                <label class="skill-option">
+                    <input type="checkbox" name="secondarySkill" value="Quality Inspection">
+                    <span>Quality Inspection</span>
+                </label>
+                <label class="skill-option">
+                    <input type="checkbox" name="secondarySkill" value="Packaging">
+                    <span>Packaging</span>
+                </label>
+                <label class="skill-option">
+                    <input type="checkbox" name="secondarySkill" value="Labeling & Tagging">
+                    <span>Labeling & Tagging</span>
+                </label>
+                <label class="skill-option">
+                    <input type="checkbox" name="secondarySkill" value="Dispatch Handling">
+                    <span>Dispatch Handling</span>
+                </label>
+                <label class="skill-option">
+                    <input type="checkbox" name="secondarySkill" value="Machine Maintenance">
+                    <span>Machine Maintenance</span>
                 </label>
             </div>
 
             <div id="msg" style="margin-top: 15px; font-size: 14px;"></div>
 
             <div class="btn-container">
-                <button onclick="addEmployee()" style="margin-top: 0;">Confirm & Add Employee</button>
+                <button onclick="addEmployee()" style="margin-top: 0;">Confirm & Add Member</button>
                 <button onclick="goSupervisor()" class="back-btn" style="margin-top: 0;">Cancel</button>
             </div>
         </div>
@@ -249,13 +288,41 @@
 
     <script src="script.js"></script>
     <script>
-        // Add visual feedback for selected skills
-        document.querySelectorAll('.skill-option input').forEach(checkbox => {
+        // Add visual feedback for selected skills + mutual exclusivity
+        const primaryCheckboxes = document.querySelectorAll('input[name="primarySkill"]');
+        const secondaryCheckboxes = document.querySelectorAll('input[name="secondarySkill"]');
+
+        function updateExclusivity(changedCheckbox, otherGroup) {
+            if (changedCheckbox.checked) {
+                const val = changedCheckbox.value;
+                otherGroup.forEach(cb => {
+                    if (cb.value === val) {
+                        cb.checked = false;
+                        cb.parentElement.classList.remove('selected');
+                        // Optional: disable it?
+                        // cb.disabled = true;
+                    }
+                });
+            }
+        }
+
+        primaryCheckboxes.forEach(checkbox => {
             checkbox.addEventListener('change', function () {
                 if (this.checked) {
                     this.parentElement.classList.add('selected');
+                    updateExclusivity(this, secondaryCheckboxes);
                 } else {
+                    this.parentElement.classList.remove('selected');
+                }
+            });
+        });
+
+        secondaryCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function () {
+                if (this.checked) {
                     this.parentElement.classList.add('selected');
+                    updateExclusivity(this, primaryCheckboxes);
+                } else {
                     this.parentElement.classList.remove('selected');
                 }
             });
