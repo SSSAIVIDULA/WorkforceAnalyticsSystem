@@ -29,4 +29,9 @@ public class OrderController {
         Optional<Order> order = orderRepository.findByOrderId(orderId);
         return order.orElse(null);
     }
+
+    @GetMapping("/orders")
+    public List<Order> getAllOrders() {
+        return orderRepository.findAll();
+    }
 }
