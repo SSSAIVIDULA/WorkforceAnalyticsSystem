@@ -317,44 +317,47 @@ const FACTORY_TASKS = {
     "Socks Labeling": { section: "Labeling & Tagging", skills: "Labeling & Tagging" },
     "Inventory Dispatch": { section: "Dispatch / Logistics", skills: "Dispatch Handling" }
 };
+let dynamicSectionSkills = {};
 
-const SECTION_SKILLS = {
-    "Machine Maintenance / Cleaning": "Machine Maintenance, Yarn Handling",
-    "Yarn Preparation": "Yarn Handling",
-    "Knitting": "Knitting Machine Operation",
-    "Dyeing": "Dyeing Process",
-    "Drying": "Drying Operation",
-    "Quality Check": "Quality Inspection",
-    "Packaging": "Packaging",
-    "Labeling & Tagging": "Labeling & Tagging",
-    "Dispatch / Logistics": "Dispatch Handling",
-    "General": "Basic Labor, Handling"
-};
+async function loadDynamicSectionsForTasks() {
+    try {
+        const res = await fetch("/api/settings/allSectionSkillMap");
+        dynamicSectionSkills = await res.json();
+        
+        let sectionDropdown = document.getElementById("taskSection");
+        if(sectionDropdown) {
+            sectionDropdown.innerHTML = '<option value="">Select Section...</option>';
+            Object.keys(dynamicSectionSkills).forEach(sec => {
+                sectionDropdown.innerHTML += `<option value="${sec}">${sec}</option>`;
+            });
+        }
+    } catch(err) {
+        console.error("Error loading sections:", err);
+    }
+}
 
-function autoFillSkillsBySection() {
+function autoFillSkillsBySectionDynamic() {
     let section = document.getElementById("taskSection").value;
-    if (SECTION_SKILLS[section]) {
-        document.getElementById("taskSkill").value = SECTION_SKILLS[section];
+    if (dynamicSectionSkills[section]) {
+        document.getElementById("taskSkill").value = dynamicSectionSkills[section].join(", ");
     } else {
-        document.getElementById("taskSkill").value = ""; // Clear if no specific skills for section
+        document.getElementById("taskSkill").value = "";
     }
 }
 
-function autoFillTaskDetails() {
-    let taskName = document.getElementById("taskName").value.trim().toLowerCase();
-    let match = Object.keys(FACTORY_TASKS).find(k => k.toLowerCase() === taskName);
-    if (match) {
-        document.getElementById("taskSection").value = FACTORY_TASKS[match].section;
-        document.getElementById("taskSkill").value = FACTORY_TASKS[match].skills;
-    } else {
-        autoFillSkillsBySection();
+document.addEventListener("DOMContentLoaded", () => {
+    if(window.location.href.includes("task-management.html")) {
+        loadDynamicSectionsForTasks();
     }
-}
+});
 
 
 function createTask() {
 
-    let taskName = document.getElementById("taskName").value.trim();
+    let taskNameVal = document.getElementById("taskName").value.trim();
+    let customTaskName = document.getElementById("customTaskName") ? document.getElementById("customTaskName").value.trim() : "";
+    let taskName = customTaskName ? customTaskName : taskNameVal;
+
     let section = document.getElementById("taskSection").value;
     let priority = document.getElementById("taskPriority").value;
     let skill = document.getElementById("taskSkill").value.trim();
@@ -1507,6 +1510,7 @@ function renderMgrCalendar() {
 // ======================
 
 function loadSupervisorDashboard() {
+    loadDynamicSectionsForTasks();
     // 1. Load Directory (cached for modal)
     loadEmployeeDirectory("supEmployeeDirectory");
 
@@ -1949,9 +1953,17 @@ function openConvertOrderModal(id, cust, skill, desc, qty, prio) {
     const list = document.getElementById("subTasksList");
     if (list) list.innerHTML = '';
 
-    // Pre-fill first task based on order
-    const defaultName = skill ? skill : 'Production Task';
-    addSubTask(defaultName, 'Raw Material Prep', skill || '');
+    // Pre-fill tasks based on dynamic sections
+    if (dynamicSectionSkills && Object.keys(dynamicSectionSkills).length > 0) {
+        Object.keys(dynamicSectionSkills).forEach(sec => {
+            const secSkills = dynamicSectionSkills[sec].join(", ");
+            const taskName = `${cust} - ${sec}`;
+            addSubTask(taskName, sec, secSkills);
+        });
+    } else {
+        const defaultName = skill ? skill : 'Production Task';
+        addSubTask(defaultName, 'General', skill || '');
+    }
 
     modal.classList.add("active");
 }
@@ -1961,15 +1973,22 @@ function addSubTask(name = '', section = '', skill = '') {
     const idx = _subTaskCounter;
     const isFirst = idx === 1;
 
-    // If name is one of FACTORY_TASKS or section is in SECTION_SKILLS, auto-fill skill
+    // If name is one of FACTORY_TASKS or section is in dynamicSectionSkills, auto-fill skill
     if (!skill) {
         let match = Object.keys(FACTORY_TASKS).find(k => k.toLowerCase() === (name || '').trim().toLowerCase());
         if (match) {
             skill = FACTORY_TASKS[match].skills;
             if (!section) section = FACTORY_TASKS[match].section;
-        } else if (SECTION_SKILLS[section]) {
-            skill = SECTION_SKILLS[section];
+        } else if (dynamicSectionSkills && dynamicSectionSkills[section]) {
+            skill = dynamicSectionSkills[section].join(", ");
         }
+    }
+
+    let sectionOptions = `<option value="">Select Section</option>`;
+    if (dynamicSectionSkills) {
+        Object.keys(dynamicSectionSkills).forEach(sec => {
+            sectionOptions += `<option value="${sec}" ${section === sec ? 'selected' : ''}>${sec}</option>`;
+        });
     }
 
     const badge = document.getElementById('taskCountBadge');
@@ -1988,13 +2007,7 @@ function addSubTask(name = '', section = '', skill = '') {
                 <div>
                     <label class="subtask-label">Section</label>
                     <select id="st_section_${idx}" class="subtask-input" onchange="autoFillSubTaskSkill(${idx})">
-                        <option value="Manufacturing" ${section === 'Manufacturing' ? 'selected' : ''}>Manufacturing</option>
-                        <option value="Processing" ${section === 'Processing' ? 'selected' : ''}>Processing</option>
-                        <option value="Cleaning" ${section === 'Cleaning' ? 'selected' : ''}>Cleaning</option>
-                        <option value="Packaging" ${section === 'Packaging' ? 'selected' : ''}>Packaging</option>
-                        <option value="Quality Control" ${section === 'Quality Control' ? 'selected' : ''}>Quality Control</option>
-                        <option value="Dispatch" ${section === 'Dispatch' ? 'selected' : ''}>Dispatch</option>
-                        <option value="General" ${section === 'General' ? 'selected' : ''}>General</option>
+                        ${sectionOptions}
                     </select>
                 </div>
                 <div>
@@ -2032,8 +2045,8 @@ function autoFillSubTaskSkill(idx) {
     if (match) {
         if (skillInput) skillInput.value = FACTORY_TASKS[match].skills;
         if (sectionInput) sectionInput.value = FACTORY_TASKS[match].section;
-    } else if (SECTION_SKILLS[section]) {
-        if (skillInput) skillInput.value = SECTION_SKILLS[section];
+    } else if (dynamicSectionSkills && dynamicSectionSkills[section]) {
+        if (skillInput) skillInput.value = dynamicSectionSkills[section].join(", ");
     }
 }
 

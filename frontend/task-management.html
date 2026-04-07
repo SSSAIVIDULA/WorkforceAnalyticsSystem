@@ -381,30 +381,18 @@
       <div class="section-title">1. Create New Task</div>
       <div class="grid-layout">
         <div class="form-group">
-          <label>Task Name</label>
-          <select id="taskName" class="form-control" onchange="autoFillTaskDetails()">
-            <option value="">Select Activity...</option>
-            <option value="Yarn Cleaning">Yarn Cleaning</option>
-            <option value="Yarn Preparation">Yarn Preparation</option>
-            <option value="Socks Knitting">Socks Knitting</option>
-            <option value="Quality Inspection">Socks Quality Inspection</option>
-            <option value="Socks Packaging">Socks Packaging</option>
-            <option value="Socks Labeling">Socks Labeling</option>
-            <option value="Inventory Dispatch">Inventory Dispatch</option>
+          <select id="taskName" class="form-control">
+            <option value="">Select or Create Activity...</option>
+          </select>
+          <input type="text" id="customTaskName" class="form-control" placeholder="Or enter custom task name..." style="margin-top:10px;">
+
           </select>
         </div>
         <div class="form-group">
           <label>Section</label>
-          <select id="taskSection" class="form-control" onchange="autoFillSkillsBySection()">
-            <option value="Machine Maintenance / Cleaning">Machine Maintenance / Cleaning</option>
-            <option value="Yarn Preparation">Yarn Preparation</option>
-            <option value="Knitting">Knitting</option>
-            <option value="Dyeing">Dyeing</option>
-            <option value="Drying">Drying</option>
-            <option value="Quality Check">Quality Check</option>
-            <option value="Packaging">Packaging</option>
-            <option value="Labeling & Tagging">Labeling & Tagging</option>
-            <option value="Dispatch / Logistics">Dispatch / Logistics</option>
+          <select id="taskSection" class="form-control" onchange="autoFillSkillsBySectionDynamic()">
+            <option value="">Select Section...</option>
+            <!-- Loaded dynamically in window.onload -->
           </select>
         </div>
         <div class="form-group">

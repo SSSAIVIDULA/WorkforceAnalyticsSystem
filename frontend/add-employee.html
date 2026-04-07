@@ -196,42 +196,7 @@
             </div>
 
             <div class="skills-grid-modern" id="primarySkillsGrid">
-                <label class="skill-option">
-                    <input type="checkbox" name="primarySkill" value="Knitting Machine Operation">
-                    <span>Knitting Machine Operation</span>
-                </label>
-                <label class="skill-option">
-                    <input type="checkbox" name="primarySkill" value="Yarn Handling">
-                    <span>Yarn Handling</span>
-                </label>
-                <label class="skill-option">
-                    <input type="checkbox" name="primarySkill" value="Dyeing Process">
-                    <span>Dyeing Process</span>
-                </label>
-                <label class="skill-option">
-                    <input type="checkbox" name="primarySkill" value="Drying Operation">
-                    <span>Drying Operation</span>
-                </label>
-                <label class="skill-option">
-                    <input type="checkbox" name="primarySkill" value="Quality Inspection">
-                    <span>Quality Inspection</span>
-                </label>
-                <label class="skill-option">
-                    <input type="checkbox" name="primarySkill" value="Packaging">
-                    <span>Packaging</span>
-                </label>
-                <label class="skill-option">
-                    <input type="checkbox" name="primarySkill" value="Labeling & Tagging">
-                    <span>Labeling & Tagging</span>
-                </label>
-                <label class="skill-option">
-                    <input type="checkbox" name="primarySkill" value="Dispatch Handling">
-                    <span>Dispatch Handling</span>
-                </label>
-                <label class="skill-option">
-                    <input type="checkbox" name="primarySkill" value="Machine Maintenance">
-                    <span>Machine Maintenance</span>
-                </label>
+                <!-- Loaded dynamically -->
             </div>
 
             <div class="form-section-title">
@@ -239,42 +204,7 @@
             </div>
 
             <div class="skills-grid-modern" id="secondarySkillsGrid">
-                <label class="skill-option">
-                    <input type="checkbox" name="secondarySkill" value="Knitting Machine Operation">
-                    <span>Knitting Machine Operation</span>
-                </label>
-                <label class="skill-option">
-                    <input type="checkbox" name="secondarySkill" value="Yarn Handling">
-                    <span>Yarn Handling</span>
-                </label>
-                <label class="skill-option">
-                    <input type="checkbox" name="secondarySkill" value="Dyeing Process">
-                    <span>Dyeing Process</span>
-                </label>
-                <label class="skill-option">
-                    <input type="checkbox" name="secondarySkill" value="Drying Operation">
-                    <span>Drying Operation</span>
-                </label>
-                <label class="skill-option">
-                    <input type="checkbox" name="secondarySkill" value="Quality Inspection">
-                    <span>Quality Inspection</span>
-                </label>
-                <label class="skill-option">
-                    <input type="checkbox" name="secondarySkill" value="Packaging">
-                    <span>Packaging</span>
-                </label>
-                <label class="skill-option">
-                    <input type="checkbox" name="secondarySkill" value="Labeling & Tagging">
-                    <span>Labeling & Tagging</span>
-                </label>
-                <label class="skill-option">
-                    <input type="checkbox" name="secondarySkill" value="Dispatch Handling">
-                    <span>Dispatch Handling</span>
-                </label>
-                <label class="skill-option">
-                    <input type="checkbox" name="secondarySkill" value="Machine Maintenance">
-                    <span>Machine Maintenance</span>
-                </label>
+                <!-- Loaded dynamically -->
             </div>
 
             <div id="msg" style="margin-top: 15px; font-size: 14px;"></div>
@@ -289,44 +219,77 @@
     <script src="script.js"></script>
     <script>
         // Add visual feedback for selected skills + mutual exclusivity
-        const primaryCheckboxes = document.querySelectorAll('input[name="primarySkill"]');
-        const secondaryCheckboxes = document.querySelectorAll('input[name="secondarySkill"]');
+        function setupExclusivityAndListeners() {
+            const primaryCheckboxes = document.querySelectorAll('input[name="primarySkill"]');
+            const secondaryCheckboxes = document.querySelectorAll('input[name="secondarySkill"]');
 
-        function updateExclusivity(changedCheckbox, otherGroup) {
-            if (changedCheckbox.checked) {
-                const val = changedCheckbox.value;
-                otherGroup.forEach(cb => {
-                    if (cb.value === val) {
-                        cb.checked = false;
-                        cb.parentElement.classList.remove('selected');
-                        // Optional: disable it?
-                        // cb.disabled = true;
+            function updateExclusivity(changedCheckbox, otherGroup) {
+                if (changedCheckbox.checked) {
+                    const val = changedCheckbox.value;
+                    otherGroup.forEach(cb => {
+                        if (cb.value === val) {
+                            cb.checked = false;
+                            cb.parentElement.classList.remove('selected');
+                        }
+                    });
+                }
+            }
+
+            primaryCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function () {
+                    if (this.checked) {
+                        this.parentElement.classList.add('selected');
+                        updateExclusivity(this, secondaryCheckboxes);
+                    } else {
+                        this.parentElement.classList.remove('selected');
                     }
                 });
-            }
+            });
+
+            secondaryCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function () {
+                    if (this.checked) {
+                        this.parentElement.classList.add('selected');
+                        updateExclusivity(this, primaryCheckboxes);
+                    } else {
+                        this.parentElement.classList.remove('selected');
+                    }
+                });
+            });
         }
 
-        primaryCheckboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', function () {
-                if (this.checked) {
-                    this.parentElement.classList.add('selected');
-                    updateExclusivity(this, secondaryCheckboxes);
-                } else {
-                    this.parentElement.classList.remove('selected');
-                }
-            });
-        });
-
-        secondaryCheckboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', function () {
-                if (this.checked) {
-                    this.parentElement.classList.add('selected');
-                    updateExclusivity(this, primaryCheckboxes);
-                } else {
-                    this.parentElement.classList.remove('selected');
-                }
-            });
-        });
+        async function fetchSystemSkills() {
+            try {
+                const res = await fetch('http://localhost:8080/api/settings/skills');
+                const skills = await res.json();
+                
+                const pGrid = document.getElementById('primarySkillsGrid');
+                const sGrid = document.getElementById('secondarySkillsGrid');
+                pGrid.innerHTML = '';
+                sGrid.innerHTML = '';
+                
+                skills.forEach(skill => {
+                    pGrid.innerHTML += `
+                        <label class="skill-option">
+                            <input type="checkbox" name="primarySkill" value="${skill.name}">
+                            <span>${skill.name}</span>
+                        </label>`;
+                    sGrid.innerHTML += `
+                        <label class="skill-option">
+                            <input type="checkbox" name="secondarySkill" value="${skill.name}">
+                            <span>${skill.name}</span>
+                        </label>`;
+                });
+                
+                setTimeout(setupExclusivityAndListeners, 100);
+            } catch (err) {
+                console.error('Error fetching skills:', err);
+                document.getElementById('primarySkillsGrid').innerHTML = '<p>Error loading skills</p>';
+                document.getElementById('secondarySkillsGrid').innerHTML = '<p>Error loading skills</p>';
+            }
+        }
+        
+        window.addEventListener('load', fetchSystemSkills);
     </script>
 
 </body>
