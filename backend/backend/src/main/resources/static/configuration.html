@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Section & Skill Configuration | Workforce Analytics</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background-color: #f0f2f5; margin: 0; font-family: 'Inter', sans-serif;}
+        .main-content { max-width: 1000px; margin: 0 auto; padding: 40px 20px; }
+        
+        .premium-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 40px;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        }
+        
+        .premium-header h1 {
+            font-size: 32px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .tabs-container {
+            display: flex;
+            background: #fff;
+            padding: 8px;
+            border-radius: 16px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+            gap: 5px;
+        }
+
+        .tab-trigger {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            background: transparent;
+            font-weight: 700;
+            color: #64748b;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .tab-trigger.active {
+            background: #6366f1;
+            color: white;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .config-card {
+            background: white;
+            padding: 30px;
+            border-radius: 24px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.03);
+            display: none;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .config-card.active { display: block; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .input-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .input-row input, .input-row select {
+            flex: 1;
+            padding: 14px 20px;
+            border: 2px solid #f1f5f9;
+            border-radius: 12px;
+            font-size: 15px;
+            background: #f8fafc;
+            transition: all 0.2s;
+            margin: 0; /* Direct override for style.css */
+        }
+
+        .input-row input:focus {
+            border-color: #6366f1;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+            outline: none;
+        }
+
+        .btn-add {
+            background: #6366f1;
+            color: white;
+            border: none;
+            padding: 0 25px;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s;
+            white-space: nowrap;
+            width: auto; /* Direct override */
+            margin: 0;
+        }
+
+        .btn-add:hover { background: #4f46e5; transform: translateY(-2px); }
+
+        .data-list { list-style: none; padding: 0; margin: 0; }
+        .data-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            background: #f8fafc;
+            border: 1px solid #f1f5f9;
+            border-radius: 12px;
+            margin-bottom: 10px;
+        }
+
+        .data-item span { font-weight: 600; color: #1e293b; }
+
+        .btn-delete-small {
+            background: #fee2e2;
+            color: #ef4444;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            width: auto;
+            margin: 0;
+        }
+
+        .btn-delete-small:hover { background: #ef4444; color: white; }
+
+        .mapping-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .mapping-card {
+            background: #f8fafc;
+            border: 1px solid #f1f5f9;
+            border-radius: 20px;
+            padding: 20px;
+        }
+
+        .mapping-header {
+            font-weight: 800;
+            color: #1e293b;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px dashed #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .skill-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: white;
+            border: 1px solid #e2e8f0;
+            padding: 6px 12px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            margin: 0 8px 8px 0;
+        }
+
+        .chip-remove { color: #ef4444; cursor: pointer; font-weight: 800; }
+    </style>
+</head>
+<body>
+    <div class="main-content">
+        <a href="supervisor-dashboard.html" class="back-btn" style="margin-bottom: 20px; display: inline-block; text-decoration: none; color: #64748b; font-weight: 700;">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+
+        <div class="premium-header">
+            <h1>Workspace Configuration</h1>
+            <p style="color: #64748b;">Manage sections, skills, and shift assignments</p>
+        </div>
+
+        <div class="tabs-container">
+            <button class="tab-trigger active" onclick="switchTab('tab-skills')"><i class="fas fa-star"></i> Skills</button>
+            <button class="tab-trigger" onclick="switchTab('tab-sections')"><i class="fas fa-industry"></i> Sections</button>
+            <button class="tab-trigger" onclick="switchTab('tab-mapping')"><i class="fas fa-link"></i> Mapping</button>
+            <button class="tab-trigger" onclick="switchTab('tab-shifts')"><i class="fas fa-clock"></i> Shifts</button>
+        </div>
+
+        <!-- SKILLS TAB -->
+        <div id="tab-skills" class="config-card active">
+            <h2 style="margin-top: 0;">Skill Management</h2>
+            <div class="input-row">
+                <input type="text" id="skillInput" placeholder="New skill (e.g. Quality Check)">
+                <button class="btn-add" onclick="addSkill()">Add Skill</button>
+            </div>
+            <ul id="skillsList" class="data-list"></ul>
+        </div>
+
+        <!-- SECTIONS TAB -->
+        <div id="tab-sections" class="config-card">
+            <h2 style="margin-top: 0;">Production Sections</h2>
+            <div class="input-row">
+                <input type="text" id="sectionInput" placeholder="New section (e.g. Finishing)">
+                <button class="btn-add" onclick="addSection()">Add Section</button>
+            </div>
+            <ul id="sectionsList" class="data-list"></ul>
+        </div>
+
+        <!-- MAPPING TAB -->
+        <div id="tab-mapping" class="config-card">
+            <h2 style="margin-top: 0;">Link Skills to Sections</h2>
+            <div class="input-row" style="flex-direction: column; gap: 20px;">
+                <div style="flex: 1; width: 100%;">
+                    <label style="display: block; font-weight: 700; color: #64748b; margin-bottom: 8px;">1. Select Section</label>
+                    <select id="mapSectionSelect" style="width: 100%; border: 2px solid #f1f5f9; padding: 12px; border-radius: 12px;" onchange="loadMappingPreview()"></select>
+                </div>
+                
+                <div style="flex: 1; width: 100%;">
+                    <label style="display: block; font-weight: 700; color: #64748b; margin-bottom: 8px;">2. Select Skills (Multiple)</label>
+                    <div id="mappingSkillCheckboxes" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; padding: 15px; background: #f8fafc; border-radius: 12px; border: 1px solid #f1f5f9; max-height: 200px; overflow-y: auto;">
+                        <p style="color: #94a3b8; font-size: 14px;">Select a section first...</p>
+                    </div>
+                </div>
+
+                <button class="btn-add" onclick="saveMappings()" style="width: 100%; padding: 15px; font-size: 16px;">Update Mappings</button>
+            </div>
+            
+            <h3 style="border-top: 1px solid #f1f5f9; padding-top: 25px; margin-top: 30px;">Current Workforce Capability Map</h3>
+            <div id="mappingDisplay" class="mapping-grid"></div>
+        </div>
+
+        <!-- SHIFTS TAB -->
+        <div id="tab-shifts" class="config-card">
+            <h2 style="margin-top: 0;">Shift & Personnel</h2>
+            <div class="input-row">
+                <input type="text" id="shiftInput" placeholder="New shift (e.g. Night Shift)">
+                <button class="btn-add" onclick="addShift()">Create Shift</button>
+            </div>
+            <ul id="shiftsList" class="data-list" style="margin-bottom: 40px;"></ul>
+
+            <h2 style="border-top: 1px solid #f1f5f9; padding-top: 30px;">Assign Employee to Shift</h2>
+            <div class="input-row">
+                <select id="empSelect"></select>
+                <select id="shiftSelect"></select>
+                <button class="btn-add" onclick="assignShift()">Assign Now</button>
+            </div>
+            <ul id="assignmentsList" class="data-list"></ul>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        function switchTab(tabId) {
+            document.querySelectorAll('.config-card').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.tab-trigger').forEach(t => t.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        async function loadSkills() {
+            const res = await fetch(api('/api/skills'));
+            const skills = await res.json();
+            window.allSkills = skills;
+            const list = document.getElementById('skillsList');
+            list.innerHTML = skills.map(s => `
+                <li class="data-item">
+                    <span>${s.name}</span>
+                    <button class="btn-delete-small" onclick="deleteSkill(${s.id})">Delete</button>
+                </li>
+            `).join('');
+            
+            await loadSections();
+        }
+
+        async function addSkill() {
+            const name = document.getElementById('skillInput').value.trim();
+            if(!name) return;
+            const res = await fetch(api('/api/skills'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name })
+            });
+            if(res.ok) {
+                document.getElementById('skillInput').value = '';
+                await init();
+            } else {
+                const text = await res.text();
+                alert(text || 'Error adding skill');
+            }
+        }
+
+        async function deleteSkill(id) {
+            if(!confirm('Delete this skill and its mappings?')) return;
+            await fetch(api(`/api/skills/${id}`), { method: 'DELETE' });
+            await init();
+        }
+
+        async function loadSections() {
+            const res = await fetch(api('/api/sections'));
+            const sections = await res.json();
+            const list = document.getElementById('sectionsList');
+            list.innerHTML = sections.map(s => `
+                <li class="data-item">
+                    <span>${s.name}</span>
+                    <button class="btn-delete-small" onclick="deleteSection(${s.id})">Delete</button>
+                </li>
+            `).join('');
+
+            document.getElementById('mapSectionSelect').innerHTML = '<option value="">Select Section...</option>' + 
+                sections.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+        }
+
+        async function addSection() {
+            const name = document.getElementById('sectionInput').value.trim();
+            if(!name) return;
+            const res = await fetch(api('/api/sections'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name })
+            });
+            if(res.ok) {
+                document.getElementById('sectionInput').value = '';
+                await init();
+            } else {
+                const text = await res.text();
+                alert(text || 'Error adding section');
+            }
+        }
+
+        async function deleteSection(id) {
+            if(!confirm('Delete this section and its mappings?')) return;
+            await fetch(api(`/api/sections/${id}`), { method: 'DELETE' });
+            await init();
+        }
+
+        async function loadMappings() {
+            const secRes = await fetch(api('/api/sections'));
+            const sections = await secRes.json();
+            const grid = document.getElementById('mappingDisplay');
+            grid.innerHTML = '';
+            
+            for(const sec of sections) {
+                const skillRes = await fetch(api(`/api/sections/${sec.id}/skills`));
+                const skills = await skillRes.json();
+                
+                const card = document.createElement('div');
+                card.className = 'mapping-card';
+                card.innerHTML = `
+                    <div class="mapping-header"><i class="fas fa-industry"></i> ${sec.name}</div>
+                    <div class="skills-area">
+                        ${skills.map(skill => `
+                            <div class="skill-chip">
+                                ${skill.name}
+                                <span class="chip-remove" onclick="removeMapping(${sec.id}, ${skill.id})">&times;</span>
+                            </div>
+                        `).join('') || '<div style="color:#94a3b8; font-size:12px;">No skills mapped</div>'}
+                    </div>
+                `;
+                grid.appendChild(card);
+            }
+        }
+
+        async function loadMappingPreview() {
+            const sectionId = document.getElementById('mapSectionSelect').value;
+            const container = document.getElementById('mappingSkillCheckboxes');
+            if(!sectionId) {
+                container.innerHTML = '<p style="color: #94a3b8; font-size: 14px;">Select a section first...</p>';
+                return;
+            }
+
+            // Fetch current skills for this section
+            const skillRes = await fetch(api(`/api/sections/${sectionId}/skills`));
+            const currentSkills = await skillRes.json();
+            const currentIds = new Set(currentSkills.map(s => s.id));
+
+            container.innerHTML = (window.allSkills || []).map(s => `
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer;">
+                    <input type="checkbox" name="skillMap" value="${s.id}" ${currentIds.has(s.id) ? 'checked' : ''}>
+                    ${s.name}
+                </label>
+            `).join('') || '<p style="color: #94a3b8; font-size: 14px;">No skills created yet.</p>';
+        }
+
+        async function saveMappings() {
+            const sectionId = document.getElementById('mapSectionSelect').value;
+            if(!sectionId) return alert('Please select a section');
+
+            const checkboxes = document.querySelectorAll('input[name="skillMap"]:checked');
+            const selectedSkillIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+
+            // Implementation: To update, we clear existing for this section and add new
+            
+            // 1. Get current mappings to find which to delete
+            const currentSkillRes = await fetch(api(`/api/sections/${sectionId}/skills`));
+            const currentSkills = await currentSkillRes.json();
+            
+            // Delete all current ones first
+            for(const s of currentSkills) {
+                await fetch(api(`/api/section-skill-map/${sectionId}/${s.id}`), { method: 'DELETE' });
+            }
+
+            // 2. Add new mappings
+            for(const skillId of selectedSkillIds) {
+                await fetch(api('/api/section-skill-map'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sectionId: parseInt(sectionId), skillId: skillId })
+                });
+            }
+
+            alert('Mappings updated successfully!');
+            await init();
+        }
+
+        async function removeMapping(secId, skillId) {
+            await fetch(api(`/api/section-skill-map/${secId}/${skillId}`), { method: 'DELETE' });
+            await init();
+        }
+
+        async function loadShifts() {
+            const res = await fetch(api('/api/sessions'));
+            const shifts = await res.json();
+            document.getElementById('shiftsList').innerHTML = shifts.map(s => `
+                <li class="data-item">
+                    <span>${s.name}</span>
+                    <button class="btn-delete-small" onclick="deleteShift(${s.id})">Delete</button>
+                </li>
+            `).join('');
+
+            document.getElementById('shiftSelect').innerHTML = '<option value="">Select Shift...</option>' + 
+                shifts.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+        }
+
+        async function addShift() {
+            const name = document.getElementById('shiftInput').value.trim();
+            if(!name) return;
+            await fetch(api('/api/sessions'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name })
+            });
+            document.getElementById('shiftInput').value = '';
+            await init();
+        }
+
+        async function deleteShift(id) {
+            await fetch(api(`/api/sessions/${id}`), { method: 'DELETE' });
+            await init();
+        }
+
+        async function loadPersonnel() {
+            const res = await fetch(api('/api/employees'));
+            const emps = await res.json();
+            document.getElementById('empSelect').innerHTML = '<option value="">Select Employee...</option>' + 
+                emps.map(e => `<option value="${e.id}">${e.username}</option>`).join('');
+
+            const assRes = await fetch(api('/api/employee-sessions'));
+            const assigns = await assRes.json();
+            
+            // Map IDs for display
+            const shiftRes = await fetch(api('/api/sessions'));
+            const shifts = await shiftRes.json();
+            const sMap = {}; shifts.forEach(s => sMap[s.id] = s.name);
+            const eMap = {}; emps.forEach(e => eMap[e.id] = e.username);
+
+            document.getElementById('assignmentsList').innerHTML = assigns.map(a => `
+                <li class="data-item">
+                    <span><b>${eMap[a.employeeId] || 'User'}</b> assigned to <b>${sMap[a.sessionId] || 'Shift'}</b></span>
+                    <button class="btn-delete-small" onclick="deleteAssignment(${a.id})">Remove</button>
+                </li>
+            `).join('');
+        }
+
+        async function assignShift() {
+            const employeeId = document.getElementById('empSelect').value;
+            const sessionId = document.getElementById('shiftSelect').value;
+            if(!employeeId || !sessionId) return;
+            await fetch(api('/api/employee-sessions'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ employeeId: parseInt(employeeId), sessionId: parseInt(sessionId) })
+            });
+            await init();
+        }
+
+        async function deleteAssignment(id) {
+            await fetch(api(`/api/employee-sessions/${id}`), { method: 'DELETE' });
+            await init();
+        }
+
+        async function init() {
+            await Promise.all([loadSkills(), loadSections(), loadMappings(), loadShifts(), loadPersonnel()]);
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>

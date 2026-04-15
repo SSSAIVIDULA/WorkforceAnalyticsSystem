@@ -133,6 +133,53 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
             border-color: #cbd5e1;
         }
+
+        .skills-grid-modern {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .skill-option {
+            background: #f8fafc;
+            border: 2px solid #eef2ff;
+            padding: 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+        }
+
+        .skill-option:hover {
+            border-color: #d1d5db;
+            background: #fff;
+            transform: translateY(-2px);
+        }
+
+        .skill-option input {
+            width: 16px;
+            height: 16px;
+            accent-color: #6366f1;
+        }
+
+        .skill-option span {
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+        }
+
+        .skill-option.selected {
+            background: #eef2ff;
+            border-color: #6366f1;
+        }
+
+        .skill-option.selected span {
+            color: #4338ca;
+        }
     </style>
 </head>
 
@@ -140,9 +187,6 @@
 
     <div class="page">
         <div class="card premium-card premium-form-container">
-            <div style="text-align: left; margin-bottom: 20px;">
-                <button onclick="goSupervisor()" class="back-btn" style="width: auto; padding: 8px 16px; background: #f1f5f9; color: #475569; box-shadow: none; border: 1px solid #e2e8f0; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;">← Back to Menu</button>
-            </div>
             <div style="text-align: center; margin-bottom: 30px;">
                 <div
                     style="width: 60px; height: 60px; background: linear-gradient(135deg, #6366f1, #a855f7); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; color: white; font-size: 24px; box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);">
@@ -185,13 +229,24 @@
                 </div>
             </div>
 
-            <div class="input-group">
-                <label for="role">Access Role</label>
-                <select id="role">
-                    <option value="employee">Standard Employee</option>
-                    <option value="supervisor">Supervisor</option>
-                </select>
-                <i class="fas fa-shield-halved"></i>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="input-group">
+                    <label for="role">Access Role</label>
+                    <select id="role">
+                        <option value="employee">Standard Employee</option>
+                        <option value="supervisor">Supervisor</option>
+                    </select>
+                    <i class="fas fa-shield-halved"></i>
+                </div>
+
+                <div class="input-group">
+                    <label for="department">Primary Section</label>
+                    <select id="department">
+                        <option value="">Select Section...</option>
+                        <!-- Loaded dynamically -->
+                    </select>
+                    <i class="fas fa-industry"></i>
+                </div>
             </div>
 
             <div class="form-section-title">
@@ -199,42 +254,7 @@
             </div>
 
             <div class="skills-grid-modern" id="primarySkillsGrid">
-                <label class="skill-option">
-                    <input type="checkbox" name="primarySkill" value="Knitting Machine Operation">
-                    <span>Knitting Machine Operation</span>
-                </label>
-                <label class="skill-option">
-                    <input type="checkbox" name="primarySkill" value="Yarn Handling">
-                    <span>Yarn Handling</span>
-                </label>
-                <label class="skill-option">
-                    <input type="checkbox" name="primarySkill" value="Dyeing Process">
-                    <span>Dyeing Process</span>
-                </label>
-                <label class="skill-option">
-                    <input type="checkbox" name="primarySkill" value="Drying Operation">
-                    <span>Drying Operation</span>
-                </label>
-                <label class="skill-option">
-                    <input type="checkbox" name="primarySkill" value="Quality Inspection">
-                    <span>Quality Inspection</span>
-                </label>
-                <label class="skill-option">
-                    <input type="checkbox" name="primarySkill" value="Packaging">
-                    <span>Packaging</span>
-                </label>
-                <label class="skill-option">
-                    <input type="checkbox" name="primarySkill" value="Labeling">
-                    <span>Labeling</span>
-                </label>
-                <label class="skill-option">
-                    <input type="checkbox" name="primarySkill" value="Dispatch Handling">
-                    <span>Dispatch Handling</span>
-                </label>
-                <label class="skill-option">
-                    <input type="checkbox" name="primarySkill" value="Machine Maintenance">
-                    <span>Machine Maintenance</span>
-                </label>
+                <!-- Loaded dynamically -->
             </div>
 
             <div class="form-section-title">
@@ -242,48 +262,14 @@
             </div>
 
             <div class="skills-grid-modern" id="secondarySkillsGrid">
-                <label class="skill-option">
-                    <input type="checkbox" name="secondarySkill" value="Knitting Machine Operation">
-                    <span>Knitting Machine Operation</span>
-                </label>
-                <label class="skill-option">
-                    <input type="checkbox" name="secondarySkill" value="Yarn Handling">
-                    <span>Yarn Handling</span>
-                </label>
-                <label class="skill-option">
-                    <input type="checkbox" name="secondarySkill" value="Dyeing Process">
-                    <span>Dyeing Process</span>
-                </label>
-                <label class="skill-option">
-                    <input type="checkbox" name="secondarySkill" value="Drying Operation">
-                    <span>Drying Operation</span>
-                </label>
-                <label class="skill-option">
-                    <input type="checkbox" name="secondarySkill" value="Quality Inspection">
-                    <span>Quality Inspection</span>
-                </label>
-                <label class="skill-option">
-                    <input type="checkbox" name="secondarySkill" value="Packaging">
-                    <span>Packaging</span>
-                </label>
-                <label class="skill-option">
-                    <input type="checkbox" name="secondarySkill" value="Labeling">
-                    <span>Labeling</span>
-                </label>
-                <label class="skill-option">
-                    <input type="checkbox" name="secondarySkill" value="Dispatch Handling">
-                    <span>Dispatch Handling</span>
-                </label>
-                <label class="skill-option">
-                    <input type="checkbox" name="secondarySkill" value="Machine Maintenance">
-                    <span>Machine Maintenance</span>
-                </label>
+                <!-- Loaded dynamically -->
             </div>
 
             <div id="msg" style="margin-top: 15px; font-size: 14px;"></div>
 
-            <div class="btn-container" style="display: block;">
-                <button onclick="addEmployee()" style="margin-top: 0; width: 100%;">Confirm & Add Member</button>
+            <div class="btn-container">
+                <button onclick="addEmployee()" style="margin-top: 0;">Confirm & Add Member</button>
+                <button onclick="goSupervisor()" class="back-btn" style="margin-top: 0;">Cancel</button>
             </div>
         </div>
     </div>
@@ -291,42 +277,109 @@
     <script src="script.js"></script>
     <script>
         // Add visual feedback for selected skills + mutual exclusivity
-        const primaryCheckboxes = document.querySelectorAll('input[name="primarySkill"]');
-        const secondaryCheckboxes = document.querySelectorAll('input[name="secondarySkill"]');
+        function setupExclusivityAndListeners() {
+            const primaryCheckboxes = document.querySelectorAll('input[name="primarySkill"]');
+            const secondaryCheckboxes = document.querySelectorAll('input[name="secondarySkill"]');
 
-        function updateExclusivity(changedCheckbox, otherGroup) {
-            if (changedCheckbox.checked) {
-                const val = changedCheckbox.value;
-                otherGroup.forEach(cb => {
-                    if (cb.value === val) {
-                        cb.checked = false;
-                        cb.parentElement.classList.remove('selected');
+            function updateExclusivity(changedCheckbox, otherGroup) {
+                if (changedCheckbox.checked) {
+                    const val = changedCheckbox.value;
+                    otherGroup.forEach(cb => {
+                        if (cb.value === val) {
+                            cb.checked = false;
+                            cb.parentElement.classList.remove('selected');
+                        }
+                    });
+                }
+            }
+
+            primaryCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function () {
+                    if (this.checked) {
+                        this.parentElement.classList.add('selected');
+                        updateExclusivity(this, secondaryCheckboxes);
+                    } else {
+                        this.parentElement.classList.remove('selected');
                     }
                 });
-            }
+            });
+
+            secondaryCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function () {
+                    if (this.checked) {
+                        this.parentElement.classList.add('selected');
+                        updateExclusivity(this, primaryCheckboxes);
+                    } else {
+                        this.parentElement.classList.remove('selected');
+                    }
+                });
+            });
         }
 
-        primaryCheckboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', function () {
-                if (this.checked) {
-                    this.parentElement.classList.add('selected');
-                    updateExclusivity(this, secondaryCheckboxes);
-                } else {
-                    this.parentElement.classList.remove('selected');
-                }
-            });
-        });
+        async function fetchSystemData() {
+            try {
+                // Fetch sections first
+                const secRes = await fetch(api('/api/sections'));
+                const sections = await secRes.json();
+                const deptSelect = document.getElementById('department');
+                deptSelect.innerHTML = '<option value="">Select Section...</option>';
+                sections.forEach(sec => {
+                    deptSelect.innerHTML += `<option value="${sec.name}">${sec.name}</option>`;
+                });
 
-        secondaryCheckboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', function () {
-                if (this.checked) {
-                    this.parentElement.classList.add('selected');
-                    updateExclusivity(this, primaryCheckboxes);
-                } else {
-                    this.parentElement.classList.remove('selected');
+                // Fetch skills
+                const skillRes = await fetch(api('/api/skills'));
+                const skills = await skillRes.json();
+                
+                const pGrid = document.getElementById('primarySkillsGrid');
+                const sGrid = document.getElementById('secondarySkillsGrid');
+                pGrid.innerHTML = '';
+                sGrid.innerHTML = '';
+                
+                // Fetch section-skill mappings for highlighting
+                const mappingData = {};
+                for (const sec of sections) {
+                    const skRes = await fetch(api(`/api/sections/${sec.id}/skills`));
+                    const sks = await skRes.json();
+                    mappingData[sec.name] = sks.map(s => s.name);
                 }
-            });
-        });
+
+                skills.forEach(skill => {
+                    const cardHtml = (name) => `
+                        <label class="skill-option" data-skill="${skill.name}">
+                            <input type="checkbox" name="${name}" value="${skill.name}">
+                            <span>${skill.name}</span>
+                        </label>`;
+                    
+                    pGrid.innerHTML += cardHtml('primarySkill');
+                    sGrid.innerHTML += cardHtml('secondarySkill');
+                });
+
+                // Add change listener to Department to highlight mapped skills
+                deptSelect.addEventListener('change', function() {
+                    const selectedSec = this.value;
+                    const mappedSkills = mappingData[selectedSec] || [];
+                    
+                    document.querySelectorAll('.skill-option').forEach(opt => {
+                        const skillName = opt.getAttribute('data-skill');
+                        if (mappedSkills.includes(skillName)) {
+                            opt.style.borderColor = '#6366f1';
+                            opt.style.background = 'rgba(99, 102, 241, 0.05)';
+                        } else {
+                            opt.style.borderColor = '#e2e8f0';
+                            opt.style.background = 'white';
+                        }
+                    });
+                });
+                
+                setTimeout(setupExclusivityAndListeners, 100);
+            } catch (err) {
+                console.error('Error fetching system data:', err);
+                document.getElementById('primarySkillsGrid').innerHTML = '<p>Error loading content</p>';
+            }
+        }
+        
+        window.addEventListener('load', fetchSystemData);
     </script>
 
 </body>

@@ -8,18 +8,18 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "section_skills")
-public class SectionSkill {
+@Table(name = "employee_sessions")
+public class EmployeeSession {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "section_id")
-    private Long sectionId;
+    @Column(name = "employee_id")
+    private Long employeeId;
 
-    @Column(name = "skill_id")
-    private Long skillId;
+    @Column(name = "session_id")
+    private Long sessionId;
 
     public Long getId() {
         return id;
@@ -29,19 +29,19 @@ public class SectionSkill {
         this.id = id;
     }
 
-    public Long getSectionId() {
-        return sectionId;
+    public Long getEmployeeId() {
+        return employeeId;
     }
 
-    public void setSectionId(Long sectionId) {
-        this.sectionId = sectionId;
+    public void setEmployeeId(Long employeeId) {
+        this.employeeId = employeeId;
     }
 
-    public Long getSkillId() {
-        return skillId;
+    public Long getSessionId() {
+        return sessionId;
     }
 
-    public void setSkillId(Long skillId) {
-        this.skillId = skillId;
+    public void setSessionId(Long sessionId) {
+        this.sessionId = sessionId;
     }
 }

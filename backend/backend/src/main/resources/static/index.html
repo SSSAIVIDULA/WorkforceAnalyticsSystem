@@ -2,134 +2,30 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Workforce Portal | Login</title>
+    <title>Socks Production Workforce System</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background: #f8fafc;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-            background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
-            background-size: 20px 20px;
-        }
-        .login-card {
-            background: white;
-            padding: 40px;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
-            border: 1px solid #e2e8f0;
-        }
-        .login-card h2 {
-            margin-top: 0;
-            color: #1e293b;
-            font-weight: 800;
-            font-size: 28px;
-        }
-        .login-card label {
-            display: block;
-            text-align: left;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #475569;
-            font-size: 14px;
-        }
-        .login-card input {
-            width: 100%;
-            padding: 14px;
-            border: 1px solid #cbd5e1;
-            border-radius: 10px;
-            margin-bottom: 22px;
-            box-sizing: border-box;
-            font-family: inherit;
-            font-size: 15px;
-            transition: all 0.2s;
-        }
-        .login-card input:focus {
-            outline: none;
-            border-color: #6366f1;
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
-        }
-        .login-card button {
-            width: 100%;
-            padding: 14px;
-            background: #6366f1;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: 0.3s;
-            box-shadow: 0 4px 6px rgba(99, 102, 241, 0.2);
-        }
-        .login-card button:hover {
-            background: #4f46e5;
-            transform: translateY(-1px);
-            box-shadow: 0 6px 10px rgba(99, 102, 241, 0.3);
-        }
-        .demo-links {
-            margin-top: 25px;
-            font-size: 12px;
-            color: #94a3b8;
-            border-top: 1px dashed #e2e8f0;
-            padding-top: 15px;
-        }
-        .demo-links a {
-            color: #6366f1;
-            text-decoration: none;
-            margin: 0 8px;
-            font-weight: 600;
-        }
-        .demo-links a:hover {
-            text-decoration: underline;
-        }
-    </style>
 </head>
 <body>
-
-    <div class="login-card">
-        <div style="font-size: 48px; margin-bottom: 5px;">🏭</div>
-        <h2>Workforce Portal</h2>
-        <p style="color: #64748b; margin-bottom: 30px; font-size: 15px;">Sign in to your production dashboard</p>
-
-        <label>Username</label>
-        <input type="text" id="username" placeholder="e.g. jdoe">
-
-        <label>Password</label>
-        <input type="password" id="password" placeholder="••••••••">
-
-        <button onclick="login()">Enter System</button>
-        <p id="msg" style="color: #ef4444; font-weight: 600; font-size: 14px; margin-top: 15px;"></p>
-
-        <div class="demo-links">
-            <p style="margin: 0 0 8px 0;">Development Fast Links:</p>
-            <a href="manager-dashboard.html">Manager HQ</a> | 
-            <a href="task-management.html">Supervisor Desk</a>
+    <div class="page">
+        <div class="card">
+            <h1>Socks Production Workforce System</h1>
+            <p class="subtitle">Select your role</p>
+            <div class="role-container">
+                <div class="role-card" onclick="goEmployee()">
+                    <div class="icon">👤</div>
+                    <p>Employee</p>
+                </div>
+                <div class="role-card" onclick="goSupervisor()">
+                    <div class="icon">👨‍💼</div>
+                    <p>Supervisor</p>
+                </div>
+                <div class="role-card" onclick="window.location='manager-dashboard.html'">
+                    <div class="icon">💼</div>
+                    <p>Manager</p>
+                </div>
+            </div>
         </div>
     </div>
-
     <script src="script.js"></script>
-    <script>
-        // Check for enter key on password field
-        document.getElementById("password").addEventListener("keypress", function(event) {
-            if (event.key === "Enter") {
-                event.preventDefault();
-                login();
-            }
-        });
-        document.getElementById("username").addEventListener("keypress", function(event) {
-            if (event.key === "Enter") {
-                document.getElementById("password").focus();
-            }
-        });
-    </script>
 </body>
 </html>

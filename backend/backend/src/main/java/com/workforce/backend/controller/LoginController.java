@@ -22,6 +22,12 @@ import com.workforce.backend.repository.AttendanceRepository;
 import com.workforce.backend.repository.OrderRepository;
 import com.workforce.backend.repository.TaskRepository;
 import com.workforce.backend.repository.UserRepository;
+import com.workforce.backend.repository.SessionRepository;
+import com.workforce.backend.repository.EmployeeSessionRepository;
+import com.workforce.backend.repository.SkillRepository;
+import com.workforce.backend.repository.EmployeeSkillRepository;
+import com.workforce.backend.model.Skill;
+import com.workforce.backend.model.EmployeeSkill;
 
 @RestController
 @CrossOrigin
@@ -39,6 +45,18 @@ public class LoginController {
 
     @Autowired
     private OrderRepository orderRepository;
+
+    @Autowired
+    private SessionRepository sessionRepository;
+
+    @Autowired
+    private EmployeeSessionRepository employeeSessionRepository;
+
+    @Autowired
+    private SkillRepository skillRepository;
+
+    @Autowired
+    private EmployeeSkillRepository employeeSkillRepository;
 
     // =========================
     // LOGIN API
@@ -313,6 +331,22 @@ public class LoginController {
             }
             
             map.put("matchType", matchType);
+
+            // Calculate Status based on task load
+            String empStatus = "Available";
+            if (todayCount == 1 || todayCount == 2) empStatus = "Busy";
+            else if (todayCount > 2) empStatus = "Overloaded";
+            map.put("status", empStatus);
+
+            // Fetch session info
+            String sessionText = "None";
+            List<com.workforce.backend.model.EmployeeSession> esList = employeeSessionRepository.findByEmployeeId(user.getId());
+            if (esList != null && !esList.isEmpty()) {
+                com.workforce.backend.model.Session s = sessionRepository.findById(esList.get(0).getSessionId()).orElse(null);
+                if (s != null) sessionText = s.getName();
+            }
+            map.put("session", sessionText);
+
             
             // ⭐ CRITICAL: Only add to result if there is a match (Primary or Secondary)
             if (!"None".equals(matchType)) {

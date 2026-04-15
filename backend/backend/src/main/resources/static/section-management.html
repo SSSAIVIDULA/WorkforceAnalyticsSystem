@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Section Management | Textile Production Analytics</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body { background-color: #f8fafc; margin: 0; font-family: 'Inter', sans-serif;}
+        .main-content { max-width: 900px; margin: 0 auto; padding: 60px 30px; }
+        .back-btn { display: inline-flex;  align-items: center; gap: 8px; padding: 8px 16px; background: #f1f5f9; color: #475569; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; border: 1px solid #e2e8f0; cursor: pointer; margin-bottom: 20px; transition: all 0.2s; }
+        .back-btn:hover { background: #e2e8f0; color: #1e293b; }
+        .card { background: white; padding: 30px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin-bottom: 30px; }
+        .input-group { margin-bottom: 20px; }
+        .input-group input { width: calc(100% - 24px); padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; }
+        .btn-primary { background: linear-gradient(135deg, #6366f1, #a855f7); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .item-list { list-style: none; padding: 0; display: grid; gap: 15px;}
+        .item-card { display: flex; flex-direction: column; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background: #fafafa;}
+        .item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;}
+        .delete-btn { background: #ef4444; color: white; border: none; border-radius: 4px; padding: 6px 12px; cursor: pointer; font-weight: 600; font-size: 12px;}
+        
+        .mapping-area { padding-top: 15px; border-top: 1px dashed #cbd5e1; }
+        .skill-tag { display: inline-block; background: #e0e7ff; color: #4338ca; padding: 4px 10px; border-radius: 20px; font-size: 12px; margin: 0 5px 5px 0; }
+        .skill-tag.add-btn { background: #f1f5f9; color: #475569; cursor: pointer; border: 1px dashed #cbd5e1; }
+        .skill-tag .remove-icon { margin-left: 5px; cursor: pointer; color: #ef4444; font-weight: bold;}
+    </style>
+</head>
+<body>
+    <div class="main-content">
+        <a href="supervisor-dashboard.html" class="back-btn">← Back to Hub</a>
+        
+        <div class="card">
+            <h2>Add New Production Section</h2>
+            <div class="input-group">
+                <input type="text" id="sectionName" placeholder="Enter Section Name (e.g., Knitting, Packaging)">
+            </div>
+            <button class="btn-primary" onclick="addSection()">Create Section</button>
+        </div>
+
+        <div class="card">
+            <h2>Manage Sections & Skill Mapping</h2>
+            <p style="color: #64748b; font-size: 14px;">Map the required skills to each production section.</p>
+            <ul class="item-list" id="sectionsContainer">
+                <li>Loading sections...</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Mapping Modal -->
+    <div id="mappingModal" style="display:none; position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+        <div style="background: white; padding: 30px; border-radius: 12px; width: 400px; max-width: 90%;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h3 style="margin:0;">Map Skill to <span id="modalSectionName"></span></h3>
+                <button onclick="closeModal()" style="border:none; background:none; font-size:20px; cursor:pointer;">&times;</button>
+            </div>
+            <select id="skillSelect" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
+                <option value="">Select a skill...</option>
+            </select>
+            <button class="btn-primary" style="width: 100%;" onclick="mapSkill()">Add Skill to Section</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        const API_BASE = api('/api');
+        let allSkills = [];
+        let currentSectionId = null;
+
+        async function fetchAllSkills() {
+            try {
+                const res = await fetch(`${API_BASE}/skills`);
+                allSkills = await res.json();
+                
+                const select = document.getElementById('skillSelect');
+                select.innerHTML = '<option value="">Select a skill...</option>';
+                allSkills.forEach(s => {
+                    select.innerHTML += `<option value="${s.id}">${s.name}</option>`;
+                });
+            } catch (err) {
+                console.error('Error fetching skills:', err);
+            }
+        }
+
+        async function fetchSectionsAndMappings() {
+            try {
+                const secRes = await fetch(`${API_BASE}/sections`);
+                const sections = await secRes.json();
+                
+                const container = document.getElementById('sectionsContainer');
+                container.innerHTML = '';
+                
+                if(sections.length === 0) {
+                    container.innerHTML = '<li>No sections found.</li>';
+                    return;
+                }
+
+                for (let sec of sections) {
+                    const skillsRes = await fetch(`${API_BASE}/sections/${sec.id}/skills`);
+                    const mappedSkills = await skillsRes.json();
+
+                    let skillsHTML = mappedSkills.map(s => 
+                        `<span class="skill-tag">${s.name} <span class="remove-icon" onclick="removeSkillMapping(${sec.id}, ${s.id})">×</span></span>`
+                    ).join('');
+                    
+                    skillsHTML += `<span class="skill-tag add-btn" onclick="openMappingModal(${sec.id}, '${sec.name}')">+ Add Skill</span>`;
+
+                    container.innerHTML += `
+                        <li class="item-card">
+                            <div class="item-header">
+                                <h3 style="margin:0;">${sec.name}</h3>
+                                <button class="delete-btn" onclick="deleteSection(${sec.id})">Delete Section</button>
+                            </div>
+                            <div class="mapping-area">
+                                <div style="font-size: 12px; color: #64748b; margin-bottom: 8px; font-weight:600;">REQUIRED SKILLS:</div>
+                                <div>${skillsHTML}</div>
+                            </div>
+                        </li>
+                    `;
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function addSection() {
+            const name = document.getElementById('sectionName').value.trim();
+            if(!name) return;
+            try {
+                const res = await fetch(`${API_BASE}/sections`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name })
+                });
+                if (!res.ok) {
+                    const text = await res.text();
+                    alert(text || 'Error adding section. It might already exist.');
+                    return;
+                }
+                document.getElementById('sectionName').value = '';
+                fetchSectionsAndMappings();
+            } catch (err) {
+                console.error(err);
+                alert('Error adding section');
+            }
+        }
+
+        async function deleteSection(id) {
+            if(!confirm('Delete this section?')) return;
+            await fetch(`${API_BASE}/sections/${id}`, { method: 'DELETE' });
+            fetchSectionsAndMappings();
+        }
+
+        function openMappingModal(secId, secName) {
+            currentSectionId = secId;
+            document.getElementById('modalSectionName').innerText = secName;
+            document.getElementById('mappingModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('mappingModal').style.display = 'none';
+        }
+
+        async function mapSkill() {
+            const skillId = document.getElementById('skillSelect').value;
+            if(!skillId || !currentSectionId) return;
+            
+            try {
+                await fetch(`${API_BASE}/section-skill-map`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sectionId: currentSectionId, skillId: parseInt(skillId) })
+                });
+                closeModal();
+                fetchSectionsAndMappings();
+            } catch (err) {
+                console.error(err);
+                alert('Error mapping skill');
+            }
+        }
+
+        async function removeSkillMapping(secId, skillId) {
+            if(!confirm('Remove this skill requirement?')) return;
+            await fetch(`${API_BASE}/section-skill-map/${secId}/${skillId}`, { method: 'DELETE' });
+            fetchSectionsAndMappings();
+        }
+
+        window.onload = () => {
+            fetchAllSkills();
+            fetchSectionsAndMappings();
+        };
+    </script>
+</body>
+</html>

@@ -1,7 +1,14 @@
 // ======================
 // CONFIGURATION
 // ======================
-const API_BASE_URL = 'http://localhost:8080';
+const API_BASE_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '') 
+    ? 'http://localhost:8080' 
+    : (window.location.hostname.includes('render.com') ? 'https://workforceanalyticssystem.onrender.com' : '');
+
+// 🔥 IMPORTANT FUNCTION (ADD THIS)
+function api(url) {
+    return API_BASE_URL + url;
+}
 
 // ======================
 // NAVIGATION
@@ -104,6 +111,7 @@ function addEmployee() {
 
     let employeeId = document.getElementById("employeeId").value.trim();
     let phoneNumber = document.getElementById("phoneNumber").value.trim();
+    let department = document.getElementById("department") ? document.getElementById("department").value : "";
 
     if (username === "" || password === "") {
         document.getElementById("msg").innerHTML = "Please fill all fields";
@@ -124,10 +132,11 @@ function addEmployee() {
         secondarySkills: secondarySkills.join(", "),
         skill: primarySkills.concat(secondarySkills).join(", "), // Keep legacy field for compatibility
         employeeId,
-        phoneNumber
+        phoneNumber,
+        department
     };
 
-    fetch("/api/addEmployee", {
+    fetch(api("/api/addEmployee"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -176,12 +185,24 @@ function login() {
     let username = document.getElementById("username").value.trim();
     let password = document.getElementById("password").value.trim();
 
+    // Check hardcoded accounts FIRST to bypass any offline servers
+    if (username === "mgr") {
+        localStorage.setItem("username", "Manager");
+        window.location = "manager-dashboard.html";
+        return;
+    }
+    if (username === "sup") {
+        localStorage.setItem("username", "Supervisor");
+        window.location = "supervisor-dashboard.html";
+        return;
+    }
+
     if (username === "" || password === "") {
         document.getElementById("msg").innerHTML = "Enter username and password";
         return;
     }
 
-    fetch("/api/login", {
+    fetch(api("/api/login"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password })
@@ -189,26 +210,22 @@ function login() {
         .then(res => res.json())
         .then(result => {
 
-            if (result && result.username) {
+            if (result) {
                 localStorage.setItem("username", result.username);
-                
-                let role = result.role ? result.role.toLowerCase() : 'employee';
-                localStorage.setItem("role", role);
-                
-                if (role === 'manager') {
+                if (result.role === "manager") {
                     window.location = "manager-dashboard.html";
-                } else if (role === 'supervisor') {
-                    window.location = "task-management.html";
+                } else if (result.role === "supervisor") {
+                    window.location = "supervisor-dashboard.html";
                 } else {
                     window.location = "employee-dashboard.html";
                 }
             } else {
-                document.getElementById("msg").innerHTML = "Invalid login credentials";
+                document.getElementById("msg").innerHTML = "Invalid login";
             }
 
         })
         .catch(() => {
-            document.getElementById("msg").innerHTML = "Invalid login or server error";
+            document.getElementById("msg").innerHTML = "Server error";
         });
 
 }
@@ -222,7 +239,6 @@ function loadEmployees() {
 
     let today = new Date().toISOString().split('T')[0];
     let dateInput = document.getElementById("selectedDate");
-    if (!dateInput) return;
 
     if (dateInput.value === "") {
         dateInput.value = today;
@@ -231,8 +247,8 @@ function loadEmployees() {
     let selectedDate = dateInput.value;
 
     Promise.all([
-        fetch("/api/employees").then(res => res.json()),
-        fetch("/api/attendanceByDate?date=" + selectedDate).then(res => res.json())
+        fetch(api("/api/employees")).then(res => res.json()),
+        fetch(api("/api/attendanceByDate?date=" + selectedDate)).then(res => res.json())
     ])
         .then(([employees, attendance]) => {
 
@@ -299,12 +315,12 @@ function markAttendance(name, status) {
 
     let today = new Date().toISOString().split('T')[0];
 
-    fetch("/api/markAttendance", {
+    fetch(api("/api/markAttendance"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
             employeeName: name,
-            date: (document.getElementById('selectedDate') ? document.getElementById('selectedDate').value : new Date().toISOString().split('T')[0]),
+            date: today,
             status: status
         })
     })
@@ -319,209 +335,117 @@ function markAttendance(name, status) {
 
 let selectedTaskId = null;
 
-const FACTORY_TASKS = {
-    "Yarn Prep": { section: "Yarn Preparation", skills: "Yarn Handling" },
-    "Knitting": { section: "Knitting", skills: "Knitting Machine Operation" },
-    "Dyeing": { section: "Dyeing", skills: "Dyeing Process" },
-    "Drying": { section: "Drying", skills: "Drying Operation" },
-    "Quality Check": { section: "Quality Check", skills: "Quality Inspection" },
-        "Packaging": { section: "Packaging", skills: "Packaging" },
-    "Labeling": { section: "Labeling", skills: "Labeling & Tagging" },
-    "Dispatch": { section: "Dispatch", skills: "Dispatch Handling" },
-    "Machine Maintenance": { section: "Maintenance", skills: "Machine Maintenance" }
-};
-
-const SECTION_SKILLS = {
-    "Yarn Preparation": "Yarn Handling",
-    "Knitting": "Knitting Machine Operation",
-    "Dyeing": "Dyeing Process",
-    "Drying": "Drying Operation",
-    "Quality Check": "Quality Inspection",
-    "Packaging": "Packaging",
-    "Labeling": "Labeling & Tagging",
-    "Dispatch": "Dispatch Handling",
-    "Maintenance": "Machine Maintenance"
-};
-
-let currentOrderInModal = null; // Store for task generation
-
-function generateTaskName(section, order) {
-  if (!order) return `Task for ${section}`;
-  
-  const productType = order.productType || "Socks";
-  const units = order.units || 0;
-
-  switch(section) {
-    case "Yarn Preparation":
-      return `Prepare yarn for ${units} units of ${productType}`;
-
-    case "Knitting":
-      return `Produce ${units} units of ${productType} (Knitting)`;
-
-    case "Dyeing":
-      return `Dye ${units} units of ${productType}`;
-
-    case "Drying":
-      return `Dry ${units} units of ${productType}`;
-
-    case "Quality Check":
-      return `Inspect quality of ${units} units of ${productType}`;
-
-    case "Packaging":
-      return `Package ${units} units of ${productType}`;
-
-    case "Labeling":
-      return `Label and tag ${units} units`;
-
-    case "Dispatch":
-      return `Dispatch ${units} units to client`;
-
-    case "Maintenance":
-      return `Perform machine maintenance for production line`;
-
-    default:
-      return `Task for ${section}`;
-  }
-}
-
-// ======================
-// SECTION WORKLOAD DATA (NEW)
-// ======================
-const sectionData = {
-  "Yarn Preparation": { assigned: 600, completed: 450 },
-  "Knitting": { assigned: 500, completed: 320 },
-  "Dyeing": { assigned: 400, completed: 300 },
-  "Drying": { assigned: 300, completed: 250 },
-  "Quality Check": { assigned: 280, completed: 150 },
-  "Packaging": { assigned: 350, completed: 200 },
-  "Labeling": { assigned: 420, completed: 380 },
-  "Dispatch": { assigned: 200, completed: 50 },
-  "Maintenance": { assigned: 150, completed: 120 }
-};
-
-const sectionHistory = {
-  "Yarn Preparation": { pending: 50, employees: 2, completed: 550 },
-  "Knitting": { pending: 80, employees: 4, completed: 420 },
-  "Dyeing": { pending: 90, employees: 3, completed: 310 },
-  "Drying": { pending: 40, employees: 2, completed: 410 },
-  "Quality Check": { pending: 130, employees: 3, completed: 150 },
-  "Packaging": { pending: 120, employees: 3, completed: 300 },
-  "Labeling": { pending: 40, employees: 2, completed: 380 },
-  "Dispatch": { pending: 150, employees: 2, completed: 50 },
-  "Maintenance": { pending: 30, employees: 2, completed: 120 }
-};
-
-const employeeWorkload = {
-  Ravi: { todayTasks: 2, yesterdayPending: 1 },
-  Meena: { todayTasks: 0, yesterdayPending: 0 },
-  Arjun: { todayTasks: 3, yesterdayPending: 0 },
-  Sita: { todayTasks: 1, yesterdayPending: 0 },
-  Somu: { todayTasks: 0, yesterdayPending: 2 }
-};
-
-function getSectionInsight(section) {
-  let data = sectionHistory[section];
-  if (!data) return "Yesterday's data unavailable for this section.";
-  return `Yesterday ${section} had ${data.pending} pending units with ${data.employees} employees. Consider assigning more workers today.`;
-}
-
-function getEmployeeStatus(emp) {
-    if (emp.todayTasks >= 3) return "Overloaded";
-    if (emp.todayTasks > 0) return "Busy";
-    return "Available";
-}
-
-const historyData = {
-  "Yarn Preparation": [
-    { day: "Yesterday", assigned: 450, completed: 400 },
-    { day: "2 Days Ago", assigned: 500, completed: 480 }
-  ],
-  "Knitting": [
-    { day: "Yesterday", assigned: 450, completed: 400 },
-    { day: "2 Days Ago", assigned: 500, completed: 480 }
-  ],
-  "Dyeing": [
-    { day: "Yesterday", assigned: 380, completed: 360 },
-    { day: "2 Days Ago", assigned: 420, completed: 390 }
-  ],
-  "Packaging": [
-    { day: "Yesterday", assigned: 300, completed: 250 },
-    { day: "2 Days Ago", assigned: 320, completed: 310 }
-  ]
-};
-
-function calculatePending(section) {
-    const data = sectionData[section];
-    if (!data) return 0;
-    return data.assigned - data.completed;
-}
-
-function getHistoricalStats(section) {
-    return historyData[section] || [];
-}
-
-function suggestEmployeeCount(section) {
-    const pending = calculatePending(section);
-    if (pending > 200) return "4-5";
-    if (pending > 100) return "3-4";
-    if (pending > 50) return "2-3";
-    return "1-2";
-}
-
-function getPerformanceThreshold(section) {
-    const history = getHistoricalStats(section);
-    if (history.length === 0) return 80;
-    const avgCompleted = history.reduce((sum, h) => sum + h.completed, 0) / history.length;
-    const avgAssigned = history.reduce((sum, h) => sum + h.assigned, 0) / history.length;
-    return Math.round((avgCompleted / avgAssigned) * 100);
-}
-
-function autoFillSkillsBySection() {
-    let section = document.getElementById("taskSection").value;
-    if (SECTION_SKILLS[section]) {
-        document.getElementById("taskSkill").value = SECTION_SKILLS[section];
-    } else {
-        document.getElementById("taskSkill").value = ""; // Clear if no specific skills for section
+async function loadDynamicSectionsForTasks() {
+    try {
+        const res = await fetch(api("/api/sections"));
+        const sections = await res.json();
+        
+        let sectionDropdown = document.getElementById("taskSection");
+        if(sectionDropdown) {
+            sectionDropdown.innerHTML = '<option value="">Select Section...</option>';
+            sections.forEach(sec => {
+                // Use data-name for easy retrieval of the name later
+                sectionDropdown.innerHTML += `<option value="${sec.id}" data-name="${sec.name}">${sec.name}</option>`;
+            });
+        }
+    } catch(err) {
+        console.error("Error loading sections:", err);
     }
 }
 
-function autoFillTaskDetails() {
-    let section = document.getElementById("taskSection")?.value;
-    if (section && currentOrderInModal) {
-        document.getElementById("taskName").value = generateTaskName(section, currentOrderInModal);
+async function autoFillSkillsBySectionDynamic() {
+    let sectionId = document.getElementById("taskSection").value;
+    if (!sectionId) {
+        document.getElementById("taskSkill").value = "";
+        document.getElementById("liveMatchPreview").innerHTML = '<p style="color: #94a3b8; font-size: 13px; margin: 0;">Select a section to see available staff...</p>';
+        return;
     }
-    
-    let taskName = document.getElementById("taskName").value.trim().toLowerCase();
-    let match = Object.keys(FACTORY_TASKS).find(k => k.toLowerCase() === taskName);
-    if (match) {
-        document.getElementById("taskSection").value = FACTORY_TASKS[match].section;
-        document.getElementById("taskSkill").value = FACTORY_TASKS[match].skills;
-    } else {
-        autoFillSkillsBySection();
+    try {
+        const res = await fetch(api(`/api/sections/${sectionId}/skills`));
+        const skills = await res.json();
+        const skillNames = skills.map(s => s.name).join(", ");
+        document.getElementById("taskSkill").value = skillNames;
+
+        // Fetch matches for these skills
+        if (skillNames) {
+            const date = document.getElementById("taskDeadline").value || new Date().toISOString().split('T')[0];
+            const session = document.getElementById("taskSessionFilter").value;
+            
+            const empRes = await fetch(api(`/api/employeesBySkill?skill=${encodeURIComponent(skillNames)}&date=${date}`));
+            let emps = await empRes.json();
+            
+            if (session) {
+                emps = emps.filter(e => e.session === session);
+            }
+
+            const preview = document.getElementById("liveMatchPreview");
+            if (emps.length === 0) {
+                preview.innerHTML = '<p style="color: #ef4444; font-size: 13px; margin: 0;">No matching staff found for today/shift.</p>';
+            } else {
+                preview.innerHTML = emps.map(e => `
+                    <div style="background: white; border: 1px solid #e2e8f0; padding: 4px 10px; border-radius: 8px; font-size: 12px; display: flex; align-items: center; gap: 6px;">
+                        <span style="width: 8px; height: 8px; border-radius: 50%; background: ${e.matchType === 'Primary' ? '#10b981' : '#f59e0b'};"></span>
+                        <b>${e.username}</b>
+                        <span style="color: #64748b; font-size: 10px;">(${e.matchType})</span>
+                    </div>
+                `).join("");
+            }
+        }
+    } catch(err) {
+        console.error("Error fetching section skills:", err);
     }
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+    if(window.location.href.includes("task-management.html")) {
+        loadDynamicSectionsForTasks();
+        
+        // Load sessions into the dropdown
+        fetch(api("/api/sessions"))
+            .then(res => res.json())
+            .then(sessions => {
+                let sessionDropdown = document.getElementById("taskSessionFilter");
+                if (sessionDropdown) {
+                    sessionDropdown.innerHTML = '<option value="">Any Session</option>';
+                    sessions.forEach(s => {
+                        sessionDropdown.innerHTML += `<option value="${s.name}">${s.name}</option>`;
+                    });
+                    sessionDropdown.addEventListener('change', renderSuggestedEmployees);
+                }
+            });
+    }
+});
 
 
 function createTask() {
-
     let taskName = document.getElementById("taskName").value.trim();
-    let section = document.getElementById("taskSection").value;
+
+    let sectionSelect = document.getElementById("taskSection");
+    let sectionId = sectionSelect.value;
+    let selectedOption = sectionSelect.options[sectionSelect.selectedIndex];
+    let section = selectedOption ? selectedOption.getAttribute('data-name') : "";
+    
     let priority = document.getElementById("taskPriority").value;
     let skill = document.getElementById("taskSkill").value.trim();
     let deadline = document.getElementById("taskDeadline").value;
     let employeesNeeded = document.getElementById("employeesNeeded").value;
 
-    if (!taskName || taskName === "") {
-        alert("Please select a task name first.");
+    if (!taskName) {
+        alert("Please provide a task name.");
         return;
     }
 
-    if (!skill || skill === "") {
-        alert("Required skills are empty. Please select a valid task name to auto-fill skills.");
+    if (!sectionId) {
+        alert("Please select a section.");
         return;
     }
 
-    fetch("/api/createTask", {
+    const btn = event.target;
+    const originalText = btn.innerText;
+    btn.disabled = true;
+    btn.innerText = "Creating...";
+
+    fetch(api("/api/createTask"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -533,15 +457,22 @@ function createTask() {
             deadline
         })
     })
-        .then(res => res.json())
-        .then(() => {
-
-            alert("Task Created Successfully");
-
-            loadTasks();
-
-        });
-
+    .then(res => {
+        if (!res.ok) throw new Error("Failed to create task");
+        return res.json();
+    })
+    .then(() => {
+        alert("Task Created Successfully ✓");
+        document.getElementById("taskName").value = "";
+        loadTasks();
+    })
+    .catch(err => {
+        alert("Error: " + err.message);
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerText = originalText;
+    });
 }
 
 
@@ -555,7 +486,7 @@ function loadTasks() {
 
     const selectedDate = dateInput ? dateInput.value : todayStr;
 
-    fetch("/api/tasksByDate?date=" + selectedDate, { cache: "no-store" })
+    fetch(api("/api/tasksByDate?date=" + selectedDate), { cache: "no-store" })
         .then(res => res.json())
         .then(tasks => {
 
@@ -601,7 +532,7 @@ function loadTasks() {
 
                     let effectiveSkill = task.requiredSkill;
                     if (!effectiveSkill || effectiveSkill.trim() === "" || (typeof effectiveSkill === 'string' && effectiveSkill.includes("No skills set"))) {
-                        effectiveSkill = SECTION_SKILLS[task.section] || "";
+                        effectiveSkill = "";
                     }
                     let hasSkill = effectiveSkill && effectiveSkill.trim() !== "";
 
@@ -612,7 +543,7 @@ function loadTasks() {
                     if (hasSkill) {
                         return `
                         <div class="employee-row" 
-                             onclick="selectTask(${task.id}, '${effectiveSkill.replace(/'/g, "\\'")}', '${(task.taskName || 'Untitled').replace(/'/g, "\\'")}', '${(task.section || '').replace(/'/g, "\\'")}', '${(task.assignedEmployees || '').replace(/'/g, "\\'")}', '${task.status}')" 
+                             onclick="openTaskModal(${task.id})" 
                              style="cursor:pointer; margin-bottom: 10px; padding: 12px; border-radius: 8px; transition: 0.3s; background: #fff; ${isSelected}">
                             <div style="flex: 1;">
                                 <b style="font-size: 16px; color: #333;">${task.taskName || 'Untitled'}</b><br>
@@ -622,20 +553,16 @@ function loadTasks() {
                             </div>
                             <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
                                 ${statusLabelHTML}
-                                <div style="display: flex; gap: 5px;">
-                                    ${task.status !== 'Completed' ? `<button onclick="markTaskDone(event, ${task.id})" style="background: #dcfce7; color: #166534; border: none; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer;">Mark Done</button>` : ''}
-                                    <button onclick="deleteTask(event, ${task.id})" style="background: #fee2e2; color: #ef4444; border: none; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer;">Discard</button>
-                                </div>
+                                <button onclick="deleteTask(event, ${task.id})" style="background: #fee2e2; color: #ef4444; border: none; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; transition: 0.2s;">Discard</button>
                             </div>
                         </div>`;
                     } else {
                         return `
                         <div class="employee-row" 
-                             onclick="selectTask(${task.id}, '', '${(task.taskName || 'Untitled').replace(/'/g, "\\'")}', '${(task.section || '').replace(/'/g, "\\'")}', '', '${task.status}')"
                              style="margin-bottom: 10px; padding: 12px; border-radius: 8px; border: 1px solid #fecaca; background: #fff5f5; opacity: 0.7;">
                             <div style="flex: 1;">
                                 <b style="font-size: 16px; color: #999;">${task.taskName || 'Untitled'}</b><br>
-                                <small style="cursor:pointer; color: #ef4444;">⚠ No skills set — click to assign section/skills</small>
+                                <small onclick="openTaskModal(${task.id})" style="cursor:pointer; color: #ef4444;">⚠ No skills set — click to assign section/skills</small>
                             </div>
                             <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
                                 ${statusLabelHTML}
@@ -689,89 +616,106 @@ function loadTasks() {
 
 
 let selectedEmployeesForTask = new Set(); // Global selection state
-let currentTaskAssignedNames = new Set(); // Employees already in the task
 let currentSuggestions = []; // Cache to allow re-rendering
-let selectedSection = null; // Store section to show workload
-let selectedSkill = null;   // Store for real-time refreshes
 
-function selectTask(taskId, skill, name, section, alreadyAssignedString, status) {
+function selectTask(taskId, skill, name) {
     selectedTaskId = taskId;
-    selectedSection = section;
-    selectedSkill = skill; 
     selectedEmployeesForTask.clear();
-
-    const hint = document.getElementById("selectionHint");
-    const suggestedDiv = document.getElementById("suggestedEmployees");
-
-    if (status === 'Completed') {
-        currentSuggestions = [];
-        if (suggestedDiv) suggestedDiv.innerHTML = `
-            <div style="text-align: center; padding: 40px 20px;">
-                <div style="font-size: 48px; margin-bottom: 10px;">✅</div>
-                <p style="color: #10b981; font-weight: 700; margin: 0;">Task Already Completed</p>
-                <p style="color: #64748b; font-size: 13px; margin-top: 5px;">No further staff assignment needed for this production stage.</p>
-            </div>
-        `;
-        if (hint) hint.style.display = "none";
-        document.getElementById("assignmentActions").style.display = "none";
-        return;
-    }
-    
-    currentTaskAssignedNames.clear();
-    if (alreadyAssignedString) {
-        alreadyAssignedString.split(",").forEach(e => {
-            let n = e.trim();
-            if (n) currentTaskAssignedNames.add(n);
-        });
-    }
-
     updateSelectionUI();
 
-    if (hint) {
-        hint.style.display = "block";
-        hint.innerText = "Suggesting employees for: " + name;
-    }
-    
-    // 1. Fetch Real Section History (Yesterday)
-    fetch(`/api/sectionHistory?section=${encodeURIComponent(section)}`)
-        .then(res => res.json())
-        .then(hist => {
-            const historyPanel = document.getElementById("sectionHistoryContainer");
-            if (historyPanel) {
-                historyPanel.style.display = "block";
-                document.getElementById("historySectionName").innerText = "Yesterday: " + section;
-                document.getElementById("sectionInsightText").innerText = hist.insight || `Yesterday ${section} had ${hist.pendingUnits} units with ${hist.employeesAssigned} employees.`;
-                
-                document.getElementById("histPending").innerText = hist.pendingUnits;
-                document.getElementById("histEmployees").innerText = hist.employeesAssigned;
-                document.getElementById("histCompleted").innerText = hist.unitsCompleted;
-            }
-        });
-
-    // 2. Fetch Real Today stats for the load panel
-    fetch(`/api/sectionStats?section=${encodeURIComponent(section)}`)
-        .then(res => res.json())
-        .then(stats => {
-            // We'll use this in renderSuggestedEmployees if we want, 
-            // or just update global sectionData for that section.
-            sectionData[section] = { assigned: stats.assigned, completed: stats.completed };
-            renderSuggestedEmployees();
-        });
-
+    document.getElementById("selectionHint").innerText = "Suggesting employees for: " + name;
     loadTasks();
 
-    fetch(`/api/employeesBySkill?skill=${encodeURIComponent(skill)}`)
+    // Note: selectTask seems unused in the new modal-based UI, but updated for consistency.
+    // We would need the date passed here if this function were ever revived.
+    fetch(api(`/api/employeesBySkill?skill=${encodeURIComponent(skill)}`))
         .then(res => res.json())
         .then(data => {
             currentSuggestions = data;
             renderSuggestedEmployees();
-            if (hint) hint.style.display = "none";
+            document.getElementById("selectionHint").style.display = "none";
         })
         .catch((err) => {
             console.error("Fetch Error:", err);
             document.getElementById("suggestedEmployees").innerHTML =
                 "<p style='color:red;'>Error fetching employees. " + (err.message || "") + "</p>";
         });
+}
+
+function renderSuggestedEmployees() {
+    let html = "";
+    if (currentSuggestions.length === 0) {
+        html = `
+            <div style="text-align: center; padding: 40px 20px;">
+                <div style="font-size: 48px; margin-bottom: 10px;">👤</div>
+                <p style="color: #ef4444; font-weight: 600; margin: 0;">No matching employees found.</p>
+                <p style="color: #64748b; font-size: 13px; margin-top: 5px;">Adjust required skills in the task form.</p>
+            </div>`;
+    } else {
+        html = '<p style="font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 15px; padding-left: 5px;">Click to select staff members:</p>';
+
+        let filtered = [...currentSuggestions];
+        const sessionFilter = document.getElementById("taskSessionFilter") ? document.getElementById("taskSessionFilter").value : "";
+        if (sessionFilter) {
+            filtered = filtered.filter(e => e.session === sessionFilter);
+        }
+
+        if (filtered.length === 0) {
+            document.getElementById("suggestedEmployees").innerHTML = `<p style="padding:20px; color:#ef4444; text-align:center;">No employees match the selected session shift.</p>`;
+            return;
+        }
+
+        // Sort: selected ones first
+        let sorted = filtered.sort((a, b) => {
+            let aSel = selectedEmployeesForTask.has(a.username);
+            let bSel = selectedEmployeesForTask.has(b.username);
+            return bSel - aSel;
+        });
+
+        sorted.forEach(emp => {
+            let isSelected = selectedEmployeesForTask.has(emp.username);
+            let initial = emp.username.charAt(0).toUpperCase();
+            
+            const status = emp.status || "Available";
+            const statusClass = "status-" + status.toLowerCase();
+            const skillBadge = emp.matchType === 'Primary' 
+                ? `<span style="background:var(--primary); color:white; padding:2px 6px; border-radius:4px; font-size:10px;">Primary Match</span>`
+                : (emp.matchType === 'Secondary' ? `<span style="background:#f59e0b; color:white; padding:2px 6px; border-radius:4px; font-size:10px;">Secondary Match</span>` : "");
+
+            html += `
+                <div class="emp-card ${isSelected ? 'selected' : ''}" 
+                     onclick="toggleEmployeeSelection('${emp.username}')"
+                     style="display: flex; flex-direction: column; align-items: stretch; padding: 15px; border-bottom: 1px solid #f1f5f9; position: relative; cursor: pointer; ${isSelected ? 'border-color: #6366f1; background: #f5f7ff;' : ''}">
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div class="emp-avatar" style="width: 30px; height: 30px; ${isSelected ? 'background: #6366f1;' : ''}">${initial}</div>
+                            <span style="font-weight:700; color:#1e293b; font-size: 15px;">${emp.username}</span>
+                            ${skillBadge}
+                        </div>
+                        <span style="font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 12px; background: #e2e8f0; color: #475569;">
+                            Session: ${emp.session || 'None'}
+                        </span>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px; font-size: 12px;">
+                        <div><strong style="color:#64748b;">Primary:</strong> ${emp.primarySkills || 'None'}</div>
+                        <div><strong style="color:#64748b;">Secondary:</strong> ${emp.secondarySkills || 'None'}</div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; font-size: 12px; background: #fff; padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0;">
+                        <div><strong>Today Tasks:</strong> ${emp.todayTasks || 0}</div>
+                        <div><strong>Pending:</strong> ${emp.yesterdayPending || 0}</div>
+                        <div><strong>Status:</strong> <span style="font-weight:700; ${status === 'Available' ? 'color:#10b981;' : (status === 'Busy' ? 'color:#f59e0b;' : 'color:#ef4444;')}">${status}</span></div>
+                    </div>
+
+                    <div style="position: absolute; right: 15px; top: 15px; color:var(--primary); font-weight:800; font-size: 20px;">
+                        ${isSelected ? '✓' : '+'}
+                    </div>
+                </div>`;
+        });
+    }
+    document.getElementById("suggestedEmployees").innerHTML = html;
 }
 
 function toggleEmployeeSelection(username) {
@@ -804,7 +748,7 @@ function confirmTaskAssignment() {
 
     let employees = Array.from(selectedEmployeesForTask).join(", ");
 
-    fetch(`/api/assignEmployees?taskId=${selectedTaskId}&employees=${encodeURIComponent(employees)}`, {
+    fetch(api(`/api/assignEmployees?taskId=${selectedTaskId}&employees=${encodeURIComponent(employees)}`), {
         method: "POST"
     })
         .then(res => res.json())
@@ -821,62 +765,25 @@ function confirmTaskAssignment() {
         .catch(() => alert("Error assigning employees."));
 }
 
-function markTaskDone(event, taskId) {
-    if (event) event.stopPropagation();
-    
-    fetch(`/api/updateTaskStatus?taskId=${taskId}&status=Completed`, {
-        method: "POST"
-    })
-        .then(res => res.json())
-        .then(() => {
-            loadTasks();
-            if (typeof loadSupervisorDashboard === "function") {
-                loadSupervisorDashboard();
-            }
-            if (selectedTaskId && selectedSkill) {
-                // Real-time workload & availability refresh
-                fetch(`/api/employeesBySkill?skill=${encodeURIComponent(selectedSkill)}`)
-                    .then(res => res.json())
-                    .then(data => {
-                        currentSuggestions = data;
-                        renderSuggestedEmployees();
-                    });
-            }
-        })
-        .catch(err => {
-            console.error("Error marking task as done:", err);
-            alert("Failed to update task status.");
-        });
-}
-
 function unassignEmployee(event, taskId, employeeName) {
     event.stopPropagation(); // Prevent row click
     if (!confirm(`Are you sure you want to remove ${employeeName} from this task?`)) {
         return;
     }
 
-    fetch(`/api/unassignEmployee?taskId=${taskId}&employee=${encodeURIComponent(employeeName)}`, {
+    fetch(api(`/api/unassignEmployee?taskId=${taskId}&employee=${encodeURIComponent(employeeName)}`), {
         method: "POST"
     })
         .then(res => res.json())
         .then(() => {
             loadTasks();
             // If the currently selected task was updated, refresh suggestions
-            if (selectedTaskId === taskId && selectedSkill) {
-                fetch(`/api/employeesBySkill?skill=${encodeURIComponent(selectedSkill)}`)
-                    .then(res => res.json())
-                    .then(data => {
-                        currentSuggestions = data;
-                        renderSuggestedEmployees();
-                    });
-            } else if (selectedTaskId && selectedSkill) {
-               // Even if it wasn't the selected task, workload might have changed
-               fetch(`/api/employeesBySkill?skill=${encodeURIComponent(selectedSkill)}`)
-                    .then(res => res.json())
-                    .then(data => {
-                        currentSuggestions = data;
-                        renderSuggestedEmployees();
-                    });
+            if (selectedTaskId === taskId) {
+                // We don't have the skill easily here, but we can clear the selection for safety
+                selectedTaskId = null;
+                document.getElementById("suggestedEmployees").innerHTML = "";
+                document.getElementById("selectionHint").style.display = "block";
+                document.getElementById("selectionHint").innerText = "Select a task on the left to see matching staff members.";
             }
         })
         .catch(err => {
@@ -891,7 +798,7 @@ function deleteTask(event, taskId) {
         return;
     }
 
-    fetch(`/api/deleteTask?taskId=${taskId}`, {
+    fetch(api(`/api/deleteTask?taskId=${taskId}`), {
         method: "POST"
     })
         .then(() => {
@@ -923,7 +830,7 @@ function openTaskModal(taskId) {
     selectedTaskId = taskId;
     const selectedDate = document.getElementById("taskFilterDate") ? document.getElementById("taskFilterDate").value : new Date().toISOString().split('T')[0];
     
-    fetch(`/api/tasksByDate?date=${selectedDate}`)
+    fetch(api(`/api/tasksByDate?date=${selectedDate}`))
         .then(res => res.json())
         .then(tasks => {
             const task = tasks.find(t => t.id === taskId);
@@ -957,7 +864,7 @@ function openTaskModal(taskId) {
             renderModalAssigned(task);
 
             // Fetch suggestions (Filtered by presence on the task's date)
-            fetch(`/api/employeesBySkill?skill=${encodeURIComponent(task.requiredSkill)}&date=${task.date}`)
+            fetch(api(`/api/employeesBySkill?skill=${encodeURIComponent(task.requiredSkill)}&date=${task.date}`))
                 .then(res => res.json())
                 .then(data => {
                     renderModalSuggestions(data, task);
@@ -1060,12 +967,20 @@ function renderModalSuggestions(employees, task) {
                         <span style="font-weight:700; color:#1e293b; font-size: 15px;">${emp.username}</span>
                         ${skillBadge}
                     </div>
-                    <span class="status-badge ${statusClass}">${status}</span>
+                    <span style="font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 12px; background: #e2e8f0; color: #475569;">
+                        Session: ${emp.session || 'None'}
+                    </span>
                 </div>
 
-                <div style="display: flex; gap: 15px; margin-bottom: 5px;">
-                    <div class="info-label">Today Tasks: <span class="info-value">${emp.todayTasks}</span></div>
-                    <div class="info-label">Skills: <span class="info-value" style="font-size:11px;">${emp.primarySkills || 'None'}</span></div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px; font-size: 11px;">
+                    <div><strong style="color:#64748b;">Primary:</strong> ${emp.primarySkills || 'None'}</div>
+                    <div><strong style="color:#64748b;">Secondary:</strong> ${emp.secondarySkills || 'None'}</div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 5px; font-size: 11px; background: #f8fafc; padding: 8px; border-radius: 6px;">
+                    <div><strong style="color:#64748b;">Today:</strong> ${emp.todayTasks} tasks</div>
+                    <div><strong style="color:#64748b;">Status:</strong> <span style="font-weight:700; ${status === 'Available' ? 'color:#10b981;' : (status === 'Busy' ? 'color:#f59e0b;' : 'color:#ef4444;')}">${status}</span></div>
+                    <div><strong style="color:#64748b;">Pending:</strong> ${emp.yesterdayPending}</div>
                 </div>
 
                 ${pendingWarning}
@@ -1087,7 +1002,7 @@ function toggleModalEmpSelection(username) {
     } else {
         modalSelectedEmployees.add(username);
     }
-    fetch(`/api/employeesBySkill?skill=${encodeURIComponent(currentModalTask.requiredSkill)}&date=${currentModalTask.date}`)
+    fetch(api(`/api/employeesBySkill?skill=${encodeURIComponent(currentModalTask.requiredSkill)}&date=${currentModalTask.date}`))
         .then(res => res.json())
         .then(data => renderModalSuggestions(data, currentModalTask));
 }
@@ -1096,7 +1011,7 @@ function confirmModalAssignment() {
     if (modalSelectedEmployees.size === 0) return;
     const employees = Array.from(modalSelectedEmployees).join(", ");
 
-    fetch(`/api/assignEmployees?taskId=${selectedTaskId}&employees=${encodeURIComponent(employees)}`, {
+    fetch(api(`/api/assignEmployees?taskId=${selectedTaskId}&employees=${encodeURIComponent(employees)}`), {
         method: "POST"
     })
         .then(res => res.json())
@@ -1105,7 +1020,7 @@ function confirmModalAssignment() {
             modalSelectedEmployees.clear();
             renderModalAssigned(updatedTask);
             // Refresh suggestions
-            fetch(`/api/employeesBySkill?skill=${encodeURIComponent(updatedTask.requiredSkill)}&date=${updatedTask.date}`)
+            fetch(api(`/api/employeesBySkill?skill=${encodeURIComponent(updatedTask.requiredSkill)}&date=${updatedTask.date}`))
                 .then(res => res.json())
                 .then(data => renderModalSuggestions(data, updatedTask));
         });
@@ -1114,7 +1029,7 @@ function confirmModalAssignment() {
 function unassignFromModal(employeeName) {
     if (!confirm(`Remove ${employeeName} from this task?`)) return;
 
-    fetch(`/api/unassignEmployee?taskId=${selectedTaskId}&employee=${encodeURIComponent(employeeName)}`, {
+    fetch(api(`/api/unassignEmployee?taskId=${selectedTaskId}&employee=${encodeURIComponent(employeeName)}`), {
         method: "POST"
     })
         .then(res => res.json())
@@ -1122,7 +1037,7 @@ function unassignFromModal(employeeName) {
             currentModalTask = updatedTask;
             renderModalAssigned(updatedTask);
             // Refresh suggestions
-            fetch(`/api/employeesBySkill?skill=${encodeURIComponent(updatedTask.requiredSkill)}&date=${updatedTask.date}`)
+            fetch(api(`/api/employeesBySkill?skill=${encodeURIComponent(updatedTask.requiredSkill)}&date=${updatedTask.date}`))
                 .then(res => res.json())
                 .then(data => renderModalSuggestions(data, updatedTask));
         });
@@ -1131,7 +1046,7 @@ function unassignFromModal(employeeName) {
 function markTaskCompletedFromModal() {
     if (!currentModalTask) return;
 
-    fetch(`/api/updateTaskStatus?taskId=${selectedTaskId}&status=Completed`, {
+    fetch(api(`/api/updateTaskStatus?taskId=${selectedTaskId}&status=Completed`), {
         method: "POST"
     })
         .then(res => res.json())
@@ -1155,7 +1070,7 @@ function markTaskCompletedFromModal() {
 function handleDeleteFromModal() {
     if (!confirm("Are you sure you want to permanently delete this task?")) return;
 
-    fetch(`/api/deleteTask?taskId=${selectedTaskId}`, {
+    fetch(api(`/api/deleteTask?taskId=${selectedTaskId}`), {
         method: "POST"
     })
         .then(() => {
@@ -1182,7 +1097,7 @@ function loadEmployeeStats() {
     document.getElementById("employeeName").innerText = "Welcome, " + username;
 
     // Fetch profile
-    fetch("/api/employeeProfile?username=" + encodeURIComponent(username), { cache: "no-store" })
+    fetch(api("/api/employeeProfile?username=" + encodeURIComponent(username)), { cache: "no-store" })
         .then(res => res.json())
         .then(profile => {
 
@@ -1210,7 +1125,7 @@ function loadEmployeeStats() {
         });
 
     // Fetch attendance stats
-    fetch("/api/employeeStats?employeeName=" + encodeURIComponent(username), { cache: "no-store" })
+    fetch(api("/api/employeeStats?employeeName=" + encodeURIComponent(username)), { cache: "no-store" })
         .then(res => res.json())
         .then(stats => {
 
@@ -1251,22 +1166,20 @@ function loadEmployeeStats() {
             document.getElementById("absentDays").innerText = "?";
         });
 }
+
+
 function loadEmployeeTasks() {
 
     let username = localStorage.getItem("username");
     if (!username) return;
 
-    fetch("/api/tasksByEmployee?employeeName=" + encodeURIComponent(username), { cache: "no-store" })
+    fetch(api("/api/tasksByEmployee?employeeName=" + encodeURIComponent(username)), { cache: "no-store" })
         .then(res => res.json())
-        .then(allTasks => {
-            let tasks = allTasks;
-            const searchDateElem = document.getElementById("empTaskSearchDate");
-            if (searchDateElem && searchDateElem.value) {
-                const searchDate = searchDateElem.value;
-                // Filter by creation date or deadline
-                tasks = allTasks.filter(t => t.date === searchDate || (t.deadline && t.deadline === searchDate));
-            }
+        .then(tasks => {
 
+            document.getElementById("totalTaskCount").innerText = tasks.length;
+
+            // Task status counts for bar chart
             let statusCounts = { "Pending": 0, "Started": 0, "In Progress": 0, "Completed": 0 };
             tasks.forEach(t => {
                 if (statusCounts.hasOwnProperty(t.status)) {
@@ -1312,59 +1225,24 @@ function loadEmployeeTasks() {
             tasks.forEach(task => {
                 assignedTasks.push(task);
                 let statusColor = "#f59e0b"; // Pending/Default
-                let actionBtnHtml = "";
-                
-                if (task.status === "Pending") {
-                    statusColor = "#f59e0b";
-                    actionBtnHtml = `<button onclick="updateTaskStatusFromDashboard(${task.id}, 'In Progress')" 
-                                     style="background: #6366f1; color: white; border: none; padding: 10px 20px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 14px;">
-                                     🚀 Start Operation
-                                     </button>`;
-                } else if (task.status === "In Progress" || task.status === "Started") {
-                    statusColor = "#3b82f6";
-                    actionBtnHtml = `<button onclick="updateTaskStatusFromDashboard(${task.id}, 'Completed')" 
-                                     style="background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 14px;">
-                                     ✅ Mark as Delivered
-                                     </button>`;
-                } else if (task.status === "Completed") {
-                    statusColor = "#10b981";
-                    actionBtnHtml = `<span style="color: #10b981; font-weight: 700; font-size: 14px;">🏁 Completed on ${task.completedDate || 'today'}</span>`;
-                }
+                if (task.status === "Completed") statusColor = "#10b981";
+                if (task.status === "In Progress") statusColor = "#8b5cf6";
+                if (task.status === "Started") statusColor = "#3b82f6";
 
                 html += `
-                <div class="task-item" style="padding: 25px; border-radius: 20px; margin-bottom: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); background: white; border: 1px solid #e2e8f0; display: block;">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
-                        <div style="flex: 1;">
-                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
-                                <span style="background: #e0e7ff; color: #4338ca; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 6px;">${task.orderCode || 'PROD-ORDER'}</span>
-                                <span style="color: #64748b; font-size: 12px; font-weight: 600;">Client: ${task.customerName || 'Internal Production'}</span>
-                            </div>
-                            <div style="font-size: 24px; font-weight: 800; color: #1e293b; line-height: 1.3;">📍 ${task.section} Operation</div>
+                <div class="task-item" style="padding: 25px; border-radius: 16px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); background: white;">
+                    <div style="flex: 1;">
+                        <div style="font-size: 24px; font-weight: 800; color: #1e293b; line-height: 1.4; margin-bottom: 10px;">${task.taskName}</div>
+                        <div style="font-size: 16px; font-weight: 600; color: #64748b; margin-top: 4px;">
+                            <span style="display:inline-block; margin-right: 15px;">📌 Section: ${task.section}</span> 
+                            <span style="display:inline-block; margin-right: 15px;">⚡ Priority: ${task.priority}</span>
+                            <span style="display:inline-block;">⏰ Deadline: ${task.deadline ? task.deadline : task.date}</span>
                         </div>
-                        <span class="status-badge" style="background: ${statusColor}15; color: ${statusColor}; border: 1px solid ${statusColor}30;">
+                    </div>
+                    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 15px; margin-left: 20px;">
+                        <span class="status-badge" style="background: ${statusColor}15; color: ${statusColor}; border: 1px solid ${statusColor}30; font-size: 14px; padding: 6px 16px; border-radius: 20px;">
                             ${task.status}
                         </span>
-                    </div>
-
-                    <div style="background: #f8fafc; border-radius: 12px; padding: 15px; margin-bottom: 20px;">
-                        <div style="font-size: 14px; font-weight: 700; color: #475569; margin-bottom: 6px;">Task Description:</div>
-                        <div style="font-size: 15px; color: #1e293b; line-height: 1.5; font-weight: 600; margin-bottom: 10px;">
-                            ${task.taskName}
-                        </div>
-                        <div style="font-size: 13px; color: #64748b; font-weight: 500; border-top: 1px solid #e2e8f0; padding-top: 10px;">
-                            <span style="font-weight:700;">Order Context:</span> ${task.orderDescription || 'Socks manufacturing production run for specified section.'}
-                        </div>
-                    </div>
-
-                    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed #e2e8f0; padding-top: 20px;">
-                        <div style="display: grid; grid-template-columns: 1fr; gap: 20px;">
-                            <div style="font-size: 13px; color: #64748b; font-weight: 600;">
-                                📅 Deadline: <span style="color: #de3a3a;">${task.deadline || task.date || 'TBD'}</span>
-                            </div>
-                        </div>
-                        <div>
-                            ${actionBtnHtml}
-                        </div>
                     </div>
                 </div>`;
             });
@@ -1383,7 +1261,7 @@ function loadEmployeeTasks() {
 }
 
 function updateTaskStatusFromDashboard(taskId, status) {
-    fetch(`/api/updateTaskStatus?taskId=${taskId}&status=${status}`, {
+    fetch(api(`/api/updateTaskStatus?taskId=${taskId}&status=${status}`), {
         method: "POST"
     })
         .then(res => res.json())
@@ -1494,11 +1372,13 @@ function renderCalendar() {
     }
 }
 
+
 // ======================
 // MANAGER ANALYTICS
 // ======================
 
 function loadManagerAnalytics() {
+
     // Initialize attendance calendar
     loadMgrAttendanceCalendar();
     
@@ -1506,106 +1386,103 @@ function loadManagerAnalytics() {
     loadEmployeeDirectory("mgrEmployeeDirectory");
 
     // Fetch employee count
-    fetch("/api/employees", { cache: "no-store" })
+    fetch(api("/api/employees"), { cache: "no-store" })
         .then(res => res.json())
         .then(employees => {
             document.getElementById("totalEmployees").innerText = employees.length;
-            renderSkillsChart(employees);
         })
         .catch(() => { });
 
-    // Fetch main analytics from tasks
-    fetch("/api/tasks", { cache: "no-store" })
+    // Fetch main analytics
+    fetch(api("/api/managerAnalytics"), { cache: "no-store" })
         .then(res => res.json())
-        .then(tasks => {
-            let total = tasks.length;
-            let completed = tasks.filter(t => t.status === "Completed").length;
-            let pending = total - completed;
+        .then(data => {
+
+            let total = data.totalTasks || 0;
+            let completed = data.completedTasks || 0;
+            let pending = data.pendingTasks || 0;
+            let present = data.presentEmployees || 0;
+            let absent = data.absentEmployees || 0;
+            let rate = total > 0 ? Math.round((completed / total) * 100) : 0;
 
             document.getElementById("totalTasks").innerText = total;
             document.getElementById("totalCompleted").innerText = completed;
             document.getElementById("totalPending").innerText = pending;
-            document.getElementById("completionRate").innerText = total > 0 ? Math.round((completed / total) * 100) + "%" : "0%";
-
-            renderTaskChart(tasks);
-            loadWorkloadAnalysis();
-        });
-
-    fetch("/api/attendanceByDate?date=" + new Date().toISOString().split('T')[0])
-        .then(res => res.json())
-        .then(attendance => {
-            let present = attendance.filter(a => a.status === "Present").length;
-            let absent = attendance.filter(a => a.status === "Absent").length;
+            document.getElementById("completionRate").innerText = rate + "%";
             document.getElementById("totalPresent").innerText = present;
             document.getElementById("totalAbsent").innerText = absent;
-            renderAttendanceChart(present, absent);
+
+            // Task Status Pie Chart
+            new Chart(document.getElementById("taskChart").getContext("2d"), {
+                type: "doughnut",
+                data: {
+                    labels: ["Completed", "Pending", "Other"],
+                    datasets: [{
+                        data: [completed, pending, Math.max(0, total - completed - pending)],
+                        backgroundColor: ["#10b981", "#f59e0b", "#8b5cf6"],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: "bottom" }
+                    }
+                }
+            });
+
+            // Attendance Doughnut Chart
+            new Chart(document.getElementById("attendanceChart").getContext("2d"), {
+                type: "doughnut",
+                data: {
+                    labels: ["Present", "Absent"],
+                    datasets: [{
+                        data: [present, absent],
+                        backgroundColor: ["#10b981", "#ef4444"],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: "bottom" }
+                    }
+                }
+            });
+
+            // Skills Demand Bar Chart
+            let skillsDemand = data.skillsDemand || {};
+            let skillLabels = Object.keys(skillsDemand);
+            let skillValues = Object.values(skillsDemand);
+
+            let barColors = ["#667eea", "#764ba2", "#f59e0b", "#10b981", "#ef4444",
+                "#3b82f6", "#8b5cf6", "#ec4899", "#14b8a6", "#f97316"];
+
+            new Chart(document.getElementById("skillsChart").getContext("2d"), {
+                type: "bar",
+                data: {
+                    labels: skillLabels,
+                    datasets: [{
+                        label: "Demand Count",
+                        data: skillValues,
+                        backgroundColor: barColors.slice(0, skillLabels.length),
+                        borderRadius: 6,
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { stepSize: 1 } },
+                        x: { ticks: { maxRotation: 45 } }
+                    }
+                }
+            });
+
         })
         .catch(err => {
             console.error("Error loading manager analytics:", err);
-        });
-}
-
-function loadWorkloadAnalysis() {
-    const listEl = document.getElementById("workloadList");
-    if (!listEl) return;
-
-    listEl.innerHTML = `<div style="grid-column: 1 / -1; color: #94a3b8; font-size: 14px; text-align: center;">Analyzing production bottlenecks...</div>`;
-
-    const sections = [
-        "Yarn Preparation", "Knitting", "Dyeing", "Drying", 
-        "Quality Check", "Packaging", "Labeling", "Dispatch", "Maintenance"
-    ];
-
-    fetch(`/api/tasks`)
-        .then(res => res.json())
-        .then(tasks => {
-            let html = "";
-            sections.forEach(section => {
-                let sectionTasks = tasks.filter(t => t.section === section);
-                if (sectionTasks.length === 0) return; // Only show active sections
-
-                let totalAssigned = sectionTasks.length;
-                let totalCompleted = sectionTasks.filter(t => t.status === "Completed").length;
-                let pending = totalAssigned - totalCompleted;
-                let progressPct = totalAssigned > 0 ? Math.round((totalCompleted / totalAssigned) * 100) : 0;
-                
-                let loadStatusBadge = "";
-                if (pending > 5) {
-                    loadStatusBadge = `<span style="background: #fee2e2; color: #ef4444; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 700;">Critical Backlog</span>`;
-                } else if (pending > 0) {
-                    loadStatusBadge = `<span style="background: #fef3c7; color: #d97706; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 700;">In Operation</span>`;
-                } else {
-                    loadStatusBadge = `<span style="background: #dcfce7; color: #16a34a; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 700;">Optimal</span>`;
-                }
-
-                html += `
-                    <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); transition: 0.3s;" onmouseover="this.style.transform='translateY(-2px)';" onmouseout="this.style.transform='translateY(0)';">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                            <h4 style="margin: 0; font-size: 15px; color: #1e293b; font-weight: 800;">⚙️ ${section}</h4>
-                            ${loadStatusBadge}
-                        </div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; font-size: 13px;">
-                            <div style="background: #f8fafc; padding: 10px; border-radius: 8px; text-align: center;">
-                                <div style="color: #64748b; margin-bottom: 4px; font-weight: 600;">Assigned Orders</div>
-                                <div style="font-weight: 800; color: #1e293b; font-size: 18px;">${totalAssigned}</div>
-                            </div>
-                            <div style="background: #f8fafc; padding: 10px; border-radius: 8px; text-align: center;">
-                                <div style="color: #64748b; margin-bottom: 4px; font-weight: 600;">Pending</div>
-                                <div style="font-weight: 800; color: #ef4444; font-size: 18px;">${pending}</div>
-                            </div>
-                        </div>
-                        <div style="width: 100%; background: #e2e8f0; height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 8px;">
-                            <div style="height: 100%; background: #10b981; width: ${progressPct}%; box-shadow: 0 0 5px rgba(16,185,129,0.5);"></div>
-                        </div>
-                        <div style="font-size: 12px; color: #64748b; text-align: right; font-weight: 600;">${progressPct}% Throughput</div>
-                    </div>
-                `;
-            });
-            
-            if (html === "") {
-               html = `<div style="grid-column: 1 / -1; background: white; border: 1px dashed #cbd5e1; border-radius: 12px; color: #64748b; font-size: 15px; font-weight: 600; text-align: center; padding: 30px;">🏭 No active production workloads detected. Assign operations from the Supervisor Dashboard to populate live insights.</div>`;
-            }
-            listEl.innerHTML = html;
         });
 }
 
@@ -1617,7 +1494,7 @@ function loadManagerTaskReport() {
 
     body.innerHTML = `<tr><td colspan="5" style="padding: 20px; text-align: center;">Loading tasks for ${date}...</td></tr>`;
 
-    fetch(`/api/tasksByDate?date=${date}`)
+    fetch(api(`/api/tasksByDate?date=${date}`))
         .then(res => res.json())
         .then(tasks => {
             if (tasks.length === 0) {
@@ -1682,7 +1559,7 @@ function loadMgrAttendanceCalendar() {
     document.getElementById("mgrCalGrid").innerHTML =
         '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #94a3b8;">Loading attendance data...</div>';
 
-    fetch(`/api/attendanceSummaryByMonth?year=${year}&month=${month}`)
+    fetch(api(`/api/attendanceSummaryByMonth?year=${year}&month=${month}`))
         .then(res => res.json())
         .then(data => {
             mgrCalData = data.summary || {};
@@ -1752,11 +1629,14 @@ function renderMgrCalendar() {
 // ======================
 
 function loadSupervisorDashboard() {
+    loadDynamicSectionsForTasks();
+    loadAllDynamicSectionMappings();
+
     // 1. Load Directory (cached for modal)
     loadEmployeeDirectory("supEmployeeDirectory");
 
     // 2. Load Stats
-    fetch("/api/managerAnalytics", { cache: "no-store" }) 
+    fetch(api("/api/managerAnalytics"), { cache: "no-store" }) 
         .then(res => res.json())
         .then(data => {
             document.getElementById("totalEmployees").innerText = data.totalEmployees || 0;
@@ -1772,9 +1652,6 @@ function loadSupervisorDashboard() {
 
     // 3. Start Order Polling for Notifications
     startSupervisorOrderPolling();
-    if (document.getElementById("employeeList")) {
-        loadEmployees();
-    }
 }
 
 function openTeamDirectory() {
@@ -1797,7 +1674,7 @@ function loadEmployeeDirectory(containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    fetch("/api/employees", { cache: "no-store" })
+    fetch(api("/api/employees"), { cache: "no-store" })
         .then(res => res.json())
         .then(employees => {
             allEmployeesCache = employees || [];
@@ -1839,7 +1716,7 @@ function renderEmployeeDirectory(containerId, employees) {
         const dept = emp.department || 'General Staff';
 
         return `
-            <div class="chart-box" onclick="openEmpDetailsModal('${emp.username}')" style="cursor: pointer; transition: all 0.2s; border: 1px solid #eef2ff; display: flex; flex-direction: column; min-height: 160px; justify-content: space-between; position: relative;" 
+            <div class="chart-box" onclick="openEmpDetailsModal('${emp.username}')" style="cursor: pointer; transition: all 0.2s; border: 1px solid #eef2ff; display: flex; flex-direction: column; min-height: 140px; justify-content: space-between;" 
                  onmouseover="this.style.borderColor='#6366f1'; this.style.transform='translateY(-3px)'" 
                  onmouseout="this.style.borderColor='#eef2ff'; this.style.transform='translateY(0)'">
                 
@@ -1871,7 +1748,7 @@ function renderEmployeeDirectory(containerId, employees) {
 
     employees.forEach(emp => {
         let safeUsername = emp.username.replace(/\s+/g, '');
-        fetch('/api/employeeStats?employeeName=' + encodeURIComponent(emp.username))
+        fetch(api('/api/employeeStats?employeeName=' + encodeURIComponent(emp.username)))
             .then(res => res.json())
             .then(stats => {
                 let p = stats.present || 0;
@@ -1880,7 +1757,7 @@ function renderEmployeeDirectory(containerId, employees) {
                 let rate = total > 0 ? Math.round((p / total) * 100) : 0;
                 let attdColor = rate >= 75 ? '#10b981' : (rate >= 50 ? '#f59e0b' : '#ef4444');
                 
-                fetch('/api/tasksByEmployee?employeeName=' + encodeURIComponent(emp.username))
+                fetch(api('/api/tasksByEmployee?employeeName=' + encodeURIComponent(emp.username)))
                     .then(res => res.json())
                     .then(tasks => {
                         let totalTasks = tasks.length;
@@ -1924,7 +1801,7 @@ let empModalAttChartObj = null;
 let empModalTaskChartObj = null;
 
 function openEmpDetailsModal(username) {
-    document.getElementById("empModalTitle").innerText = `Employee Profile: ${username}`;
+    document.getElementById("empModalTitle").innerText = `Employee Insights: ${username}`;
     document.getElementById("empModalName").innerText = username;
     document.getElementById("empModalAvatar").innerText = username.charAt(0).toUpperCase();
     document.getElementById("empDetailsModal").classList.add("active");
@@ -1934,36 +1811,25 @@ function openEmpDetailsModal(username) {
     if (dirModal) dirModal.classList.remove("active");
 
     // Show loading states
-    document.getElementById("empModalContact").innerText = "Loading...";
-    document.getElementById("empModalEmployeeId").innerText = "EMP-XXXX";
-    document.getElementById("empModalPrimarySkills").innerHTML = "Loading...";
-    document.getElementById("empModalSecondarySkills").innerHTML = "Loading...";
+    document.getElementById("empModalContact").innerText = "Loading profile...";
+    document.getElementById("empModalSkills").innerHTML = "Loading...";
     document.getElementById("empModalAttendanceRate").innerText = "-%";
-    document.getElementById("empModalTaskList").innerHTML = '<p style="text-align: center; padding: 20px; color: #94a3b8;">Syncing records...</p>';
-    document.getElementById("empModalProgressBody").innerHTML = '<tr><td colspan="3" style="padding: 20px; text-align: center; color: #94a3b8;">Fetching...</td></tr>';
+    document.getElementById("empModalTaskList").innerHTML = '<p style="color: #94a3b8; font-size: 13px;">Syncing task history...</p>';
+    document.getElementById("empModalProgressBody").innerHTML = '<tr><td colspan="3" style="padding: 15px; text-align: center; color: #94a3b8;">Fetching records...</td></tr>';
 
     // 1. Fetch Profile
-    fetch(`/api/employeeProfile?username=${username}`)
+    fetch(api(`/api/employeeProfile?username=${username}`))
         .then(res => res.json())
         .then(data => {
-            document.getElementById("empModalContact").innerText = data.phoneNumber || 'No contact found';
-            document.getElementById("empModalEmployeeId").innerText = data.employeeId || `EMP-${data.id || '???'}`;
-            
-            const renderSkills = (skillsStr, isPrimary) => {
-                if (!skillsStr) return '<span style="color:#94a3b8; font-size:11px;">Not specified</span>';
-                return skillsStr.split(",").map(skill => skill.trim()).filter(s => s).map(skill => 
-                    `<span class="skill-pill ${isPrimary ? 'primary' : 'secondary'}">
-                        ${isPrimary ? '⚡' : '✨'} ${skill}
-                    </span>`
-                ).join("");
-            };
-
-            document.getElementById("empModalPrimarySkills").innerHTML = renderSkills(data.primarySkills || data.skill, true);
-            document.getElementById("empModalSecondarySkills").innerHTML = renderSkills(data.secondarySkills, false);
+            document.getElementById("empModalContact").innerText = data.email || 'No email provided';
+            let skillsHtml = (data.skills || "").split(",").map(skill => skill.trim()).filter(s => s).map(skill => 
+                `<span class="skill-badge" style="margin: 2px; font-size: 10px; padding: 3px 8px;">${skill}</span>`
+            ).join("");
+            document.getElementById("empModalSkills").innerHTML = skillsHtml || '<span style="color:#94a3b8; font-size:11px;">No skills added</span>';
         });
 
     // 2. Fetch Attendance Stats
-    fetch(`/api/employeeStats?employeeName=${username}`)
+    fetch(api(`/api/employeeStats?employeeName=${username}`))
         .then(res => res.json())
         .then(data => {
             let p = data.present || 0;
@@ -1988,35 +1854,28 @@ function openEmpDetailsModal(username) {
                             borderWidth: 0
                         }]
                     },
-                    options: { 
-                        responsive: true, 
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } } 
-                    }
+                    options: { responsive: true, plugins: { legend: { display: false } } }
                 });
             }
         });
 
     // 3. Fetch Tasks
-    fetch(`/api/tasksByEmployee?employeeName=${username}`)
+    fetch(api(`/api/tasksByEmployee?employeeName=${username}`))
         .then(res => res.json())
         .then(tasks => {
             let stats = { "Pending": 0, "Started": 0, "In Progress": 0, "Completed": 0 };
             let listHtml = "";
 
-            if (!tasks || tasks.length === 0) {
-                listHtml = '<p style="color: #94a3b8; font-size: 13px; text-align: center; padding: 30px;">No task assignments found in history.</p>';
+            if (tasks.length === 0) {
+                listHtml = '<p style="color: #94a3b8; font-size: 13px; text-align: center; padding: 20px;">No tasks assigned yet.</p>';
             } else {
                 tasks.forEach(t => {
                     if (stats[t.status] !== undefined) stats[t.status]++;
                     let statusColor = t.status === 'Completed' ? '#10b981' : (t.status === 'Pending' ? '#f59e0b' : '#6366f1');
                     listHtml += `
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid #f8fafc;">
-                            <div>
-                                <div style="font-size: 14px; font-weight: 700; color: #1e293b;">${t.taskName}</div>
-                                <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">ID: ${t.id} • ${t.section || 'General'}</div>
-                            </div>
-                            <span style="font-size: 11px; font-weight: 700; color: ${statusColor}; background: ${statusColor}15; padding: 4px 10px; border-radius: 8px;">${t.status}</span>
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #f1f5f9;">
+                            <div style="font-size: 13px; font-weight: 500;">${t.taskName}</div>
+                            <span style="font-size: 10px; color: ${statusColor}; background: ${statusColor}10; padding: 2px 8px; border-radius: 10px; border: 1px solid ${statusColor}30;">${t.status}</span>
                         </div>
                     `;
                 });
@@ -2040,21 +1899,20 @@ function openEmpDetailsModal(username) {
                     },
                     options: { 
                         responsive: true, 
-                        maintainAspectRatio: false,
                         plugins: { legend: { display: false } },
-                        scales: { y: { display: false, beginAtZero: true } }
+                        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
                     }
                 });
             }
         });
 
     // 4. Fetch Historical Attendance Records
-    fetch(`/api/employeeAttendanceRecords?username=${username}`)
+    fetch(api(`/api/employeeAttendanceRecords?username=${username}`))
         .then(res => res.json())
         .then(records => {
             const body = document.getElementById("empModalProgressBody");
             if (!records || records.length === 0) {
-                body.innerHTML = '<tr><td colspan="3" style="padding: 30px; text-align: center; color: #94a3b8;">No historical logs available for this period.</td></tr>';
+                body.innerHTML = '<tr><td colspan="3" style="padding: 20px; text-align: center; color: #94a3b8;">No historical records found.</td></tr>';
                 return;
             }
 
@@ -2064,22 +1922,19 @@ function openEmpDetailsModal(username) {
             body.innerHTML = records.map(r => {
                 const statusColor = r.status === 'Present' ? '#10b981' : '#ef4444';
                 return `
-                    <tr style="border-bottom: 1px solid #f8fafc; transition: background 0.2s;">
-                        <td style="padding: 12px 15px; font-weight: 700; color: #1e293b;">${r.date}</td>
-                        <td style="padding: 12px 15px;">
-                            <span style="display: inline-flex; align-items: center; gap: 6px; color: ${statusColor}; font-weight: 800; font-size: 12px; text-transform: uppercase;">
-                                <div style="width: 8px; height: 8px; border-radius: 50%; background: ${statusColor};"></div>
-                                ${r.status}
-                            </span>
+                    <tr style="border-bottom: 1px solid #f8fafc;">
+                        <td style="padding: 10px; font-weight: 500; color: #1e293b;">${r.date}</td>
+                        <td style="padding: 10px;">
+                            <span style="color: ${statusColor}; font-weight: 700;">${r.status}</span>
                         </td>
-                        <td style="padding: 12px 15px; color: #64748b; font-weight: 600;">Textile Production</td>
+                        <td style="padding: 10px; color: #64748b;">General</td>
                     </tr>
                 `;
             }).join("");
         })
         .catch(err => {
-            console.error("Error fetching history:", err);
-            document.getElementById("empModalProgressBody").innerHTML = '<tr><td colspan="3" style="padding: 20px; text-align: center; color: #ef4444;">Access error. Try again.</td></tr>';
+            console.error("Error fetching attendance history:", err);
+            document.getElementById("empModalProgressBody").innerHTML = '<tr><td colspan="3" style="padding: 20px; text-align: center; color: #ef4444;">Error loading history.</td></tr>';
         });
 }
 
@@ -2097,7 +1952,7 @@ function showMgrAttEmployees(date, status) {
     body.innerHTML = '<p style="padding:20px; text-align:center;">Fetching list...</p>';
     document.getElementById("mgrAttModal").classList.add("active");
 
-    fetch(`/api/attendanceByDate?date=${date}`)
+    fetch(api(`/api/attendanceByDate?date=${date}`))
         .then(res => res.json())
         .then(records => {
             const filtered = records.filter(r => r.status.toLowerCase() === status.toLowerCase());
@@ -2131,7 +1986,7 @@ function closeMgrAttModal(event) {
 // ===================================
 
 function loadOrders() {
-    fetch(API_BASE_URL + "/api/ordersByStatus?status=Pending")
+    fetch(api("/api/ordersByStatus?status=Pending"))
         .then(res => res.json())
         .then(orders => {
             const container = document.getElementById("orderList");
@@ -2189,7 +2044,7 @@ function loadOrders() {
 function rejectOrder(orderId) {
     if (!confirm("Are you sure you want to reject this order?")) return;
 
-    fetch(API_BASE_URL + `/api/rejectOrder?orderId=${orderId}`, {
+    fetch(api(`/api/rejectOrder?orderId=${orderId}`), {
         method: "POST"
     })
     .then(res => res.json())
@@ -2210,13 +2065,6 @@ function openConvertOrderModal(id, cust, skill, desc, qty, prio) {
     const modal = document.getElementById("convertOrderModal");
     if (!modal) return;
 
-    // Store for dynamic generation
-    currentOrderInModal = {
-        productType: desc,
-        units: qty,
-        orderId: id
-    };
-
     document.getElementById("convOrderId").value = id;
     document.getElementById("convCustName").innerText = cust;
     document.getElementById("convOrderDesc").innerText = desc || '';
@@ -2226,10 +2074,17 @@ function openConvertOrderModal(id, cust, skill, desc, qty, prio) {
     const list = document.getElementById("subTasksList");
     if (list) list.innerHTML = '';
 
-    // Pre-fill first task based on order
-    const section = 'Yarn Preparation';
-    const autoName = generateTaskName(section, currentOrderInModal);
-    addSubTask(autoName, section, skill || '');
+    // Pre-fill tasks based on dynamic sections
+    if (dynamicSectionSkills && Object.keys(dynamicSectionSkills).length > 0) {
+        Object.keys(dynamicSectionSkills).forEach(sec => {
+            const secSkills = dynamicSectionSkills[sec].join(", ");
+            const taskName = `${cust} - ${sec}`;
+            addSubTask(taskName, sec, secSkills);
+        });
+    } else {
+        const defaultName = skill ? skill : 'Production Task';
+        addSubTask(defaultName, 'General', skill || '');
+    }
 
     modal.classList.add("active");
 }
@@ -2239,15 +2094,22 @@ function addSubTask(name = '', section = '', skill = '') {
     const idx = _subTaskCounter;
     const isFirst = idx === 1;
 
-    // If name is one of FACTORY_TASKS or section is in SECTION_SKILLS, auto-fill skill
+    // If name is one of FACTORY_TASKS or section is in dynamicSectionSkills, auto-fill skill
     if (!skill) {
         let match = Object.keys(FACTORY_TASKS).find(k => k.toLowerCase() === (name || '').trim().toLowerCase());
         if (match) {
             skill = FACTORY_TASKS[match].skills;
             if (!section) section = FACTORY_TASKS[match].section;
-        } else if (SECTION_SKILLS[section]) {
-            skill = SECTION_SKILLS[section];
+        } else if (dynamicSectionSkills && dynamicSectionSkills[section]) {
+            skill = dynamicSectionSkills[section].join(", ");
         }
+    }
+
+    let sectionOptions = `<option value="">Select Section</option>`;
+    if (dynamicSectionSkills) {
+        Object.keys(dynamicSectionSkills).forEach(sec => {
+            sectionOptions += `<option value="${sec}" ${section === sec ? 'selected' : ''}>${sec}</option>`;
+        });
     }
 
     const badge = document.getElementById('taskCountBadge');
@@ -2261,20 +2123,12 @@ function addSubTask(name = '', section = '', skill = '') {
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                 <div style="grid-column: 1 / -1;">
                     <label class="subtask-label">Task Name *</label>
-                    <input type="text" id="st_name_${idx}" class="subtask-input" value="${name}" placeholder="Task name will be auto-generated based on section and order" onchange="autoFillSubTaskSkill(${idx})">
+                    <input type="text" id="st_name_${idx}" class="subtask-input" value="${name}" placeholder="e.g. Wash Vegetables" onchange="autoFillSubTaskSkill(${idx})">
                 </div>
                 <div>
                     <label class="subtask-label">Section</label>
                     <select id="st_section_${idx}" class="subtask-input" onchange="autoFillSubTaskSkill(${idx})">
-                        <option value="Yarn Preparation" ${section === 'Yarn Preparation' ? 'selected' : ''}>Yarn Preparation</option>
-                        <option value="Knitting" ${section === 'Knitting' ? 'selected' : ''}>Knitting</option>
-                        <option value="Dyeing" ${section === 'Dyeing' ? 'selected' : ''}>Dyeing</option>
-                        <option value="Drying" ${section === 'Drying' ? 'selected' : ''}>Drying</option>
-                        <option value="Quality Check" ${section === 'Quality Check' ? 'selected' : ''}>Quality Check</option>
-                        <option value="Packaging" ${section === 'Packaging' ? 'selected' : ''}>Packaging</option>
-                        <option value="Labeling" ${section === 'Labeling' ? 'selected' : ''}>Labeling</option>
-                        <option value="Dispatch" ${section === 'Dispatch' ? 'selected' : ''}>Dispatch</option>
-                        <option value="Maintenance" ${section === 'Maintenance' ? 'selected' : ''}>Maintenance</option>
+                        ${sectionOptions}
                     </select>
                 </div>
                 <div>
@@ -2301,16 +2155,10 @@ function addSubTask(name = '', section = '', skill = '') {
 }
 
 function autoFillSubTaskSkill(idx) {
+    const nameInput = document.getElementById(`st_name_${idx}`);
+    const name = nameInput ? nameInput.value.trim().toLowerCase() : '';
     const sectionInput = document.getElementById(`st_section_${idx}`);
     const section = sectionInput ? sectionInput.value : '';
-    const nameInput = document.getElementById(`st_name_${idx}`);
-    
-    // Auto-generate name based on section if order exists
-    if (currentOrderInModal && nameInput && section) {
-        nameInput.value = generateTaskName(section, currentOrderInModal);
-    }
-
-    const name = nameInput ? nameInput.value.trim().toLowerCase() : '';
     const skillInput = document.getElementById(`st_skill_${idx}`);
 
     let match = Object.keys(FACTORY_TASKS).find(k => k.toLowerCase() === name);
@@ -2318,8 +2166,8 @@ function autoFillSubTaskSkill(idx) {
     if (match) {
         if (skillInput) skillInput.value = FACTORY_TASKS[match].skills;
         if (sectionInput) sectionInput.value = FACTORY_TASKS[match].section;
-    } else if (SECTION_SKILLS[section]) {
-        if (skillInput) skillInput.value = SECTION_SKILLS[section];
+    } else if (dynamicSectionSkills && dynamicSectionSkills[section]) {
+        if (skillInput) skillInput.value = dynamicSectionSkills[section].join(", ");
     }
 }
 
@@ -2362,7 +2210,7 @@ async function confirmMultiTaskCreation() {
     try {
         // First task: uses convertOrderToTask — marks order as "In Progress"
         const first = tasks[0];
-        await fetch(API_BASE_URL + `/api/convertOrderToTask?orderId=${orderId}`, {
+        await fetch(api(`/api/convertOrderToTask?orderId=${orderId}`), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -2378,7 +2226,7 @@ async function confirmMultiTaskCreation() {
         // Remaining tasks: convertOrderToTask so they all link to the order
         for (let i = 1; i < tasks.length; i++) {
             const t = tasks[i];
-            await fetch(API_BASE_URL + `/api/convertOrderToTask?orderId=${orderId}`, {
+            await fetch(api(`/api/convertOrderToTask?orderId=${orderId}`), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -2411,7 +2259,7 @@ async function confirmMultiTaskCreation() {
 let orderFulfillmentChartObj = null;
 
 function loadOrderAnalytics() {
-    fetch(API_BASE_URL + "/api/orderAnalytics")
+    fetch(api("/api/orderAnalytics"))
         .then(res => res.json())
         .then(data => {
             document.getElementById("anaTotalOrders").innerText = data.totalOrders;
@@ -2492,7 +2340,7 @@ function startSupervisorOrderPolling() {
 }
 
 function checkNewOrders() {
-    fetch(API_BASE_URL + "/api/ordersByStatus?status=Pending")
+    fetch(api("/api/ordersByStatus?status=Pending"))
         .then(res => res.json())
         .then(orders => {
             if (!Array.isArray(orders)) return;
@@ -2554,7 +2402,7 @@ function showOrderNotification(order) {
 }
 
 function loadAllOrderHistory() {
-    fetch(API_BASE_URL + '/api/orders')
+    fetch(api('/api/orders'))
         .then(res => res.json())
         .then(data => {
             const renderTable = (listId) => {
@@ -2601,123 +2449,5 @@ function loadAllOrderHistory() {
             if (table1) table1.innerHTML = errStr;
             if (table2) table2.innerHTML = errStr;
         });
-}
-
-function renderSuggestedEmployees() {
-    let listEl = document.getElementById("suggestedEmployees");
-    if (!listEl) return;
-
-    let html = "";
-    
-    // Panel title handling
-    const sidebarTitle = listEl.parentElement.querySelector(".section-title");
-    if (sidebarTitle) {
-        sidebarTitle.innerText = "Workforce Insights & Assignment Intelligence";
-    }
-
-    // Today's Load Stats Panel
-    if (selectedSection) {
-        const data = sectionData[selectedSection] || { assigned: 0, completed: 0 };
-        const pending = data.assigned - data.completed;
-        
-        html += `
-            <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
-                <h4 style="margin: 0 0 12px 0; font-size: 14px; color: #1e293b;">📊 Today's ${selectedSection} Load</h4>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; font-size: 12px;">
-                    <div>
-                        <div style="color: #64748b;">Assigned Today</div>
-                        <div style="font-weight: 700; color: #1e293b;">${data.assigned} units</div>
-                    </div>
-                    <div>
-                        <div style="color: #64748b;">Pending Right Now</div>
-                        <div style="font-weight: 800; color: #ef4444;">${pending} units</div>
-                    </div>
-                </div>
-            </div>
-            <p style="font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 15px; padding-left: 5px;">
-                ${currentSuggestions.length > 0 ? 'Click to select staff members (Sorted by Load):' : ''}
-            </p>
-        `;
-    }
-
-    if (currentSuggestions.length === 0) {
-        html += `
-            <div style="text-align: center; padding: 40px 20px;">
-                <div style="font-size: 48px; margin-bottom: 10px;">👤</div>
-                <p style="color: #ef4444; font-weight: 600; margin: 0;">No matching staff found.</p>
-                <p style="color: #64748b; font-size: 13px; margin-top: 5px;">Ensure employees are marked <b>Present</b> in attendance and have the required skills.</p>
-            </div>`;
-    } else {
-        // Filter out already assigned employees
-        let filtered = currentSuggestions.filter(emp => !currentTaskAssignedNames.has(emp.username));
-        
-        if (filtered.length === 0) {
-            html += `
-                <div style="text-align: center; padding: 40px 20px;">
-                    <div style="font-size: 48px; margin-bottom: 10px;">👤</div>
-                    <p style="color: #64748b; font-weight: 600; margin: 0;">All qualified employees are already assigned.</p>
-                </div>`;
-            listEl.innerHTML = html;
-            return;
-        }
-
-        // Sort: Already selected first, then Match Type (Primary > Secondary), then by load
-        let sorted = [...filtered];
-        sorted.sort((a, b) => {
-            let aSel = selectedEmployeesForTask.has(a.username);
-            let bSel = selectedEmployeesForTask.has(b.username);
-            if (aSel !== bSel) return bSel - aSel;
-
-            // Primary > Secondary
-            const p1 = a.matchType === 'Primary' ? 1 : (a.matchType === 'Secondary' ? 2 : 3);
-            const p2 = b.matchType === 'Primary' ? 1 : (b.matchType === 'Secondary' ? 2 : 3);
-            if (p1 !== p2) return p1 - p2;
-
-            const totalA = (a.todayTasks || 0) + (a.yesterdayPending || 0);
-            const totalB = (b.todayTasks || 0) + (b.yesterdayPending || 0);
-            return totalA - totalB;
-        });
-
-        sorted.forEach(emp => {
-            let isSelected = selectedEmployeesForTask.has(emp.username);
-            let initial = emp.username.charAt(0).toUpperCase();
-            
-            const todayTasks = emp.todayTasks || 0;
-            const yesterdayPending = emp.yesterdayPending || 0;
-            
-            let status = "Available";
-            let badgeClass = "badge-available";
-            if (todayTasks >= 3) {
-                status = "Overloaded";
-                badgeClass = "badge-overloaded";
-            } else if (todayTasks > 0) {
-                status = "Busy";
-                badgeClass = "badge-busy";
-            }
-
-            html += `
-                <div class="emp-card ${isSelected ? 'selected' : ''}" 
-                     onclick="toggleEmployeeSelection('${emp.username}')"
-                     style="${isSelected ? 'border-color: #6366f1; background: #f5f7ff; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);' : ''}">
-                    <div class="emp-avatar" style="${isSelected ? 'background: #6366f1;' : ''}">${initial}</div>
-                    <div style="flex: 1;">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div style="font-weight: 700; color: #1e293b; font-size: 15px;">${emp.username}</div>
-                            <span class="badge ${badgeClass}">${status}</span>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 5px; margin-top: 4px;">
-                            <span style="font-size: 9px; font-weight: 800; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; border: 1px solid ${emp.matchType === 'Primary' ? '#6366f1' : '#ec4899'}; color: ${emp.matchType === 'Primary' ? '#6366f1' : '#ec4899'}; background: ${emp.matchType === 'Primary' ? '#6366f1' : '#ec4899'}10;">
-                                ${emp.matchType} Match
-                            </span>
-                        </div>
-                        <div style="color: #64748b; font-size: 11px; margin-top: 8px;">
-                            → Load: <b>${todayTasks} tasks</b> today
-                        </div>
-                    </div>
-                </div>`;
-        });
-    }
-    
-    listEl.innerHTML = html;
 }
 
