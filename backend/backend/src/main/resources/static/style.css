@@ -7,6 +7,8 @@ body {
     margin: 0;
     color: #333;
     min-height: 100vh;
+    min-width: 1400px;
+    overflow-x: auto;
 }
 
 /* Center page */
@@ -24,10 +26,9 @@ body {
     background: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    padding: 45px 40px;
+    padding: 50px 45px;
     border-radius: 20px;
-    width: 420px;
-    max-width: 100%;
+    width: 500px;
     box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
     border: 1px solid rgba(255, 255, 255, 0.5);
     text-align: center;
@@ -44,8 +45,7 @@ body {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
     padding: 40px;
-    width: 750px;
-    max-width: 100%;
+    width: 900px;
     border-radius: 20px;
     box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
     border: 1px solid rgba(255, 255, 255, 0.5);
@@ -66,31 +66,31 @@ h2 {
     color: #666;
     text-align: center;
     margin-bottom: 25px;
-    font-size: 15px;
-    font-weight: 400;
+    font-size: 16px;
+    font-weight: 500;
 }
 
 /* Labels */
 label {
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 600;
     color: #444;
     display: block;
     text-align: left;
-    margin-bottom: 5px;
+    margin-bottom: 8px;
 }
 
 /* Inputs */
 input,
 select {
     width: 100%;
-    padding: 12px 15px;
+    padding: 14px 18px;
     margin-top: 5px;
     margin-bottom: 20px;
     border: 2px solid #e1e1e1;
     border-radius: 10px;
     font-family: inherit;
-    font-size: 15px;
+    font-size: 16px;
     transition: all 0.3s ease;
     box-sizing: border-box;
     background: #fff;
@@ -105,19 +105,24 @@ select:focus {
 
 /* Buttons */
 button {
-    padding: 12px 20px;
+    padding: 14px 24px;
     border: none;
     border-radius: 10px;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     font-family: inherit;
     font-weight: 600;
-    font-size: 15px;
+    font-size: 16px;
     cursor: pointer;
     margin-top: 10px;
-    width: 100%;
     transition: all 0.3s ease;
     box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.card button,
+.dashboard-buttons button,
+.attendance-card button {
+    width: 100%;
 }
 
 button:hover {
@@ -517,4 +522,41 @@ button:active {
     display: flex;
     align-items: center;
     gap: 10px;
+}
+
+/* Unified Back Button */
+.back-container {
+    position: fixed;
+    top: 25px;
+    left: 25px;
+    z-index: 1000;
+}
+
+.back-btn-unified {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 20px;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(8px);
+    color: #475569;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 14px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    cursor: pointer;
+}
+
+.back-btn-unified:hover {
+    background: #fff;
+    transform: translateX(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    color: #6366f1;
+}
+
+.back-btn-unified i {
+    font-size: 18px;
 }

@@ -184,6 +184,11 @@
 </head>
 
 <body>
+    <div class="back-container">
+        <a href="supervisor-dashboard.html" class="back-btn-unified">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
 
     <div class="page">
         <div class="card premium-card premium-form-container">
@@ -267,9 +272,8 @@
 
             <div id="msg" style="margin-top: 15px; font-size: 14px;"></div>
 
-            <div class="btn-container">
-                <button onclick="addEmployee()" style="margin-top: 0;">Confirm & Add Member</button>
-                <button onclick="goSupervisor()" class="back-btn" style="margin-top: 0;">Cancel</button>
+            <div class="btn-container" style="grid-template-columns: 1fr;">
+                <button onclick="addEmployee()" style="margin-top: 0; padding: 16px;">Confirm & Add Member</button>
             </div>
         </div>
     </div>

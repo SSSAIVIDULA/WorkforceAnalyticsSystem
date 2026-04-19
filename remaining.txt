@@ -1,0 +1,29 @@
+416: fetch("/api/tasksByDate?date=" + selectedDate, { cache: "no-store" })
+891: fetch(`/api/employeesBySkill?skill=${encodeURIComponent(currentModalTask.requiredSkill)}&date=${currentModalTask.date}`)
+909: fetch(`/api/employeesBySkill?skill=${encodeURIComponent(updatedTask.requiredSkill)}&date=${updatedTask.date}`)
+918: fetch(`/api/unassignEmployee?taskId=${selectedTaskId}&employee=${encodeURIComponent(employeeName)}`, {
+926: fetch(`/api/employeesBySkill?skill=${encodeURIComponent(updatedTask.requiredSkill)}&date=${updatedTask.date}`)
+935: fetch(`/api/updateTaskStatus?taskId=${selectedTaskId}&status=Completed`, {
+959: fetch(`/api/deleteTask?taskId=${selectedTaskId}`, {
+986: fetch("/api/employeeProfile?username=" + encodeURIComponent(username), { cache: "no-store" })
+1014: fetch("/api/employeeStats?employeeName=" + encodeURIComponent(username), { cache: "no-store" })
+1062: fetch("/api/tasksByEmployee?employeeName=" + encodeURIComponent(username), { cache: "no-store" })
+1150: fetch(`/api/updateTaskStatus?taskId=${taskId}&status=${status}`, {
+1283: fetch("/api/managerAnalytics", { cache: "no-store" })
+1383: fetch(`/api/tasksByDate?date=${date}`)
+1448: fetch(`/api/attendanceSummaryByMonth?year=${year}&month=${month}`)
+1523: fetch("/api/managerAnalytics", { cache: "no-store" })
+1635: fetch('/api/employeeStats?employeeName=' + encodeURIComponent(emp.username))
+1644: fetch('/api/tasksByEmployee?employeeName=' + encodeURIComponent(emp.username))
+1705: fetch(`/api/employeeProfile?username=${username}`)
+1716: fetch(`/api/employeeStats?employeeName=${username}`)
+1747: fetch(`/api/tasksByEmployee?employeeName=${username}`)
+1794: fetch(`/api/employeeAttendanceRecords?username=${username}`)
+1839: fetch(`/api/attendanceByDate?date=${date}`)
+1873: fetch(API_BASE_URL + "/api/ordersByStatus?status=Pending")
+1931: fetch(API_BASE_URL + `/api/rejectOrder?orderId=${orderId}`, {
+2097: await fetch(API_BASE_URL + `/api/convertOrderToTask?orderId=${orderId}`, {
+2113: await fetch(API_BASE_URL + `/api/convertOrderToTask?orderId=${orderId}`, {
+2146: fetch(API_BASE_URL + "/api/orderAnalytics")
+2227: fetch(API_BASE_URL + "/api/ordersByStatus?status=Pending")
+2289: fetch(API_BASE_URL + '/api/orders')

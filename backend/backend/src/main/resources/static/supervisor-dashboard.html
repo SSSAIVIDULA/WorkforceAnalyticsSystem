@@ -4,514 +4,2169 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Supervisor Dashboard | Textile Production Analytics</title>
-    <link rel="stylesheet" href="style.css">
-    <!-- Notification Toast Container -->
-    <div id="notification-container" style="position: fixed; bottom: 30px; right: 30px; z-index: 10000; display: flex; flex-direction: column; gap: 10px;"></div>
+    <title>Supervisor Dashboard | Workforce AI</title>
+    <meta name="description" content="Supervisor command center for workforce analytics, task management, and operational control.">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Icons & Charts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
     <style>
-        .stats-row {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
-            margin-bottom: 25px;
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-light: #eef2ff;
+            --success: #10b981;
+            --success-light: #d1fae5;
+            --warning: #f59e0b;
+            --warning-light: #fef3c7;
+            --danger: #ef4444;
+            --danger-light: #fee2e2;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --bg-main: #f1f5f9;
+            --card-bg: #ffffff;
+            --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 20px rgba(0, 0, 0, 0.03);
+            --card-shadow-hover: 0 8px 30px rgba(99, 102, 241, 0.1);
+            --sidebar-width: 260px;
+            --border-color: #e2e8f0;
+            --radius: 16px;
+            --radius-sm: 10px;
         }
 
-        .stat-card {
-            padding: 20px;
-            border-radius: 16px;
-            color: white;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', sans-serif; }
 
-        .stat-card h4 {
-            margin: 0;
-            font-size: 13px;
-            opacity: 0.9;
-            text-transform: uppercase;
-        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-        .stat-card .num {
-            font-size: 32px;
-            font-weight: 800;
-            margin: 10px 0 0 0;
-        }
-
-        /* Reusing common dashboard styles */
-        .mgr-calendar-section {
-            background: #fff;
-            border-radius: 16px;
-            padding: 24px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            border: 1px solid #eef2ff;
-            margin-bottom: 25px;
-        }
-
-        /* Modal Styles */
-        .mgr-att-modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(4px);
-            z-index: 9999;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .mgr-att-modal-overlay.active {
-            display: flex;
-        }
-
-        .mgr-att-modal {
-            background: white;
-            border-radius: 20px;
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            height: 100vh;
             overflow: hidden;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
         }
 
-        .mgr-att-modal-header {
-            padding: 20px 25px;
-            border-bottom: 1px solid #f1f5f9;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .close-btn {
-            background: #f1f5f9;
-            border: none;
-            width: 35px;
-            height: 35px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 20px;
-        }
-
-        .chart-box {
-            background: #fff;
-            border-radius: 14px;
-            padding: 20px;
-            border: 1px solid #eef2ff;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
-        }
-
-        /* ===== HUB UI STYLES ===== */
-        .hub-container {
+        .dashboard-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 25px;
-            margin-top: 40px;
+            grid-template-columns: var(--sidebar-width) 1fr;
+            height: 100vh;
         }
 
-        .hub-card {
-            background: white;
-            padding: 40px 30px;
-            border-radius: 20px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        }
-
-        .hub-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-            border-color: #6366f1;
-        }
-
-        .hub-card .icon-box {
-            font-size: 50px;
-            margin-bottom: 20px;
-        }
-
-        .hub-card h3 {
-            margin: 0;
-            font-size: 20px;
-            color: #1e293b;
-        }
-
-        .hub-card p {
-            margin: 10px 0 0 0;
-            color: #64748b;
-            font-size: 14px;
-        }
-
-        .back-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            background: #f1f5f9;
-            color: #475569;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 14px;
-            border: 1px solid #e2e8f0;
-            cursor: pointer;
-            margin-bottom: 20px;
-            transition: all 0.2s;
-            width: auto;
-        }
-
-        .back-btn:hover {
-            background: #e2e8f0;
-            color: #1e293b;
-        }
-
-        /* ===== CLASSIC SIDEBAR LAYOUT (MODIFIED FOR HUB) ===== */
-        body { background-color: #f8fafc; margin: 0; }
-        .dashboard-container { display: block; min-height: 100vh; }
-        .sidebar { display: none; } /* HIDDEN BY DEFAULT */
-        .main-content { max-width: 1200px; margin: 0 auto; padding: 60px 30px; }
-        .tab-section { display: none; animation: fadeIn 0.3s ease; }
-        .tab-section.active { display: block; }
-        
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        /* Override layouts */
-        .page { background: none; display: block; padding: 0; margin: 0; }
-        .card { width: 100%; max-width: none; box-shadow: none; background: transparent; padding: 0; }
-
-        /* Navigation Badge */
-        .nav-badge {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: #ef4444;
-            color: white;
-            font-size: 11px;
-            font-weight: 800;
-            padding: 3px 8px;
-            border-radius: 50%;
-            box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3);
+        /* ─── Sidebar ─── */
+        .sidebar {
+            background: var(--card-bg);
+            border-right: 1px solid var(--border-color);
+            padding: 28px 16px;
             display: flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 18px;
-            animation: bounce 2s infinite;
+            flex-direction: column;
+            height: 100vh;
+            z-index: 100;
         }
 
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
-            40% {transform: translateY(-5px);}
-            60% {transform: translateY(-3px);}
+        .logo-box {
+            display: flex; align-items: center; gap: 12px;
+            margin-bottom: 36px; padding: 0 12px;
+        }
+        .logo-box i { font-size: 26px; color: var(--primary); }
+        .logo-box h2 { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; margin: 0; line-height: 1.2; }
+        .logo-box p { font-size: 9px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; margin: 0; }
+
+        .nav-link {
+            display: flex; align-items: center; gap: 14px;
+            padding: 12px 16px; border-radius: var(--radius-sm);
+            color: var(--text-muted); text-decoration: none;
+            font-weight: 600; font-size: 14px; margin-bottom: 4px;
+            transition: all 0.2s; cursor: pointer; position: relative;
+        }
+        .nav-link i { width: 20px; text-align: center; font-size: 15px; }
+        .nav-link:hover { background: var(--primary-light); color: var(--primary); }
+        .nav-link.active {
+            background: var(--primary); color: white;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
         }
 
+        /* ─── Main Content ─── */
+        .main-content {
+            padding: 32px 40px;
+            overflow-y: auto;
+            height: 100vh;
+            scroll-behavior: smooth;
+        }
+
+        /* ─── Header ─── */
+        .page-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 32px;
+        }
+        .page-header h1 { font-size: 28px; font-weight: 800; line-height: 1.2; }
+        .page-header .subtitle {
+            color: var(--text-muted); font-weight: 500; font-size: 14px; margin-top: 4px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .header-actions {
+            display: flex; align-items: center; gap: 16px;
+        }
+        .header-chip {
+            background: var(--card-bg); padding: 10px 16px; border-radius: var(--radius-sm);
+            box-shadow: var(--card-shadow); font-size: 12px; font-weight: 700; color: #475569;
+            display: flex; align-items: center; gap: 10px;
+            border: 1px solid var(--border-color);
+        }
+        .header-chip .progress-mini {
+            width: 100px; height: 5px; background: #e2e8f0; border-radius: 3px; overflow: hidden;
+        }
+        .header-chip .progress-mini-fill {
+            height: 100%; background: linear-gradient(90deg, var(--primary), #818cf8);
+            transition: width 1s ease-in-out; border-radius: 3px;
+        }
+        .btn-refresh {
+            background: var(--primary-light); color: var(--primary); border: 1px solid #c7d2fe;
+            padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 700;
+            cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px;
+        }
+        .btn-refresh:hover { background: var(--primary); color: white; }
+
+        .sync-dot {
+            width: 7px; height: 7px; background: var(--success); border-radius: 50%;
+            display: inline-block; animation: blink 1.5s ease-in-out infinite;
+        }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+        /* ─── Cards ─── */
+        .card {
+            background: var(--card-bg); border-radius: var(--radius);
+            box-shadow: var(--card-shadow); border: 1px solid var(--border-color);
+            transition: all 0.25s ease;
+        }
+        .card:hover { box-shadow: var(--card-shadow-hover); }
+
+        .card-header {
+            display: flex; align-items: center; gap: 10px;
+            padding: 20px 24px 0; font-size: 15px; font-weight: 800; color: var(--text-main);
+        }
+        .card-header i { font-size: 14px; }
+        .card-body { padding: 20px 24px 24px; }
+
+        /* ─── KPI Row ─── */
+        .kpi-row {
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 20px; margin-bottom: 28px;
+        }
+        .kpi-card {
+            background: var(--card-bg); border-radius: var(--radius);
+            box-shadow: var(--card-shadow); border: 1px solid var(--border-color);
+            padding: 24px; display: flex; align-items: center; gap: 18px;
+            transition: all 0.25s; cursor: pointer;
+        }
+        .kpi-card:hover { transform: translateY(-3px); box-shadow: var(--card-shadow-hover); }
+        .kpi-icon {
+            width: 52px; height: 52px; border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; flex-shrink: 0;
+        }
+        .kpi-label { font-size: 13px; color: var(--text-muted); font-weight: 600; margin-bottom: 4px; }
+        .kpi-value { font-size: 26px; font-weight: 800; line-height: 1; }
+        .kpi-sub { font-size: 11px; font-weight: 700; margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+
+        /* ─── Three Column Command Row ─── */
+        .command-row {
+            display: grid; grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px; margin-bottom: 28px;
+        }
+
+        /* Assignment Queue */
+        .queue-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 14px; background: #fef2f2; border-radius: var(--radius-sm);
+            border-left: 3px solid var(--danger); transition: all 0.2s; cursor: pointer;
+        }
+        .queue-item:hover { transform: translateX(4px); }
+        .queue-item .qi-name { font-size: 13px; font-weight: 700; color: var(--text-main); }
+        .queue-item .qi-meta { font-size: 11px; color: var(--text-muted); font-weight: 600; }
+
+        /* Control Panel Item */
+        .ctrl-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 14px 16px; background: #f8fafc; border-radius: var(--radius-sm);
+            transition: all 0.2s;
+        }
+        .ctrl-item:hover { background: #eef2ff; }
+        .ctrl-label { font-size: 13px; color: #475569; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+        .ctrl-label i { width: 18px; text-align: center; }
+        .ctrl-val { font-weight: 800; font-size: 18px; }
+
+        /* Performance Bars */
+        .perf-row { display: flex; flex-direction: column; gap: 22px; }
+        .perf-item-label {
+            display: flex; justify-content: space-between; margin-bottom: 8px;
+            font-size: 13px; font-weight: 700; color: #475569;
+        }
+        .perf-item-label i { width: 18px; }
+        .perf-bar {
+            height: 10px; background: #f1f5f9; border-radius: 5px; overflow: hidden;
+        }
+        .perf-bar-fill {
+            height: 100%; border-radius: 5px;
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* ─── Analytics Row ─── */
+        .analytics-row {
+            display: grid; grid-template-columns: 1.6fr 1fr;
+            gap: 20px; margin-bottom: 28px;
+        }
+
+        /* Audit Table */
+        .audit-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
+        .audit-table thead th {
+            text-align: left; font-size: 10px; text-transform: uppercase;
+            color: #94a3b8; font-weight: 800; padding: 0 12px 8px; letter-spacing: 0.5px;
+        }
+        .audit-table tbody td {
+            padding: 12px; background: #f8fafc; font-size: 13px; font-weight: 700;
+        }
+        .audit-table tbody td:first-child { border-radius: 8px 0 0 8px; }
+        .audit-table tbody td:last-child { border-radius: 0 8px 8px 0; }
+
+        /* ─── Alerts Hero ─── */
+        .alerts-hero {
+            background: linear-gradient(135deg, #fef2f2, #fff7ed);
+            border: 1px solid #fecaca; border-radius: var(--radius);
+            padding: 20px 24px; margin-bottom: 28px;
+        }
+        .alerts-hero h3 {
+            font-size: 15px; font-weight: 800; color: var(--danger);
+            margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+        }
+        .alert-card {
+            display: flex; align-items: flex-start; gap: 12px;
+            padding: 12px 16px; background: white; border-radius: var(--radius-sm);
+            border-left: 3px solid; margin-bottom: 10px;
+        }
+        .alert-card:last-child { margin-bottom: 0; }
+        .alert-card .alert-title { font-size: 13px; font-weight: 700; color: var(--text-main); }
+        .alert-card .alert-text { font-size: 11px; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
+
+        /* ─── Task Section ─── */
+        .section-divider {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 20px; padding-top: 8px;
+        }
+        .section-divider h2 { font-size: 22px; font-weight: 800; }
+        .btn-create {
+            background: var(--primary); color: white; border: none;
+            padding: 10px 20px; border-radius: var(--radius-sm);
+            font-weight: 700; font-size: 13px; cursor: pointer;
+            transition: all 0.2s; display: flex; align-items: center; gap: 6px;
+        }
+        .btn-create:hover { background: var(--primary-dark); transform: translateY(-1px); }
+
+        .filter-bar {
+            display: flex; gap: 12px; background: var(--card-bg);
+            padding: 16px 20px; border-radius: var(--radius);
+            box-shadow: var(--card-shadow); border: 1px solid var(--border-color);
+            margin-bottom: 24px; flex-wrap: wrap;
+        }
+        .filter-group {
+            display: flex; align-items: center; gap: 8px;
+            background: var(--bg-main); padding: 8px 14px; border-radius: 8px;
+            flex: 1; min-width: 180px;
+        }
+        .filter-group i { color: var(--text-muted); font-size: 13px; }
+        .filter-group input, .filter-group select {
+            background: none; border: none; width: 100%;
+            font-weight: 600; outline: none; font-size: 13px; font-family: 'Outfit';
+        }
+
+        .task-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .task-card {
+            background: var(--card-bg); padding: 22px; border-radius: var(--radius);
+            box-shadow: var(--card-shadow); border: 1px solid var(--border-color);
+            transition: all 0.3s; display: flex; flex-direction: column; gap: 14px;
+        }
+        .task-card:hover { transform: translateY(-4px); box-shadow: var(--card-shadow-hover); border-color: #c7d2fe; }
+        .task-header { display: flex; justify-content: space-between; align-items: flex-start; }
+        .task-title { font-size: 15px; font-weight: 800; margin-bottom: 3px; }
+        .task-meta { color: var(--text-muted); font-size: 11px; font-weight: 600; }
+        .priority-badge {
+            padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 800; text-transform: uppercase;
+        }
+        .p-High { background: var(--danger-light); color: var(--danger); }
+        .p-Medium { background: var(--warning-light); color: var(--warning); }
+        .p-Low { background: var(--success-light); color: var(--success); }
+        .p-Urgent { background: #fef2f2; color: #dc2626; }
+        .task-progress { margin-top: auto; }
+
+        /* ─── Date Group Accordion ─── */
+        .date-group { margin-bottom: 24px; }
+        .date-group-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 14px 20px; background: var(--card-bg); border-radius: var(--radius-sm);
+            border: 1px solid var(--border-color); cursor: pointer;
+            transition: all 0.25s; user-select: none; margin-bottom: 16px;
+            box-shadow: var(--card-shadow);
+        }
+        .date-group-header:hover { background: var(--primary-light); border-color: #c7d2fe; }
+        .date-group-header.today { border-left: 4px solid var(--primary); background: #f5f3ff; }
+        .date-group-header.collapsed { margin-bottom: 0; border-radius: var(--radius-sm); }
+        .date-group-header .dg-left {
+            display: flex; align-items: center; gap: 12px;
+        }
+        .date-group-header .dg-icon {
+            width: 36px; height: 36px; border-radius: 10px; display: flex;
+            align-items: center; justify-content: center; font-size: 14px;
+            background: var(--primary-light); color: var(--primary);
+        }
+        .date-group-header.today .dg-icon { background: var(--primary); color: white; }
+        .date-group-header .dg-date { font-size: 15px; font-weight: 800; color: var(--text-main); }
+        .date-group-header .dg-day { font-size: 11px; font-weight: 600; color: var(--text-muted); }
+        .date-group-header .dg-right {
+            display: flex; align-items: center; gap: 14px;
+        }
+        .date-group-header .dg-stat {
+            font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 6px;
+        }
+        .date-group-header .dg-chevron {
+            font-size: 12px; color: var(--text-muted); transition: transform 0.3s;
+        }
+        .date-group-header.collapsed .dg-chevron { transform: rotate(-90deg); }
+        .date-group-body { display: block; }
+        .date-group-body.hidden { display: none; }
+        .task-progress-info { display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; margin-bottom: 6px; }
+        .task-bar-bg { height: 6px; background: #f1f5f9; border-radius: 3px; overflow: hidden; }
+        .task-bar-fill { height: 100%; background: var(--primary); border-radius: 3px; transition: width 0.5s; }
+        .task-footer {
+            display: flex; justify-content: space-between; align-items: center;
+            padding-top: 12px; border-top: 1px solid #f1f5f9;
+        }
+        .task-deadline { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; color: var(--text-muted); }
+
+        /* ─── Tab System ─── */
+        .tab-section { display: none; }
+        .tab-section.active { display: block; animation: fadeUp 0.35s ease; }
+        @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+        /* ─── Side Panel & Overlay ─── */
+        .overlay {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3);
+            z-index: 500; backdrop-filter: blur(2px);
+        }
+        .overlay.active { display: block; }
+        .side-panel {
+            position: fixed; top: 0; right: -450px; width: 440px; height: 100vh;
+            background: var(--card-bg); box-shadow: -10px 0 40px rgba(0,0,0,0.1);
+            z-index: 501; padding: 32px; transition: right 0.35s ease; overflow-y: auto;
+        }
+        .side-panel.active { right: 0; }
+
+        /* ─── Notification Toast ─── */
+        #notification-container {
+            position: fixed; top: 20px; right: 20px; z-index: 1000;
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .notification-toast {
+            background: white; padding: 14px 18px; border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12); display: flex; align-items: center;
+            gap: 12px; cursor: pointer; animation: slideIn 0.3s ease;
+            border-left: 3px solid var(--primary);
+        }
+        @keyframes slideIn { from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1} }
+        .toast-exit { animation: slideOut 0.3s ease forwards; }
+        @keyframes slideOut { to{transform:translateX(100%);opacity:0} }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center; padding: 32px 20px; color: #94a3b8; font-size: 13px; font-weight: 600;
+        }
+        .empty-state i { font-size: 32px; margin-bottom: 10px; display: block; opacity: 0.4; }
+
+        /* Embedded Modal Elements */
+        .modal-overlay {
+            display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(8px); z-index: 1000; justify-content: center; align-items: center;
+            animation: fadeIn 0.3s ease;
+        }
+        .modal-content {
+            background: var(--card-bg); width: 90%; max-width: 900px; max-height: 90vh;
+            border-radius: var(--radius); overflow: hidden; display: flex; flex-direction: column;
+            box-shadow: var(--card-shadow-hover);
+        }
+        .modal-header {
+            padding: 24px; border-bottom: 1px solid var(--border-color); display: flex;
+            justify-content: space-between; align-items: center; background: var(--bg-main);
+        }
+        .modal-body { padding: 24px; overflow-y: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        .modal-footer {
+            padding: 16px 24px; border-top: 1px solid var(--border-color); display: flex;
+            justify-content: flex-end; gap: 12px; background: var(--bg-main);
+        }
+        .info-label { font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; }
+        .info-value { font-size: 14px; font-weight: 700; color: var(--text-main); margin-top: 4px; }
+        .assigned-tag { display: inline-flex; align-items: center; background: var(--primary-light); color: var(--primary); padding: 6px 12px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 700; margin: 4px; }
+        .unassign-btn { margin-left: 8px; color: var(--danger); cursor: pointer; font-weight: 800; }
+        .suggestion-item {
+            border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 10px;
+            display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; cursor: pointer;
+        }
+        .suggestion-item:hover { border-color: var(--primary); background: var(--primary-light); }
+        .suggestion-item.selected { border-color: var(--primary); background: #eef2ff; }
     </style>
 </head>
 
 <body onload="loadSupervisorDashboard()">
 
     <div class="dashboard-container">
-        <!-- SIDEBAR REMOVED IN FAVOR OF HUB NAV -->
-
-        <!-- MAIN CONTENT -->
-        <div class="main-content">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo-box">
+                <i class="fas fa-brain"></i>
+                <div>
+                    <h2>Antigravity</h2>
+                    <p>Advanced Analytics</p>
+                </div>
+            </div>
             
-            <!-- HUB SECTION -->
-            <div id="tab-hub" class="tab-section active">
-                <div style="text-align: center; margin-bottom: 50px;">
-                    <h1 style="font-size: 36px; margin-bottom: 10px; background: linear-gradient(135deg, #6366f1, #a855f7); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Supervisor Terminal</h1>
-                    <p style="color: #64748b; font-size: 18px;">Select a workspace to manage your team operations</p>
+            <nav>
+                <div class="nav-link active" onclick="switchTab('tab-sup-overview', this)">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Dashboard Overview</span>
                 </div>
-
-                <div class="hub-container">
-                    <div class="hub-card" onclick="switchTab('tab-sup-overview')">
-                        <div class="icon-box">📈</div>
-                        <h3>Stats Overview</h3>
-                        <p>Analyze team productivity and attendance metrics in real-time.</p>
-                    </div>
-                    <div class="hub-card" onclick="goAddEmployee()">
-                        <div class="icon-box">👤</div>
-                        <h3>Add Team Member</h3>
-                        <p>Register new employees and set their roles and skills.</p>
-                    </div>
-                    <div class="hub-card" onclick="goAttendance()">
-                        <div class="icon-box">✅</div>
-                        <h3>Mark Attendance</h3>
-                        <p>Daily check-in/out for all employees in your team.</p>
-                    </div>
-                    <div class="hub-card" onclick="goTaskManagement()">
-                        <div class="icon-box">📋</div>
-                        <h3>Manage Tasks</h3>
-                        <p>Assign work, set priorities, and track progress.</p>
-                    </div>
-                    <div class="hub-card" onclick="switchTab('tab-sup-directory')">
-                        <div class="icon-box">👥</div>
-                        <h3>Team Directory</h3>
-                        <p>View detailed profiles and performance history of your staff.</p>
-                    </div>
-                    <div class="hub-card" onclick="switchTab('tab-orders')" style="position: relative;">
-                        <div id="order-badge" class="nav-badge" style="display: none;">0</div>
-                        <div class="icon-box">📦</div>
-                        <h3>Production Management</h3>
-                        <p>View incoming production orders and convert them into workforce tasks.</p>
-                    </div>
-                    <div class="hub-card" onclick="switchTab('tab-order-history')">
-                        <div class="icon-box">📜</div>
-                        <h3>Production Order History</h3>
-                        <p>View complete history of all past and current production orders.</p>
-                    </div>
-                    <div class="hub-card" onclick="window.location.href='configuration.html'">
-                        <div class="icon-box">⚙️</div>
-                        <h3>Section & Skill Configuration</h3>
-                        <p>Dynamically manage skills, production sections, mappings, and shifts.</p>
-                    </div>
+                <div class="nav-link" onclick="switchTab('tab-sup-tasks', this); if(typeof loadTasks==='function') loadTasks();">
+                    <i class="fas fa-tasks"></i>
+                    <span>Manage Tasks</span>
                 </div>
+                <div class="nav-link" onclick="switchTab('tab-sup-attendance', this); if(typeof loadAttendanceMarkingPage==='function') loadAttendanceMarkingPage();">
+                    <i class="fas fa-calendar-check"></i>
+                    <span>Daily Attendance</span>
+                </div>
+                <div class="nav-link" onclick="switchTab('tab-sup-directory', this)">
+                    <i class="fas fa-users"></i>
+                    <span>Team Directory</span>
+                </div>
+                <div class="nav-link" onclick="window.location.href='add-employee.html'">
+                    <i class="fas fa-user-plus"></i>
+                    <span>Add Employee</span>
+                </div>
+                <div class="nav-link" onclick="switchTab('tab-orders', this)">
+                    <i class="fas fa-box-open"></i>
+                    <span>Production Orders</span>
+                    <span id="order-badge" style="background:var(--danger); color:white; padding:2px 8px; border-radius:10px; font-size:10px; font-weight:800; margin-left:auto; display:none;">0</span>
+                </div>
+                <div class="nav-link" onclick="switchTab('tab-order-history', this)">
+                    <i class="fas fa-history"></i>
+                    <span>Order History</span>
+                </div>
+                <div class="nav-link" onclick="window.location.href='configuration.html'">
+                    <i class="fas fa-cog"></i>
+                    <span>Configuration</span>
+                </div>
+            </nav>
 
-                <div style="margin-top: 60px; text-align: center;">
-                    <button class="btn-logout" style="width: 200px; padding: 15px;" onclick="logout()">Logout Session</button>
+            <div style="margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border-color);">
+                <div class="nav-link" onclick="logout()" style="color: var(--danger);">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
                 </div>
             </div>
+        </aside>
 
-            <!-- OVERVIEW SECTION -->
-            <div id="tab-sup-overview" class="tab-section">
-                <button class="back-btn" onclick="switchTab('tab-hub')">â† Back to Menu</button>
-                <div style="margin-bottom: 30px;">
-                    <h2 style="margin: 0; font-size: 28px; text-align: left;">Performance Insights</h2>
-                    <p style="color: #64748b; margin: 5px 0 0 0;">Real-time team analytics and productivity metrics</p>
-                </div>
-
-                <div class="stats-row">
-                    <div class="stat-card" style="background: linear-gradient(135deg, #6366f1, #4f46e5);">
-                        <h4>Active Staff</h4>
-                        <div class="num" id="totalEmployees">0</div>
-                    </div>
-                    <div class="stat-card" style="background: linear-gradient(135deg, #10b981, #059669);">
-                        <h4>Present Today</h4>
-                        <div class="num" id="todayPresent">0</div>
-                    </div>
-                    <div class="stat-card" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
-                        <h4>Pending Operations</h4>
-                        <div class="num" id="pendingTasks">0</div>
-                    </div>
-                    <div class="stat-card" style="background: linear-gradient(135deg, #ec4899, #be185d);">
-                        <h4>Avg Productivity</h4>
-                        <div class="num" id="avgProductivity">0%</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- OPERATIONS SECTION -->
-            <div id="tab-sup-ops" class="tab-section">
-                <button class="back-btn" onclick="switchTab('tab-hub')">â† Back to Menu</button>
-                <div class="chart-box">
-                    <h3 style="margin-bottom: 25px; font-size: 20px; color: #1e293b; border-bottom: 2px solid #eef2ff; padding-bottom: 10px;">ðŸ› ï¸ Management Tools</h3>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
-                        <div class="chart-box" style="text-align: center; cursor: pointer; border: 1px solid #e2e8f0; transition: all 0.2s;" onmouseover="this.style.borderColor='#6366f1'" onmouseout="this.style.borderColor='#e2e8f0'" onclick="goAddEmployee()">
-                            <div style="font-size: 40px; margin-bottom: 15px;">ðŸ‘¤</div>
-                            <h4 style="margin: 0; color: #1e293b;">Add Workforce Member</h4>
-                            <p style="font-size: 13px; color: #64748b; margin-top: 8px;">Register new team members</p>
+        <!-- Main Content -->
+        <main class="main-content">
+            
+            <!-- ═══════════ OVERVIEW TAB ═══════════ -->
+            <div id="tab-sup-overview" class="tab-section active">
+                
+                <!-- Header -->
+                <div class="page-header">
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <h1>Supervisor Hub</h1>
+                            <button onclick="loadSupervisorDashboard()" class="btn-refresh">
+                                <i class="fas fa-sync-alt"></i> Refresh
+                            </button>
                         </div>
-                        <div class="chart-box" style="text-align: center; cursor: pointer; border: 1px solid #e2e8f0; transition: all 0.2s;" onmouseover="this.style.borderColor='#10b981'" onmouseout="this.style.borderColor='#e2e8f0'" onclick="goAttendance()">
-                            <div style="font-size: 40px; margin-bottom: 15px;">âœ…</div>
-                            <h4 style="margin: 0; color: #1e293b;">Attendance</h4>
-                            <p style="font-size: 13px; color: #64748b; margin-top: 8px;">Mark daily presence</p>
+                        <p class="subtitle">
+                            Shift Command & Operations Control &bull;
+                            <span class="sync-dot"></span>
+                            <span style="color: var(--success); font-weight: 700;">Live updated at <span id="lastUpdatedTime">--:--</span></span>
+                        </p>
+                    </div>
+                    <div class="header-actions">
+                        <div class="header-chip">
+                            <span>Shift Productivity</span>
+                            <span id="headerProgressVal" style="color: var(--primary); font-weight: 800;">0%</span>
+                            <div class="progress-mini">
+                                <div id="headerProgressFill" class="progress-mini-fill" style="width: 0%;"></div>
+                            </div>
                         </div>
-                        <div class="chart-box" style="text-align: center; cursor: pointer; border: 1px solid #e2e8f0; transition: all 0.2s;" onmouseover="this.style.borderColor='#f59e0b'" onmouseout="this.style.borderColor='#e2e8f0'" onclick="goTaskManagement()">
-                            <div style="font-size: 40px; margin-bottom: 15px;">ðŸ“‹</div>
-                            <h4 style="margin: 0; color: #1e293b;">Production Tasks</h4>
-                            <p style="font-size: 13px; color: #64748b; margin-top: 8px;">Assign and track work</p>
+                        <div class="header-chip">
+                            <i class="far fa-calendar-alt" style="color: var(--primary);"></i>
+                            <span id="currentDateDisplay">...</span>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- DIRECTORY SECTION -->
-            <div id="tab-sup-directory" class="tab-section">
-                <button class="back-btn" onclick="switchTab('tab-hub')">â† Back to Menu</button>
-                <div class="mgr-calendar-section">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+                <!-- Critical Alerts (conditionally shown) -->
+                <div id="heroAlertSystem" class="alerts-hero" style="display: none;">
+                    <h3><i class="fas fa-exclamation-triangle"></i> Critical Operational Alerts</h3>
+                    <div id="criticalAlertsList"></div>
+                </div>
+
+                <!-- KPI Cards -->
+                <div class="kpi-row">
+                    <div class="kpi-card" onclick="switchTab('tab-sup-directory', document.querySelector('.nav-link:nth-child(4)'))">
+                        <div class="kpi-icon" style="background: var(--primary-light); color: var(--primary);">
+                            <i class="fas fa-user-friends"></i>
+                        </div>
                         <div>
-                            <h3 style="margin: 0; font-size: 24px; color: #1e293b;">ðŸ‘¥ Team Member Directory</h3>
-                            <p style="color: #64748b; font-size: 14px; margin-top: 5px;">View detailed profile and granular progress history</p>
+                            <div class="kpi-label">Staff Availability</div>
+                            <div style="display: flex; gap: 12px; align-items: baseline;">
+                                <span class="kpi-value" id="presentCount" style="color: var(--success);">0</span>
+                                <span style="font-size: 12px; color: var(--text-muted); font-weight: 700;">Pres</span>
+                                <span style="width: 1px; height: 18px; background: var(--border-color);"></span>
+                                <span class="kpi-value" id="absentCount" style="color: var(--danger); font-size: 22px;">0</span>
+                                <span style="font-size: 12px; color: var(--text-muted); font-weight: 700;">Abs</span>
+                            </div>
+                            <div class="kpi-sub" style="color: var(--success);"><i class="fas fa-signal"></i> Real-time Registry</div>
                         </div>
-                        <input type="text" id="supEmpSearch" placeholder="Search team member..." 
-                               style="width: 300px; padding: 12px 20px; border-radius: 12px; border: 1px solid #e2e8f0; font-size: 14px;"
-                               onkeyup="filterEmployeeDirectory('supEmpSearch', 'supEmployeeDirectory')">
                     </div>
-                    <div id="supEmployeeDirectory" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px;">
-                        <p style="text-align: center; grid-column: 1/-1; padding: 40px; color: #94a3b8;">Loading team directory...</p>
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background: var(--warning-light); color: var(--warning);">
+                            <i class="fas fa-layer-group"></i>
+                        </div>
+                        <div>
+                            <div class="kpi-label">Total Workload</div>
+                            <div class="kpi-value" id="pendingTasks">0</div>
+                            <div class="kpi-sub" style="color: var(--text-muted);">Current Shift</div>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background: #ecfdf5; color: var(--success);">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div>
+                            <div class="kpi-label">Section Health</div>
+                            <div class="kpi-value" id="sectionHealthPct">0%</div>
+                            <div class="kpi-sub" style="color: var(--text-muted);">Avg Efficiency</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Command Row: 3 columns -->
+                <div class="command-row">
+                    <!-- Assignment Queue -->
+                    <div class="card" style="border-top: 3px solid var(--danger);">
+                        <div class="card-header" style="color: var(--danger);">
+                            <i class="fas fa-user-plus"></i> Needs Assignment
+                        </div>
+                        <div class="card-body" id="assignmentQueueList" style="display: flex; flex-direction: column; gap: 10px; max-height: 280px; overflow-y: auto;">
+                            <div class="empty-state"><i class="fas fa-check-circle"></i>Scanning for unassigned tasks...</div>
+                        </div>
+                    </div>
+
+                    <!-- Today's Control Panel -->
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-calendar-day" style="color: var(--primary);"></i> Today's Operational Control
+                        </div>
+                        <div class="card-body" style="display: flex; flex-direction: column; gap: 12px;">
+                            <div class="ctrl-item">
+                                <div class="ctrl-label"><i class="fas fa-check-circle" style="color: var(--success);"></i> Total Tasks Scheduled</div>
+                                <div class="ctrl-val" id="cpTotalTasks">0</div>
+                            </div>
+                            <div class="ctrl-item">
+                                <div class="ctrl-label"><i class="fas fa-hourglass-half" style="color: var(--primary);"></i> Tasks In Progress</div>
+                                <div class="ctrl-val" id="cpInProgress" style="color: var(--primary);">0</div>
+                            </div>
+                            <div class="ctrl-item" id="cpDelayedRow">
+                                <div class="ctrl-label"><i class="fas fa-times-circle" style="color: var(--danger);"></i> Delayed Tasks</div>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <div class="ctrl-val" id="cpDelayed" style="color: var(--danger);">0</div>
+                                    <i class="fas fa-exclamation-triangle" id="cpDelayedIcon" style="color: var(--danger); display: none; font-size: 12px;"></i>
+                                </div>
+                            </div>
+                            <div class="ctrl-item">
+                                <div class="ctrl-label"><i class="fas fa-users" style="color: var(--primary);"></i> Active Staff Capacity</div>
+                                <div class="ctrl-val" id="cpActiveStaff">0/0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Team Performance -->
+                    <div class="card">
+                        <div class="card-body" style="display: grid; grid-template-columns: 1.3fr 0.7fr; gap: 20px; height: 100%;">
+                            <div style="display: flex; flex-direction: column;">
+                                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 24px;">
+                                    <h3 style="font-size: 15px; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+                                        <i class="fas fa-star" style="color: var(--warning); font-size: 14px;"></i> Live Team Performance
+                                    </h3>
+                                    <div>
+                                        <span id="teamPerfTotal" style="font-size: 28px; font-weight: 900; color: var(--primary);">--</span><span style="font-size: 13px; font-weight: 700; color: #94a3b8;">/100</span>
+                                    </div>
+                                </div>
+                                <div class="perf-row" style="flex: 1;">
+                                    <div>
+                                        <div class="perf-item-label">
+                                            <span><i class="fas fa-tasks" style="color: var(--success);"></i> Completeness</span>
+                                            <span id="teamScoreComp" style="color: var(--success);">0%</span>
+                                        </div>
+                                        <div class="perf-bar"><div class="perf-bar-fill" id="teamBarComp" style="width: 0%; background: linear-gradient(90deg, #10b981, #34d399);"></div></div>
+                                    </div>
+                                    <div>
+                                        <div class="perf-item-label">
+                                            <span><i class="fas fa-user-check" style="color: var(--primary);"></i> Attendance</span>
+                                            <span id="teamScoreAtt" style="color: var(--primary);">0%</span>
+                                        </div>
+                                        <div class="perf-bar"><div class="perf-bar-fill" id="teamBarAtt" style="width: 0%; background: linear-gradient(90deg, #6366f1, #818cf8);"></div></div>
+                                    </div>
+                                    <div>
+                                        <div class="perf-item-label">
+                                            <span><i class="fas fa-tachometer-alt" style="color: var(--warning);"></i> Efficiency</span>
+                                            <span id="teamScoreEff" style="color: var(--warning);">0%</span>
+                                        </div>
+                                        <div class="perf-bar"><div class="perf-bar-fill" id="teamBarEff" style="width: 0%; background: linear-gradient(90deg, #f59e0b, #fbbf24);"></div></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; border-left: 1px solid #f1f5f9; padding-left: 16px;">
+                                <h4 style="font-size: 12px; font-weight: 800; color: var(--text-muted); align-self: flex-start; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Distribution</h4>
+                                <div style="height: 160px; width: 100%;">
+                                    <canvas id="taskStatusChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analytics Row -->
+                <div class="analytics-row">
+                    <!-- Section Performance Chart -->
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-chart-bar" style="color: var(--success);"></i> Live Section Output Performance (%)
+                        </div>
+                        <div class="card-body">
+                            <div style="height: 280px;">
+                                <canvas id="sectionPerformanceChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section Health Audit Table -->
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-clipboard-check" style="color: var(--primary);"></i> Section Health Audit
+                        </div>
+                        <div class="card-body" style="overflow-x: auto;">
+                            <table class="audit-table">
+                                <thead>
+                                    <tr>
+                                        <th>Section</th>
+                                        <th style="text-align: center;">Total</th>
+                                        <th style="text-align: center;">Done</th>
+                                        <th style="text-align: center;">Pending</th>
+                                        <th style="text-align: center;">Delayed</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="sectionAuditBody">
+                                    <tr><td colspan="5" class="empty-state">Loading section data...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Task Section Header -->
+                <div class="section-divider">
+                    <h2>Operational Workforce Tasks</h2>
+                    <button onclick="goTaskManagement()" class="btn-create">
+                        <i class="fas fa-plus"></i> Create New Task
+                    </button>
+                </div>
+
+                <!-- Filter Bar -->
+                <div class="filter-bar">
+                    <div class="filter-group">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="taskSearch" placeholder="Search tasks or members..." onkeyup="filterDashboardTasks()">
+                    </div>
+                    <div class="filter-group">
+                        <i class="fas fa-layer-group"></i>
+                        <select id="sectionFilter" onchange="filterDashboardTasks()">
+                            <option value="All">All Sections</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <i class="fas fa-flag"></i>
+                        <select id="priorityFilter" onchange="filterDashboardTasks()">
+                            <option value="All">All Priorities</option>
+                            <option value="High">High</option>
+                            <option value="Medium">Medium</option>
+                            <option value="Low">Low</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <i class="fas fa-calendar"></i>
+                        <input type="date" id="dateFilter" onchange="filterDashboardTasks()">
+                    </div>
+                </div>
+
+                <!-- Task Grid -->
+                <div id="taskGridContainer" style="margin-bottom: 40px;">
+                    <div class="empty-state"><i class="fas fa-spinner fa-spin"></i> Loading tasks...</div>
+                </div>
+            </div>
+
+            <!-- ═══════════ DIRECTORY TAB ═══════════ -->
+            <div id="tab-sup-directory" class="tab-section">
+                <div class="page-header">
+                    <div>
+                        <h1>Team Directory</h1>
+                        <p class="subtitle"><span class="sync-dot"></span>&nbsp; Live workforce registry — click any member to view full profile & analytics.</p>
+                    </div>
+                    <div class="header-actions">
+                        <div class="filter-group" style="min-width:240px;">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="supEmpSearch" placeholder="Search by name, ID, role..."
+                                   style="background:none;border:none;outline:none;font-family:'Outfit';font-weight:600;font-size:13px;width:100%;"
+                                   oninput="filterEmployeeDirectory()">
+                        </div>
+                        <select id="dirRoleFilter" onchange="filterEmployeeDirectory()" style="padding:10px 14px;border:1px solid var(--border-color);border-radius:var(--radius-sm);font-family:'Outfit';font-weight:600;font-size:13px;background:var(--card-bg);color:var(--text-main);outline:none;">
+                            <option value="">All Roles</option>
+                            <option value="employee">Employees</option>
+                            <option value="supervisor">Supervisors</option>
+                        </select>
+                        <button onclick="openAddEmployeeModal()" class="btn-create">
+                            <i class="fas fa-user-plus"></i> Add Member
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Name List -->
+                <div class="card" style="overflow:hidden; margin-bottom:24px;">
+                    <div style="padding:16px 24px; border-bottom:1px solid var(--border-color); display:flex; align-items:center; justify-content:space-between;">
+                        <div style="font-size:14px;font-weight:800;color:var(--text-main); display:flex;align-items:center;gap:8px;">
+                            <i class="fas fa-users" style="color:var(--primary);"></i>
+                            Workforce Members
+                        </div>
+                        <div id="dirMemberCount" style="font-size:12px;font-weight:700;color:var(--text-muted);">Loading...</div>
+                    </div>
+                    <div id="supEmployeeDirectory" style="display:flex;flex-direction:column;">
+                        <div class="empty-state"><i class="fas fa-spinner fa-spin"></i> Loading team directory...</div>
                     </div>
                 </div>
             </div>
 
-            <!-- ORDER MANAGEMENT SECTION -->
+            <!-- ═══════════ MANAGE TASKS TAB ═══════════ -->
+            <div id="tab-sup-tasks" class="tab-section">
+                <div class="page-header">
+                    <div>
+                        <h1>Production Task Management</h1>
+                        <p class="subtitle">Assign workers, match skills, and execute active production orders.</p>
+                    </div>
+                </div>
+
+                <!-- 1. Create New Task -->
+                <div class="card" style="margin-bottom: 24px; overflow: visible;">
+                    <div class="card-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 16px; margin-bottom: 16px;">
+                        <div><i class="fas fa-plus-circle" style="color: var(--primary); margin-right: 6px;"></i> 1. Create New Task</div>
+                    </div>
+                    <div class="card-body" style="padding-top: 0;">
+                        <div class="kpi-row" style="grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 0;">
+                            <div class="form-group">
+                                <label style="display:block; font-size:12px; font-weight:800; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Task Name</label>
+                                <input type="text" id="taskName" placeholder="Enter task name..." style="width:100%; padding:10px 14px; border:1px solid var(--border-color); border-radius:var(--radius-sm); font-family: Outfit; font-weight: 600;">
+                            </div>
+                            <div class="form-group">
+                                <label style="display:block; font-size:12px; font-weight:800; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Section</label>
+                                <select id="taskSection" onchange="autoFillSkillsBySectionDynamic()" style="width:100%; padding:10px 14px; border:1px solid var(--border-color); border-radius:var(--radius-sm); font-family: Outfit; font-weight: 600;">
+                                    <option value="">Select Section...</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label style="display:block; font-size:12px; font-weight:800; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Priority</label>
+                                <select id="taskPriority" style="width:100%; padding:10px 14px; border:1px solid var(--border-color); border-radius:var(--radius-sm); font-family: Outfit; font-weight: 600;">
+                                    <option value="High">High Priority</option>
+                                    <option value="Medium" selected>Medium Priority</option>
+                                    <option value="Low">Low Priority</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label style="display:block; font-size:12px; font-weight:800; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Employees Needed</label>
+                                <input type="number" id="employeesNeeded" min="1" value="1" style="width:100%; padding:10px 14px; border:1px solid var(--border-color); border-radius:var(--radius-sm); font-family: Outfit; font-weight: 600;">
+                            </div>
+                            <div class="form-group">
+                                <label style="display:block; font-size:12px; font-weight:800; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Deadline</label>
+                                <input type="date" id="taskDeadline" style="width:100%; padding:10px 14px; border:1px solid var(--border-color); border-radius:var(--radius-sm); font-family: Outfit; font-weight: 600;">
+                            </div>
+                            <div class="form-group">
+                                <label style="display:block; font-size:12px; font-weight:800; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Required Skills</label>
+                                <input type="text" id="taskSkill" readonly placeholder="Auto-filled from section..." style="width:100%; padding:10px 14px; border:1px solid var(--border-color); border-radius:var(--radius-sm); font-family: Outfit; font-weight: 600; background: var(--bg-main);">
+                            </div>
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label style="display:block; font-size:12px; font-weight:800; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Filter Suggestions (Shift)</label>
+                                <select id="taskSessionFilter" onchange="autoFillSkillsBySectionDynamic()" style="width:100%; padding:10px 14px; border:1px solid var(--border-color); border-radius:var(--radius-sm); font-family: Outfit; font-weight: 600;">
+                                    <option value="">Any Session</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label style="display:block; font-size:12px; font-weight:800; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Potential Matches Preview</label>
+                                <div id="liveMatchPreview" style="display: flex; flex-wrap: wrap; gap: 8px; min-height: 44px; padding: 12px; background: var(--bg-main); border-radius: var(--radius-sm); border: 1px dashed var(--border-color);">
+                                    <p style="color: var(--text-muted); font-size: 13px; font-weight: 500; margin: 0;">Select a section to see available staff...</p>
+                                </div>
+                            </div>
+                        </div>
+                        <button onclick="createTask()" class="btn-create" style="width: 100%; justify-content: center; margin-top: 16px; padding: 12px; font-size: 14px;">Create Production Task</button>
+                    </div>
+                </div>
+
+                <div class="command-row">
+                    <!-- Column 1 -->
+                    <div class="card" style="display: flex; flex-direction: column;">
+                        <div class="card-header" style="justify-content: space-between; border-bottom: 2px solid var(--primary-light); padding-bottom: 12px; margin-bottom: 0;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span style="background: var(--primary); color: white; border-radius: 6px; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px;">2</span>
+                                <span>Needs Assignment</span>
+                            </div>
+                            <input type="date" id="taskFilterDate" onchange="loadTasks()" style="border: 1px solid var(--border-color); border-radius: 6px; padding: 4px 8px; font-size: 11px; font-family: Outfit; font-weight: 700; color: var(--text-muted);">
+                        </div>
+                        <div class="card-body" id="taskListAssignment" style="flex: 1; overflow-y: auto; max-height: 500px; padding: 16px;">
+                            <div class="empty-state">No pending tasks found.</div>
+                        </div>
+                    </div>
+
+                    <!-- Column 2 -->
+                    <div class="card" style="display: flex; flex-direction: column; border-top: 4px solid var(--primary);">
+                        <div class="card-header" style="justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 0;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span style="background: var(--primary-light); color: var(--primary); border-radius: 6px; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px;">3</span>
+                                <span>Workforce Matching</span>
+                            </div>
+                            <div id="selectionCounter" style="display: none; background: var(--primary); color: white; padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800;">0 Selected</div>
+                        </div>
+                        <div class="card-body" style="flex: 1; display: flex; flex-direction: column; overflow-y: auto; max-height: 500px; padding: 16px;">
+                            <p id="selectionHint" style="background: var(--bg-main); border-radius: var(--radius-sm); padding: 14px; border-left: 4px solid var(--text-muted); font-size: 12px; font-weight: 600; color: #475569; margin: 0 0 16px;">Select a pending task from the left column to discover matching staff members.</p>
+                            <div id="suggestedEmployees" style="flex: 1;"></div>
+                            <div id="assignmentActions" style="display: none; margin-top: 16px; border-top: 1px dashed var(--border-color); padding-top: 16px;">
+                                <button onclick="confirmTaskAssignment()" class="btn-create" style="width: 100%; justify-content: center; padding: 12px; font-size: 13px;">Confirm Assignment <i class="fas fa-check" style="margin-left:6px;"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Column 3 -->
+                    <div class="card" style="display: flex; flex-direction: column; border-top: 4px solid var(--success);">
+                        <div class="card-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 0;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span style="background: var(--success-light); color: var(--success); border-radius: 6px; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px;">4</span>
+                                <span>Task Execution Status</span>
+                            </div>
+                        </div>
+                        <div class="card-body" id="taskListExecution" style="flex: 1; overflow-y: auto; max-height: 500px; padding: 16px;">
+                            <div class="empty-state">No assigned tasks found.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══════════ DAILY ATTENDANCE TAB ═══════════ -->
+            <div id="tab-sup-attendance" class="tab-section">
+                <div class="page-header" style="margin-bottom: 24px;">
+                    <div>
+                        <h1>Daily Workforce Registry</h1>
+                        <p class="subtitle">Quickly mark staff presence or absence for active operational shifts.</p>
+                    </div>
+                    <div class="header-actions">
+                        <button onclick="bulkMarkAttendance('Present')" class="btn-create" style="background: var(--success); color: white; padding: 10px 16px;"><i class="fas fa-check-circle"></i> Mark All Present</button>
+                        <button onclick="bulkMarkAttendance('Absent')" class="btn-create" style="background: var(--danger); color: white; padding: 10px 16px;"><i class="fas fa-times-circle"></i> Mark All Absent</button>
+                    </div>
+                </div>
+
+                <div class="filter-bar" style="justify-content: space-between; align-items: center;">
+                    <div class="filter-group" style="max-width: 250px;">
+                        <i class="fas fa-calendar-alt"></i>
+                        <input type="date" id="attMarkingDate" onchange="loadAttendanceMarkingPage()" style="color: var(--text-main);">
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 16px;">
+                        <div id="liveSyncStatus" style="font-size: 11px; font-weight: 800; color: var(--success); text-transform: uppercase;">
+                            <i class="fas fa-circle-notch fa-spin"></i> Sync Active
+                        </div>
+                        <button onclick="loadAttendanceMarkingPage()" class="btn-refresh">
+                            <i class="fas fa-sync-alt"></i> Sync Data
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card" style="overflow: hidden;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
+                        <thead>
+                            <tr style="background: var(--bg-main); border-bottom: 1px solid var(--border-color);">
+                                <th style="padding: 16px 20px; color: #475569; font-weight: 800; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px;">Employee Identification</th>
+                                <th style="padding: 16px 20px; color: #475569; font-weight: 800; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px; text-align: right;">Operational Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendanceMarkingList">
+                            <tr><td colspan="2" class="empty-state">Establishing connection to registry...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ═══════════ ORDERS TAB ═══════════ -->
             <div id="tab-orders" class="tab-section">
-                <button class="back-btn" onclick="switchTab('tab-hub')">â† Back to Menu</button>
-                <div style="margin-bottom: 30px;">
-                    <h2 style="margin: 0; font-size: 28px;">New Production Requests</h2>
-                    <p style="color: #64748b; margin: 5px 0 0 0;">Review customer requests and convert them into production tasks</p>
+                <div class="page-header">
+                    <div>
+                        <h1>Production Orders</h1>
+                        <p class="subtitle">Review customer requests and convert them into production tasks.</p>
+                    </div>
                 </div>
+                <div id="orderList" class="task-grid">
+                    <p class="empty-state" style="grid-column: 1/-1;">No pending orders available.</p>
+                </div>
+            </div>
 
-                <div class="mgr-calendar-section" style="background: white; border-radius: 16px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <h3 style="margin: 0; font-size: 20px;">Pending Customer Orders</h3>
-                        <div style="background: #f1f5f9; padding: 5px 15px; border-radius: 20px; font-size: 13px; font-weight: 600; color: #475569;">
-                            <span id="orderCount">0</span> Requests Found
+            <!-- ═══════════ ORDER HISTORY TAB ═══════════ -->
+            <div id="tab-order-history" class="tab-section">
+                <div class="page-header">
+                    <div>
+                        <h1>Order History</h1>
+                        <p class="subtitle">Complete log of past production cycles.</p>
+                    </div>
+                </div>
+                <div class="card" style="overflow: hidden;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
+                        <thead>
+                            <tr style="background: #f8fafc; border-bottom: 2px solid var(--border-color);">
+                                <th style="padding: 16px 20px; color: #475569; font-weight: 700;">Order ID</th>
+                                <th style="padding: 16px 20px; color: #475569; font-weight: 700;">Customer</th>
+                                <th style="padding: 16px 20px; color: #475569; font-weight: 700;">Product Batch</th>
+                                <th style="padding: 16px 20px; color: #475569; font-weight: 700;">Status</th>
+                                <th style="padding: 16px 20px; color: #475569; font-weight: 700;">Priority</th>
+                                <th style="padding: 16px 20px; color: #475569; font-weight: 700;">Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="supFullOrderHistoryList">
+                            <tr><td colspan="6" style="padding: 20px; text-align: center; color: #94a3b8;">Loading complete order history...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Task Detail Side Panel -->
+    <div id="taskSidePanelOverlay" class="overlay" onclick="closeTaskPanel()"></div>
+    <div id="taskSidePanel" class="side-panel">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <h3 id="panelTaskName" style="margin: 0; font-size: 18px; font-weight: 800;">Task Analysis</h3>
+            <button onclick="closeTaskPanel()" style="background: var(--bg-main); border: none; width: 32px; height: 32px; border-radius: 8px; cursor: pointer; font-size: 18px;">&times;</button>
+        </div>
+        <div id="panelContent" style="display: flex; flex-direction: column; gap: 20px; overflow-y: auto;">
+            <p style="color: var(--text-muted);">Loading task details...</p>
+        </div>
+    </div>
+
+    <!-- Employee Profile Full Modal -->
+    <div id="empProfileOverlay" onclick="closeEmpProfile()" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.7);backdrop-filter:blur(10px);z-index:1500;overflow-y:auto;padding:24px;">
+        <div id="empProfileModalBox" onclick="event.stopPropagation()" style="max-width:1100px;margin:0 auto;background:var(--card-bg);border-radius:var(--radius);box-shadow:0 25px 70px rgba(0,0,0,0.25);overflow:hidden;">
+            <!-- Modal Header -->
+            <div style="padding:28px 32px;border-bottom:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between;background:var(--bg-main);">
+                <div style="display:flex;align-items:center;gap:16px;">
+                    <div id="empModalAvatar" style="width:56px;height:56px;border-radius:16px;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;flex-shrink:0;">?</div>
+                    <div>
+                        <div id="empModalName" style="font-size:22px;font-weight:800;color:var(--text-main);">Loading...</div>
+                        <div id="empModalMeta" style="font-size:12px;font-weight:600;color:var(--text-muted);margin-top:4px;"></div>
+                    </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:16px;">
+                    <div id="empModalPerfBadge" style="text-align:center;background:var(--primary-light);padding:12px 20px;border-radius:var(--radius-sm);border:1px solid #c7d2fe;">
+                        <div style="font-size:10px;font-weight:800;color:var(--primary);text-transform:uppercase;letter-spacing:1px;">Performance</div>
+                        <div id="empModalPerfScore" style="font-size:28px;font-weight:900;color:var(--primary);line-height:1.1;">--</div>
+                        <div id="empModalPerfLabel" style="font-size:10px;font-weight:700;color:var(--primary);">Computing...</div>
+                    </div>
+                    <button onclick="closeEmpProfile()" style="background:var(--bg-main);border:1px solid var(--border-color);width:40px;height:40px;border-radius:var(--radius-sm);cursor:pointer;font-size:20px;color:var(--text-muted);transition:all 0.2s;" onmouseover="this.style.background='#fee2e2';this.style.color='#ef4444'" onmouseout="this.style.background='var(--bg-main)';this.style.color='var(--text-muted)'">×</button>
+                </div>
+            </div>
+            <!-- Modal Body -->
+            <div id="empProfileContent" style="padding:28px 32px;">
+                <div class="empty-state"><i class="fas fa-spinner fa-spin"></i> Loading employee profile...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notification-container"></div>
+
+    <!-- Task Management Detail Modal (Ported) -->
+    <div id="taskModal" class="modal-overlay" onclick="handleOutsideClick(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2 id="modalTitle" style="margin: 0; font-size: 20px; font-weight: 800; color: var(--text-main);">Task Details</h2>
+                <span class="close-modal" onclick="closeTaskModal()" style="font-size: 24px; cursor: pointer; color: var(--text-muted);">&times;</span>
+            </div>
+            <div class="modal-body">
+                <!-- Left Side: Information -->
+                <div style="display: flex; flex-direction: column; gap: 20px;">
+                    <div style="background: var(--bg-main); padding: 20px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                            <div>
+                                <div class="info-label">Section Alignment</div>
+                                <div id="modalSection" class="info-value">-</div>
+                            </div>
+                            <div>
+                                <div class="info-label">Current Priority</div>
+                                <div id="modalPriority" class="info-value">-</div>
+                            </div>
+                            <div>
+                                <div class="info-label">Delivery Deadline</div>
+                                <div id="modalDeadline" class="info-value">-</div>
+                            </div>
+                            <div>
+                                <div class="info-label">Execution Status</div>
+                                <div id="modalStatus" class="info-value">-</div>
+                            </div>
                         </div>
                     </div>
-                    <div id="orderList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px;">
-                        <p style="text-align: center; grid-column: 1/-1; padding: 40px; color: #94a3b8;">No pending orders available.</p>
+                    <div>
+                        <h3 style="font-size: 13px; font-weight: 800; color: var(--text-main); margin-bottom: 12px; text-transform: uppercase;">Assigned Production Staff</h3>
+                        <div id="modalAssignedList" style="min-height: 48px; background: white; border: 1px dashed var(--border-color); border-radius: var(--radius-sm); padding: 12px;"></div>
+                    </div>
+                    <div style="margin-top: auto;">
+                        <button id="completeBtn" onclick="markTaskCompletedFromModal()" class="btn-create" style="width: 100%; justify-content: center; padding: 12px; background: var(--success); font-size: 14px;">Mark Assignment Completed <i class="fas fa-check-circle" style="margin-left:6px;"></i></button>
+                    </div>
+                </div>
+
+                <!-- Right Side: Modifications -->
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <h3 style="font-size: 13px; font-weight: 800; color: var(--text-main); margin: 0; text-transform: uppercase;">Available Contingency Staff</h3>
+                    <div id="modalSuggestionsList" style="flex: 1; overflow-y: auto; max-height: 400px; padding-right: 8px;"></div>
+                    <div id="modalSelectionActions" style="display: none; padding-top: 12px; border-top: 1px dashed var(--border-color);">
+                        <button onclick="confirmModalAssignment()" class="btn-create" style="width: 100%; justify-content: center; padding: 12px;">Assign Additional Staff</button>
                     </div>
                 </div>
             </div>
-
-            <!-- ORDER HISTORY SECTION -->
-            <div id="tab-order-history" class="tab-section">
-                <button class="back-btn" onclick="switchTab('tab-hub')">â† Back to Menu</button>
-                <div style="margin-bottom: 30px;">
-                    <h2 style="margin: 0; font-size: 28px;">Production Order History</h2>
-                    <p style="color: #64748b; margin: 5px 0 0 0;">View the complete log of all past and pending production orders</p>
-                </div>
-
-                <div class="mgr-calendar-section">
-                    <div style="overflow-x: auto;">
-                        <table style="width: 100%; border-collapse: collapse; font-size: 14px; text-align: left;">
-                            <thead>
-                                <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
-                                    <th style="padding: 15px; color: #475569;">Order ID</th>
-                                    <th style="padding: 15px; color: #475569;">Customer</th>
-                                    <th style="padding: 15px; color: #475569;">Product Batch</th>
-                                    <th style="padding: 15px; color: #475569;">Units Produced</th>
-                                    <th style="padding: 15px; color: #475569;">Status</th>
-                                    <th style="padding: 15px; color: #475569;">Priority</th>
-                                    <th style="padding: 15px; color: #475569;">Date</th>
-                                </tr>
-                            </thead>
-                            <tbody id="supFullOrderHistoryList">
-                                <tr><td colspan="7" style="padding: 20px; text-align: center; color: #94a3b8;">Loading complete order history...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+            <div class="modal-footer">
+                <button onclick="handleDeleteFromModal()" class="btn-create" style="background: var(--danger-light); color: var(--danger); padding: 10px 18px;">Discard Task</button>
+                <button onclick="closeTaskModal()" class="btn-create" style="background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color); padding: 10px 18px;">Close Window</button>
             </div>
-
         </div>
     </div>
 
     <!-- Legacy IDs for script compatibility -->
     <div id="teamDirectoryModal" style="display:none;"></div>
 
-    <!-- ===== SHARED EMPLOYEE DETAILS MODAL ===== -->
-    <div class="mgr-att-modal-overlay" id="empDetailsModal" onclick="closeEmpDetailsModal(event)">
-        <div class="mgr-att-modal" style="width: 850px; max-width: 95%; height: 85vh;" onclick="event.stopPropagation()">
-            <div class="mgr-att-modal-header">
-                <h4 id="empModalTitle">Team Member Insights</h4>
-                <button class="close-btn" onclick="closeEmpDetailsModal()">&times;</button>
-            </div>
-            <div class="mgr-att-modal-body" style="background: #f8fafc; padding: 25px; overflow-y: auto; height: calc(100% - 76px);">
-                <div style="display: grid; grid-template-columns: 300px 1fr; gap: 25px;">
-                    <!-- Sidebar -->
-                    <div style="display: flex; flex-direction: column; gap: 20px;">
-                        <div class="chart-box" style="text-align: center;">
-                            <div id="empModalAvatar" style="width: 80px; height: 80px; border-radius: 20px; background: #6366f1; color: white; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 800; margin: 0 auto 15px;">?</div>
-                            <h3 id="empModalName" style="margin-bottom: 5px;">Employee Name</h3>
-                            <p id="empModalContact" style="font-size: 13px; color: #64748b;">Contact Loading...</p>
-                            <div style="margin-top: 20px; text-align: left;">
-                                <h4 style="font-size: 11px; color: #94a3b8; text-transform: uppercase;">Skill Set</h4>
-                                <div id="empModalSkills"></div>
-                            </div>
-                        </div>
-                        <div class="chart-box">
-                            <h4 style="font-size: 13px; margin: 0;">Attendance Consistency</h4>
-                            <div id="empModalAttendanceRate" style="font-size: 32px; font-weight: 800; color: #10b981; margin-top: 10px;">0%</div>
-                        </div>
-                    </div>
-                    <!-- Main Content -->
-                    <div style="display: flex; flex-direction: column; gap: 20px;">
-                        <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px;">
-                            <div class="chart-box">
-                                <h4 style="font-size: 13px; margin-bottom: 15px;">Attendance Split</h4>
-                                <canvas id="empModalAttendanceChart"></canvas>
-                            </div>
-                            <div class="chart-box">
-                                <h4 style="font-size: 13px; margin-bottom: 15px;">Task Accomplishments</h4>
-                                <canvas id="empModalTaskChart"></canvas>
-                            </div>
-                        </div>
-                        <div class="chart-box">
-                            <h4 style="font-size: 13px; margin-bottom: 15px;">Assigned Workstream</h4>
-                            <div id="empModalTaskList" style="max-height: 150px; overflow-y: auto; margin-bottom: 15px;"></div>
-                            
-                            <h4 style="font-size: 13px; border-top: 1px solid #f1f5f9; padding-top: 15px; margin-top: 15px;">ðŸ“… Daily Progress History</h4>
-                            <div style="overflow-x: auto;">
-                                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
-                                    <thead>
-                                        <tr style="border-bottom: 2px solid #eef2ff; color: #64748b;">
-                                            <th style="padding: 8px; text-align: left;">Date</th>
-                                            <th style="padding: 8px; text-align: left;">Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="empModalProgressBody">
-                                        <tr><td colspan="2" style="padding: 10px; text-align: center; color: #94a3b8;">Loading...</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Main Script -->
+    <script src="script.js"></script>
 
-    <!-- ===== CONVERT ORDER TO TASKS (MULTI-TASK BREAKDOWN BUILDER) ===== -->
-    <div class="mgr-att-modal-overlay" id="convertOrderModal" onclick="this.classList.remove('active')">
-        <div class="mgr-att-modal" style="width: 700px; max-width: 96vw; max-height: 90vh; display: flex; flex-direction: column;" onclick="event.stopPropagation()">
-            <div class="mgr-att-modal-header" style="flex-shrink: 0;">
+    <!-- ═══════════ SUPERVISOR DASHBOARD JS ═══════════ -->
+    <script>
+    // ─── Chart instances (destroy before recreating) ───
+    let _taskStatusChart = null;
+    let _sectionPerfChart = null;
+    let _allDashboardTasks = []; // Cache for filtering
+
+    // ─── Main load function ───
+    async function loadSupervisorDashboard() {
+        // Login guard
+        const role = localStorage.getItem('userRole');
+        if (role !== 'supervisor') { window.location.href = 'index.html'; return; }
+
+        // Update timestamp
+        const now = new Date();
+        const el = document.getElementById('lastUpdatedTime');
+        if (el) el.textContent = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+
+        // Update date display
+        const dateEl = document.getElementById('currentDateDisplay');
+        if (dateEl) dateEl.textContent = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+
+        // Fire all API calls in parallel
+        try {
+            const [summary, today, perf, statusCount, sections, alerts, tasks] = await Promise.all([
+                fetchJSON('/api/dashboard/summary'),
+                fetchJSON('/api/dashboard/today'),
+                fetchJSON('/api/dashboard/team-performance'),
+                fetchJSON('/api/tasks/status-count'),
+                fetchJSON('/api/sections/performance'),
+                fetchJSON('/api/dashboard/alerts'),
+                fetchJSON('/api/tasks')
+            ]);
+
+            renderSummaryKPIs(summary);
+            renderTodayControl(today);
+            renderTeamPerformance(perf);
+            renderTaskStatusChart(statusCount);
+            renderSectionPerformance(sections);
+            renderSectionAudit(sections);
+            renderAlerts(alerts);
+            renderAssignmentQueue(tasks);
+            renderDashboardTasks(tasks);
+            populateSectionFilter(sections);
+
+        } catch (err) {
+            console.error('Dashboard load error:', err);
+        }
+
+        // Start order polling
+        if (typeof startSupervisorOrderPolling === 'function') startSupervisorOrderPolling();
+    }
+
+    function fetchJSON(url) {
+        const base = (typeof api === 'function') ? api(url) : url;
+        return fetch(base, { cache: 'no-store' }).then(r => r.json());
+    }
+
+    // ─── Summary KPIs ───
+    function renderSummaryKPIs(d) {
+        setText('presentCount', d.activeStaff || 0);
+        setText('absentCount', d.absentStaff || 0);
+        setText('pendingTasks', d.totalPendingTasks || 0);
+
+        const output = d.shiftOutput || 0;
+        setText('headerProgressVal', output + '%');
+        setWidth('headerProgressFill', output + '%');
+    }
+
+    // ─── Today's Control Panel ───
+    function renderTodayControl(d) {
+        setText('cpTotalTasks', d.totalTasks || 0);
+        setText('cpInProgress', d.inProgress || 0);
+        setText('cpDelayed', d.delayed || 0);
+        setText('cpActiveStaff', (d.activeStaffCount || 0) + '/' + (d.totalStaffCount || 0));
+
+        // Pulse delayed row if > 0
+        const row = document.getElementById('cpDelayedRow');
+        const icon = document.getElementById('cpDelayedIcon');
+        if (d.delayed > 0) {
+            row.style.background = '#fef2f2';
+            row.style.border = '1px solid #fecaca';
+            icon.style.display = 'inline';
+        } else {
+            row.style.background = '#f8fafc';
+            row.style.border = '1px solid transparent';
+            icon.style.display = 'none';
+        }
+    }
+
+    // ─── Team Performance ───
+    function renderTeamPerformance(d) {
+        const comp = d.completionRate || 0;
+        const att = d.attendanceRate || 0;
+        const eff = d.efficiencyRate || 0;
+        const total = Math.round((comp * 0.4) + (att * 0.3) + (eff * 0.3));
+
+        setText('teamPerfTotal', total);
+        setText('teamScoreComp', comp + '%');
+        setText('teamScoreAtt', att + '%');
+        setText('teamScoreEff', eff + '%');
+        setWidth('teamBarComp', comp + '%');
+        setWidth('teamBarAtt', att + '%');
+        setWidth('teamBarEff', eff + '%');
+
+        // Section health = weighted average
+        setText('sectionHealthPct', total + '%');
+    }
+
+    // ─── Task Status Doughnut ───
+    function renderTaskStatusChart(d) {
+        const ctx = document.getElementById('taskStatusChart');
+        if (!ctx) return;
+        if (_taskStatusChart) _taskStatusChart.destroy();
+
+        _taskStatusChart = new Chart(ctx.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Completed', 'Pending', 'In Progress'],
+                datasets: [{
+                    data: [d.Completed || 0, d.Pending || 0, d.InProgress || 0],
+                    backgroundColor: ['#10b981', '#f59e0b', '#6366f1'],
+                    borderWidth: 0, hoverOffset: 6
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                cutout: '72%',
+                plugins: {
+                    legend: { display: true, position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle', padding: 12, font: { family: 'Outfit', size: 11, weight: '600' } } }
+                }
+            }
+        });
+    }
+
+    // ─── Section Performance Bar Chart ───
+    function renderSectionPerformance(sections) {
+        const ctx = document.getElementById('sectionPerformanceChart');
+        if (!ctx) return;
+        if (_sectionPerfChart) _sectionPerfChart.destroy();
+
+        if (!sections || sections.length === 0) {
+            ctx.parentElement.innerHTML = '<div class="empty-state" style="height:280px;"><i class="fas fa-chart-bar"></i> No section data available.</div>';
+            return;
+        }
+
+        const labels  = sections.map(s => s.section);
+        const outputs = sections.map(s => s.output || 0);
+        const bgs     = ['rgba(99,102,241,0.18)','rgba(16,185,129,0.18)','rgba(245,158,11,0.18)','rgba(59,130,246,0.18)','rgba(236,72,153,0.18)','rgba(139,92,246,0.18)'];
+        const borders = ['#6366f1','#10b981','#f59e0b','#3b82f6','#ec4899','#8b5cf6'];
+
+        _sectionPerfChart = new Chart(ctx.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Completion %',
+                    data: outputs,
+                    backgroundColor: labels.map((_, i) => bgs[i % bgs.length]),
+                    borderColor:     labels.map((_, i) => borders[i % borders.length]),
+                    borderWidth: 2,
+                    borderRadius: 10,
+                    borderSkipped: false,
+                    barPercentage: 0.55
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => ` ${ctx.parsed.y}% completion  (${sections[ctx.dataIndex].completed || 0} done / ${sections[ctx.dataIndex].total || 0} total)`
+                        },
+                        backgroundColor: '#1e293b',
+                        titleFont: { family: 'Outfit', weight: '800', size: 13 },
+                        bodyFont:  { family: 'Outfit', weight: '600', size: 12 },
+                        padding: 12, cornerRadius: 8
+                    },
+                    datalabels: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true, max: 100,
+                        grid: { color: '#f1f5f9' },
+                        ticks: { 
+                            font: { family: 'Outfit', weight: '700', size: 11 },
+                            callback: v => v + '%',
+                            color: '#64748b'
+                        },
+                        border: { dash: [4,4] }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { family: 'Outfit', weight: '800', size: 12 }, color: '#1e293b' }
+                    }
+                },
+                animation: {
+                    duration: 700,
+                    easing: 'easeOutQuart'
+                }
+            },
+            plugins: [{
+                id: 'valueLabel',
+                afterDatasetsDraw(chart) {
+                    const { ctx, data, scales: { x, y } } = chart;
+                    data.datasets[0].data.forEach((val, i) => {
+                        const meta = chart.getDatasetMeta(0);
+                        const bar = meta.data[i];
+                        const color = borders[i % borders.length];
+                        ctx.save();
+                        ctx.font = 'bold 13px Outfit, sans-serif';
+                        ctx.fillStyle = color;
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'bottom';
+                        ctx.fillText(val + '%', bar.x, bar.y - 4);
+                        ctx.restore();
+                    });
+                }
+            }]
+        });
+    }
+
+
+    // ─── Section Audit Table ───
+    function renderSectionAudit(sections) {
+        const body = document.getElementById('sectionAuditBody');
+        if (!body) return;
+
+        if (!sections || sections.length === 0) {
+            body.innerHTML = '<tr><td colspan="5" class="empty-state">No section data available.</td></tr>';
+            return;
+        }
+
+        const icons = { 'Yarn Preparation': '🧵', 'Knitting': '🪡', 'Packaging': '📦', 'Dispatch': '🚚' };
+
+        body.innerHTML = sections.map(s => {
+            const icon = icons[s.section] || '📋';
+            return `
+                <tr>
+                    <td style="font-weight: 800; color: var(--text-main);">
+                        <span style="margin-right: 6px;">${icon}</span> ${s.section}
+                    </td>
+                    <td style="text-align: center; font-weight: 800;">${s.total || 0}</td>
+                    <td style="text-align: center; color: var(--success); font-weight: 800;">${s.completed || 0}</td>
+                    <td style="text-align: center; color: var(--warning); font-weight: 800;">${s.pending || 0}</td>
+                    <td style="text-align: center; color: ${(s.delayed || 0) > 0 ? 'var(--danger)' : 'var(--text-muted)'}; font-weight: 800;">${s.delayed || 0}</td>
+                </tr>`;
+        }).join('');
+    }
+
+    // ─── Alerts ───
+    function renderAlerts(alerts) {
+        const container = document.getElementById('heroAlertSystem');
+        const list = document.getElementById('criticalAlertsList');
+        if (!container || !list) return;
+
+        if (!alerts || alerts.length === 0) {
+            container.style.display = 'none';
+            return;
+        }
+
+        container.style.display = 'block';
+        list.innerHTML = alerts.map(a => `
+            <div class="alert-card" style="border-color: ${a.color};">
+                <i class="fas ${a.icon || 'fa-circle'}" style="color: ${a.color}; margin-top: 2px;"></i>
                 <div>
-                    <h4 style="margin:0; font-size: 17px;">ðŸ”§ Break Order into Tasks</h4>
-                    <p style="margin: 4px 0 0; font-size: 12px; color: #64748b;">Create one or more tasks from this customer order</p>
+                    <div class="alert-title">${a.title}</div>
+                    <div class="alert-text">${a.text}</div>
                 </div>
-                <button class="close-btn" onclick="document.getElementById('convertOrderModal').classList.remove('active')">&times;</button>
             </div>
-            <div style="padding: 20px 24px; overflow-y: auto; flex: 1;">
-                <!-- Order Summary Banner -->
-                <input type="hidden" id="convOrderId">
-                <div style="background: linear-gradient(135deg, #eef2ff, #f5f3ff); border: 1px solid #c7d2fe; border-radius: 12px; padding: 14px 18px; margin-bottom: 20px;">
-                    <div style="font-size: 10px; font-weight: 700; color: #6366f1; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px;">ðŸ“¦ Customer Order</div>
-                    <div id="convCustName" style="font-weight: 800; color: #1e293b; font-size: 16px;"></div>
-                    <div id="convOrderDesc" style="font-size: 12px; color: #64748b; margin-top: 4px; line-height: 1.5;"></div>
-                </div>
+        `).join('');
+    }
 
-                <!-- Sub-tasks header -->
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
-                    <div>
-                        <span style="font-weight: 700; color: #1e293b; font-size: 14px;">Sub-Tasks</span>
-                        <span id="taskCountBadge" style="background: #6366f1; color: white; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; margin-left: 8px;">1</span>
+    // ─── Assignment Queue ───
+    function renderAssignmentQueue(tasks) {
+        const el = document.getElementById('assignmentQueueList');
+        if (!el) return;
+
+        const unassigned = (tasks || []).filter(t =>
+            t.status !== 'Completed' && (!t.assignedEmployees || t.assignedEmployees.trim() === '')
+        );
+
+        if (unassigned.length === 0) {
+            el.innerHTML = '<div class="empty-state"><i class="fas fa-check-circle"></i> All tasks are assigned!</div>';
+            return;
+        }
+
+        el.innerHTML = unassigned.slice(0, 8).map(t => `
+            <div class="queue-item" onclick="goTaskManagement()">
+                <div style="flex: 1;">
+                    <div class="qi-name">${t.taskName || 'Untitled Task'}</div>
+                    <div class="qi-meta">${t.section || 'General'} &bull; ${t.priority || 'Medium'}</div>
+                </div>
+                <span class="priority-badge p-${t.priority || 'Medium'}" style="flex-shrink: 0;">${t.priority || 'Med'}</span>
+            </div>
+        `).join('');
+    }
+
+    // ─── Dashboard Tasks Grid (Date Grouped) ───
+    function renderDashboardTasks(tasks) {
+        _allDashboardTasks = tasks || [];
+        filterDashboardTasks();
+    }
+
+    function filterDashboardTasks() {
+        const search = (document.getElementById('taskSearch')?.value || '').toLowerCase();
+        const section = document.getElementById('sectionFilter')?.value || 'All';
+        const priority = document.getElementById('priorityFilter')?.value || 'All';
+        const dateVal = document.getElementById('dateFilter')?.value || '';
+
+        let filtered = _allDashboardTasks.filter(t => {
+            if (search && !(t.taskName || '').toLowerCase().includes(search) && !(t.assignedEmployees || '').toLowerCase().includes(search) && !(t.section || '').toLowerCase().includes(search)) return false;
+            if (section !== 'All' && t.section !== section) return false;
+            if (priority !== 'All' && t.priority !== priority) return false;
+            // date filter narrows to a single date
+            if (dateVal && t.date !== dateVal && t.deadline !== dateVal) return false;
+            return true;
+        });
+
+        const container = document.getElementById('taskGridContainer');
+        if (!container) return;
+
+        if (filtered.length === 0) {
+            container.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i> No tasks match your filters.</div>';
+            return;
+        }
+
+        // Group by date (use task.date or task.deadline)
+        const groups = {};
+        filtered.forEach(t => {
+            const key = t.date || t.deadline || 'No Date';
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(t);
+        });
+
+        // Sort date keys descending (newest first), "No Date" at end
+        const sortedKeys = Object.keys(groups).sort((a, b) => {
+            if (a === 'No Date') return 1;
+            if (b === 'No Date') return -1;
+            return b.localeCompare(a);
+        });
+
+        const todayStr = new Date().toISOString().split('T')[0];
+
+        container.innerHTML = sortedKeys.map(dateKey => {
+            const tasks = groups[dateKey];
+            const isToday = dateKey === todayStr;
+            const completedCount = tasks.filter(t => t.status === 'Completed').length;
+            const startExpanded = isToday || !!dateVal; // expand today or if user filtered by date
+            const headerClass = `date-group-header ${isToday ? 'today' : ''} ${startExpanded ? '' : 'collapsed'}`;
+            const bodyClass = `date-group-body task-grid ${startExpanded ? '' : 'hidden'}`;
+            const groupId = 'dg-' + dateKey.replace(/[^a-zA-Z0-9]/g, '');
+
+            // Format date nicely
+            let dateLabel = dateKey;
+            let dayLabel = '';
+            if (dateKey !== 'No Date') {
+                try {
+                    const d = new Date(dateKey + 'T00:00:00');
+                    dateLabel = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+                    dayLabel = d.toLocaleDateString('en-IN', { weekday: 'long' });
+                    if (isToday) dayLabel = 'Today • ' + dayLabel;
+                } catch(e) {}
+            }
+
+            const taskCards = tasks.map(t => renderSingleTaskCard(t)).join('');
+
+            return `
+                <div class="date-group">
+                    <div class="${headerClass}" onclick="toggleDateGroup('${groupId}', this)">
+                        <div class="dg-left">
+                            <div class="dg-icon"><i class="far fa-calendar-alt"></i></div>
+                            <div>
+                                <div class="dg-date">${dateLabel}</div>
+                                <div class="dg-day">${dayLabel}</div>
+                            </div>
+                        </div>
+                        <div class="dg-right">
+                            <span class="dg-stat" style="background: var(--primary-light); color: var(--primary);">${tasks.length} task${tasks.length !== 1 ? 's' : ''}</span>
+                            <span class="dg-stat" style="background: ${completedCount > 0 ? 'var(--success-light)' : '#f1f5f9'}; color: ${completedCount > 0 ? 'var(--success)' : 'var(--text-muted)'};">${completedCount} done</span>
+                            <i class="fas fa-chevron-down dg-chevron"></i>
+                        </div>
                     </div>
-                    <button onclick="addSubTask()" style="background: #eef2ff; color: #6366f1; border: 1px solid #c7d2fe; padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s;"
-                            onmouseover="this.style.background='#6366f1'; this.style.color='white';"
-                            onmouseout="this.style.background='#eef2ff'; this.style.color='#6366f1';">
-                        + Add Sub-task
-                    </button>
+                    <div id="${groupId}" class="${bodyClass}">
+                        ${taskCards}
+                    </div>
+                </div>`;
+        }).join('');
+
+        // If user picked a specific date, scroll to that group
+        if (dateVal) {
+            const gid = 'dg-' + dateVal.replace(/[^a-zA-Z0-9]/g, '');
+            const el = document.getElementById(gid);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+
+    // Toggle date group expand/collapse
+    function toggleDateGroup(groupId, headerEl) {
+        const body = document.getElementById(groupId);
+        if (!body) return;
+        const isHidden = body.classList.contains('hidden');
+        if (isHidden) {
+            body.classList.remove('hidden');
+            headerEl.classList.remove('collapsed');
+        } else {
+            body.classList.add('hidden');
+            headerEl.classList.add('collapsed');
+        }
+    }
+
+    // Render a single task card
+    function renderSingleTaskCard(t) {
+        const statusColor = t.status === 'Completed' ? 'var(--success)' : (t.status === 'In Progress' || t.status === 'Started') ? 'var(--primary)' : 'var(--warning)';
+        const progress = t.status === 'Completed' ? 100 : (t.status === 'In Progress' || t.status === 'Started') ? 50 : 10;
+        const assigned = t.assignedEmployees || 'Unassigned';
+        const avatars = assigned !== 'Unassigned' ? assigned.split(',').slice(0, 3).map((e, i) =>
+            `<div style="width:28px; height:28px; border-radius:50%; background: ${['#6366f1','#10b981','#f59e0b','#ec4899'][i%4]}; color:white; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; margin-left:${i>0?'-8':'0'}px; border: 2px solid white;">${e.trim().charAt(0).toUpperCase()}</div>`
+        ).join('') : '<span style="color:var(--danger); font-size:11px; font-weight:700;">Not assigned</span>';
+
+        return `
+            <div class="task-card">
+                <div class="task-header">
+                    <div>
+                        <div style="font-size: 15px; font-weight: 800; margin-bottom: 3px;">${t.taskName || 'Untitled'}</div>
+                        <div style="color: var(--text-muted); font-size: 11px; font-weight: 600;">${t.section || 'General'} &bull; ${t.requiredSkill || ''}</div>
+                    </div>
+                    <span class="priority-badge p-${t.priority || 'Medium'}">${t.priority || 'Med'}</span>
+                </div>
+                <div style="display: flex; align-items: center;">${avatars}</div>
+                <div class="task-progress">
+                    <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; margin-bottom: 6px;">
+                        <span style="color: ${statusColor};">${t.status || 'Pending'}</span>
+                        <span>${progress}%</span>
+                    </div>
+                    <div class="task-bar-bg"><div class="task-bar-fill" style="width: ${progress}%; background: ${statusColor};"></div></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 12px; border-top: 1px solid #f1f5f9;">
+                    <div style="display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; color: var(--text-muted);">
+                        <i class="far fa-clock"></i> ${t.deadline || t.date || 'No date'}
+                    </div>
+                    <span style="font-size: 11px; font-weight: 700; padding: 4px 12px; background: ${statusColor}15; color: ${statusColor}; border-radius: 6px;">${t.status || 'Pending'}</span>
+                </div>
+            </div>`;
+    }
+
+    // ─── Populate section filter dropdown ───
+    function populateSectionFilter(sections) {
+        const sel = document.getElementById('sectionFilter');
+        if (!sel) return;
+        const existing = sel.querySelectorAll('option:not(:first-child)');
+        existing.forEach(o => o.remove());
+        (sections || []).forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.section;
+            opt.textContent = s.section;
+            sel.appendChild(opt);
+        });
+    }
+
+    // ─── Side Panel ───
+    function closeTaskPanel() {
+        document.getElementById('taskSidePanelOverlay')?.classList.remove('active');
+        document.getElementById('taskSidePanel')?.classList.remove('active');
+    }
+
+    // ─── Tab Switcher (overrides script.js version with nav-link support) ───
+    function switchTab(tabId, clickedEl) {
+        document.querySelectorAll('.tab-section').forEach(t => t.classList.remove('active'));
+        const target = document.getElementById(tabId);
+        if (target) target.classList.add('active');
+        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+        if (clickedEl) clickedEl.classList.add('active');
+        const main = document.querySelector('.main-content');
+        if (main) main.scrollTop = 0;
+
+        // Trigger data loads per tab
+        if (tabId === 'tab-sup-attendance') {
+            const d = document.getElementById('attMarkingDate');
+            if (d && !d.value) d.value = new Date().toISOString().split('T')[0];
+            if (typeof loadAttendanceMarkingPage === 'function') loadAttendanceMarkingPage();
+        } else if (tabId === 'tab-sup-directory') {
+            loadEmployeeDirectory();
+        } else if (tabId === 'tab-sup-tasks') {
+            if (typeof loadTasks === 'function') loadTasks();
+            if (typeof loadSectionDropdowns === 'function') loadSectionDropdowns();
+        } else if (tabId === 'tab-orders') {
+            if (typeof loadOrders === 'function') loadOrders();
+        } else if (tabId === 'tab-order-history') {
+            if (typeof loadAllOrderHistory === 'function') loadAllOrderHistory();
+        }
+    }
+
+    // ─── Team Directory Loader ───
+    let _empCache = [];
+    let _empStatsMap = {};
+    async function loadEmployeeDirectory() {
+        const container = document.getElementById('supEmployeeDirectory');
+        if (!container) return;
+        container.innerHTML = '<p class="empty-state" style="grid-column:1/-1"><i class="fas fa-spinner fa-spin"></i> Loading team...</p>';
+        try {
+            const [employees, allTasks, allAttendance] = await Promise.all([
+                fetchJSON('/api/employees'),
+                fetchJSON('/api/tasks'),
+                fetchJSON('/api/employeeAttendanceRecords?username=__ALL__').catch(() => null)
+            ]);
+            _empCache = employees || [];
+
+            // Build per-employee stats from bulk data
+            _empStatsMap = {};
+            for (const emp of _empCache) {
+                const name = emp.username;
+                // Count tasks assigned to this employee
+                const myTasks = (allTasks || []).filter(t => {
+                    if (!t.assignedEmployees) return false;
+                    return t.assignedEmployees.split(',').some(e => e.trim().toLowerCase() === name.toLowerCase());
+                });
+                const completed = myTasks.filter(t => t.status === 'Completed').length;
+                const pending = myTasks.filter(t => t.status !== 'Completed').length;
+                _empStatsMap[name] = { completed, pending, totalTasks: myTasks.length, present: 0, absent: 0 };
+            }
+
+            // Fetch attendance stats individually (lightweight calls)
+            const attPromises = _empCache.map(emp =>
+                fetchJSON('/api/employeeStats?employeeName=' + encodeURIComponent(emp.username))
+                    .then(s => { _empStatsMap[emp.username].present = s.present || 0; _empStatsMap[emp.username].absent = s.absent || 0; })
+                    .catch(() => {})
+            );
+            await Promise.all(attPromises);
+
+            renderEmployeeCards(_empCache);
+        } catch(e) {
+            console.error('Directory error:', e);
+            container.innerHTML = '<p class="empty-state" style="grid-column:1/-1"><i class="fas fa-exclamation-circle"></i> Could not load employees.</p>';
+        }
+    }
+
+    // ─── Render employee name list ───
+    function renderEmployeeCards(list) {
+        const container = document.getElementById('supEmployeeDirectory');
+        const countEl = document.getElementById('dirMemberCount');
+        if (!container) return;
+        if (!list || list.length === 0) {
+            container.innerHTML = '<div class="empty-state"><i class="fas fa-users-slash"></i> No employees found.</div>';
+            if (countEl) countEl.textContent = '0 members';
+            return;
+        }
+        if (countEl) countEl.textContent = list.length + ' member' + (list.length !== 1 ? 's' : '');
+        const colors = ['#6366f1','#10b981','#f59e0b','#ec4899','#3b82f6','#8b5cf6'];
+        container.innerHTML = list.map((emp, i) => {
+            const initial = (emp.username || '?').charAt(0).toUpperCase();
+            const color = colors[i % colors.length];
+            const role = (emp.role || 'employee').toLowerCase();
+            const roleLabel = role === 'supervisor' ? 'Supervisor' : 'Team Member';
+            const roleIconColor = role === 'supervisor' ? 'var(--primary)' : 'var(--text-muted)';
+
+            return `
+            <div onclick="openEmployeeProfile('${(emp.username||'').replace(/'/g,"\\'")}', '${color}')"
+                 style="display:flex;align-items:center;gap:14px;padding:13px 24px;border-bottom:1px solid var(--border-color);cursor:pointer;transition:background 0.18s;"
+                 onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background=''">
+                <div style="width:38px;height:38px;border-radius:11px;background:${color};color:white;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;flex-shrink:0;">${initial}</div>
+                <div style="flex:1;min-width:0;">
+                    <div style="font-size:14px;font-weight:800;color:var(--text-main);">${emp.username || 'Unknown'}</div>
+                    <div style="font-size:11px;font-weight:600;color:${roleIconColor};margin-top:2px;">
+                        <i class="fas ${role === 'supervisor' ? 'fa-user-tie' : 'fa-user'}" style="margin-right:4px;"></i>${roleLabel}${emp.employeeId ? `<span style="margin-left:8px;color:var(--text-muted);">• ${emp.employeeId}</span>` : ''}
+                    </div>
+                </div>
+                <i class="fas fa-chevron-right" style="color:var(--primary);font-size:11px;flex-shrink:0;"></i>
+            </div>`;
+        }).join('');
+    }
+
+    // ─── Chart refs for profile modal ───
+    let _empPerfWeekChart = null;
+    let _empSectionChart = null;
+
+    // ─── Employee Profile Full Modal ───
+    async function openEmployeeProfile(username, avatarColor) {
+        const overlay = document.getElementById('empProfileOverlay');
+        const content = document.getElementById('empProfileContent');
+        const avatarEl = document.getElementById('empModalAvatar');
+        const nameEl = document.getElementById('empModalName');
+        const metaEl = document.getElementById('empModalMeta');
+        const perfScore = document.getElementById('empModalPerfScore');
+        const perfLabel = document.getElementById('empModalPerfLabel');
+        const perfBadge = document.getElementById('empModalPerfBadge');
+        if (!overlay || !content) return;
+
+        const initial = username.charAt(0).toUpperCase();
+        if (avatarEl) { avatarEl.textContent = initial; avatarEl.style.background = avatarColor; }
+        if (nameEl) nameEl.textContent = username;
+        if (metaEl) metaEl.textContent = 'Loading...';
+        if (perfScore) perfScore.textContent = '—';
+        if (perfLabel) perfLabel.textContent = 'Computing...';
+        content.innerHTML = `<div class="empty-state"><i class="fas fa-spinner fa-spin"></i> Loading employee profile...</div>`;
+        overlay.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+
+        try {
+            const [empProfile, attStats, tasksAll, attRecords, sectionPerf] = await Promise.all([
+                fetchJSON('/api/employeeProfile?username=' + encodeURIComponent(username)),
+                fetchJSON('/api/employeeStats?employeeName=' + encodeURIComponent(username)),
+                fetchJSON('/api/tasksByEmployee?employeeName=' + encodeURIComponent(username)),
+                fetchJSON('/api/employeeAttendanceRecords?username=' + encodeURIComponent(username)),
+                fetchJSON('/api/sections/performance').catch(() => [])
+            ]);
+
+            const present = attStats.present || 0;
+            const absent = attStats.absent || 0;
+            const totalAtt = present + absent;
+            const attRate = totalAtt > 0 ? Math.round((present / totalAtt) * 100) : 0;
+
+            const allTasks = tasksAll || [];
+            const completedArr = allTasks.filter(t => t.status === 'Completed');
+            const ongoingArr = allTasks.filter(t => t.status === 'In Progress' || t.status === 'Started');
+            const pendingArr = allTasks.filter(t => t.status !== 'Completed' && t.status !== 'In Progress' && t.status !== 'Started');
+
+            const totalTasks = allTasks.length;
+            const completionRate = totalTasks > 0 ? Math.round((completedArr.length / totalTasks) * 100) : 0;
+            const score = totalAtt > 0 || totalTasks > 0 ? Math.round((attRate * 0.4) + (completionRate * 0.6)) : 0;
+            const scoreLabel = score >= 85 ? 'Excellent' : score >= 70 ? 'Good' : score >= 50 ? 'Average' : 'Needs Improvement';
+            const scoreColor = score >= 85 ? '#10b981' : score >= 70 ? '#6366f1' : score >= 50 ? '#f59e0b' : '#ef4444';
+
+            // Update header
+            if (metaEl) metaEl.innerHTML = `${empProfile?.employeeId ? `<i class="fas fa-id-badge" style="margin-right:4px;"></i>${empProfile.employeeId} &bull; ` : ''}<i class="fas fa-phone" style="margin:0 4px;"></i>${empProfile?.phoneNumber || 'N/A'} &bull; <i class="fas fa-star" style="color:var(--warning);margin:0 4px;"></i>${[].concat(empProfile?.primarySkills||[], empProfile?.secondarySkills||[]).join(', ')||'No skills'}`;
+            if (perfScore) { perfScore.textContent = score + '%'; perfScore.style.color = scoreColor; }
+            if (perfLabel) { perfLabel.textContent = scoreLabel; perfLabel.style.color = scoreColor; }
+            if (perfBadge) { perfBadge.style.background = scoreColor + '15'; perfBadge.style.borderColor = scoreColor + '30'; }
+
+            // Build week performance data from attendance records
+            const today = new Date();
+            const weekDays = [];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date(today);
+                d.setDate(today.getDate() - i);
+                weekDays.push(d.toISOString().split('T')[0]);
+            }
+            const attMap = {};
+            (attRecords || []).forEach(r => { attMap[r.date] = r.status; });
+            const weekAttData = weekDays.map(d => attMap[d] === 'Present' ? 100 : attMap[d] === 'Absent' ? 0 : null);
+            const weekDayLabels = weekDays.map(d => {
+                const dt = new Date(d + 'T00:00:00');
+                return dt.toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short' });
+            });
+
+            // Build week task completion data
+            const taskDateMap = {};
+            allTasks.forEach(t => {
+                const tDate = t.completedDate || t.date || t.deadline;
+                if (!tDate) return;
+                if (!taskDateMap[tDate]) taskDateMap[tDate] = { done: 0, total: 0 };
+                taskDateMap[tDate].total++;
+                if (t.status === 'Completed') taskDateMap[tDate].done++;
+            });
+            const weekTaskData = weekDays.map(d => {
+                const entry = taskDateMap[d];
+                if (!entry || entry.total === 0) return 0;
+                return Math.round((entry.done / entry.total) * 100);
+            });
+
+            content.innerHTML = `
+            <!-- ── Top Info Row ── -->
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:24px;">
+                <div style="background:var(--bg-main);border-radius:var(--radius-sm);padding:16px;text-align:center;border:1px solid var(--border-color);">
+                    <div style="font-size:10px;font-weight:800;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;">Attendance</div>
+                    <div style="font-size:28px;font-weight:900;color:var(--success);line-height:1;">${attRate}%</div>
+                    <div style="font-size:11px;font-weight:700;color:var(--text-muted);margin-top:4px;">${present} Present &nbsp;/&nbsp; ${absent} Absent</div>
+                    <div style="margin-top:8px;height:5px;background:#e2e8f0;border-radius:3px;overflow:hidden;">
+                        <div style="width:${attRate}%;height:100%;background:var(--success);border-radius:3px;"></div>
+                    </div>
+                </div>
+                <div style="background:var(--bg-main);border-radius:var(--radius-sm);padding:16px;text-align:center;border:1px solid var(--border-color);">
+                    <div style="font-size:10px;font-weight:800;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;">Task Completion</div>
+                    <div style="font-size:28px;font-weight:900;color:var(--primary);line-height:1;">${completionRate}%</div>
+                    <div style="font-size:11px;font-weight:700;color:var(--text-muted);margin-top:4px;">${completedArr.length} Done &nbsp;/&nbsp; ${pendingArr.length + ongoingArr.length} Remaining</div>
+                    <div style="margin-top:8px;height:5px;background:#e2e8f0;border-radius:3px;overflow:hidden;">
+                        <div style="width:${completionRate}%;height:100%;background:var(--primary);border-radius:3px;"></div>
+                    </div>
+                </div>
+                <div style="background:${scoreColor}10;border-radius:var(--radius-sm);padding:16px;text-align:center;border:1px solid ${scoreColor}25;">
+                    <div style="font-size:10px;font-weight:800;color:${scoreColor};text-transform:uppercase;margin-bottom:6px;">Overall Score</div>
+                    <div style="font-size:28px;font-weight:900;color:${scoreColor};line-height:1;">${score}%</div>
+                    <div style="font-size:11px;font-weight:700;color:${scoreColor};margin-top:4px;">${scoreLabel}</div>
+                    <div style="margin-top:8px;height:5px;background:#e2e8f0;border-radius:3px;overflow:hidden;">
+                        <div style="width:${score}%;height:100%;background:${scoreColor};border-radius:3px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Charts Row ── -->
+            <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:20px;margin-bottom:24px;">
+                <!-- Week-wise Performance Chart -->
+                <div style="background:var(--card-bg);border:1px solid var(--border-color);border-radius:var(--radius);padding:20px;">
+                    <div style="font-size:13px;font-weight:800;color:var(--text-main);margin-bottom:16px;display:flex;align-items:center;gap:8px;">
+                        <i class="fas fa-chart-line" style="color:var(--primary);"></i> Week-wise Performance (Last 7 Days)
+                    </div>
+                    <div style="height:200px;">
+                        <canvas id="empWeekChart"></canvas>
+                    </div>
+                </div>
+                <!-- Live Section Output Chart -->
+                <div style="background:var(--card-bg);border:1px solid var(--border-color);border-radius:var(--radius);padding:20px;">
+                    <div style="font-size:13px;font-weight:800;color:var(--text-main);margin-bottom:16px;display:flex;align-items:center;gap:8px;">
+                        <i class="fas fa-chart-bar" style="color:var(--success);"></i> Live Section Output (%)
+                    </div>
+                    <div style="height:200px;">
+                        <canvas id="empSectionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Task Tracking Section ── -->
+            <div style="background:var(--card-bg);border:1px solid var(--border-color);border-radius:var(--radius);padding:20px;">
+                <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px;">
+                    <div style="font-size:13px;font-weight:800;color:var(--text-main);display:flex;align-items:center;gap:8px;">
+                        <i class="fas fa-tasks" style="color:var(--warning);"></i> Task Tracking
+                    </div>
+                    
+                    <!-- Status Filter on Top -->
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                        <button onclick="filterEmpTasks('All')" id="empTaskFilter-All" class="emp-task-chip active-chip" style="padding:6px 14px;border-radius:20px;font-size:11px;font-weight:800;cursor:pointer;border:1px solid var(--primary);background:var(--primary);color:white;transition:all 0.2s;">All (${totalTasks})</button>
+                        <button onclick="filterEmpTasks('Pending')" id="empTaskFilter-Pending" class="emp-task-chip" style="padding:6px 14px;border-radius:20px;font-size:11px;font-weight:800;cursor:pointer;border:1px solid var(--warning);background:var(--warning-light);color:var(--warning);transition:all 0.2s;">Pending (${pendingArr.length})</button>
+                        <button onclick="filterEmpTasks('Ongoing')" id="empTaskFilter-Ongoing" class="emp-task-chip" style="padding:6px 14px;border-radius:20px;font-size:11px;font-weight:800;cursor:pointer;border:1px solid var(--primary);background:var(--primary-light);color:var(--primary);transition:all 0.2s;">Ongoing (${ongoingArr.length})</button>
+                        <button onclick="filterEmpTasks('Completed')" id="empTaskFilter-Completed" class="emp-task-chip" style="padding:6px 14px;border-radius:20px;font-size:11px;font-weight:800;cursor:pointer;border:1px solid var(--success);background:var(--success-light);color:var(--success);transition:all 0.2s;">Completed (${completedArr.length})</button>
+                    </div>
+
+                    <!-- Date Filter Below -->
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="font-size:11px;font-weight:700;color:var(--text-muted);">Filter by Date:</span>
+                        <input type="date" id="empTaskDateFilter" onchange="filterEmpTasks()" style="padding:6px 12px;border:1px solid var(--border-color);border-radius:var(--radius-sm);font-family:'Outfit';font-weight:600;font-size:12px;outline:none;color:var(--text-main);">
+                        <button onclick="document.getElementById('empTaskDateFilter').value=''; filterEmpTasks();" style="padding:6px 12px;border:1px solid var(--border-color);border-radius:var(--radius-sm);font-family:'Outfit';font-weight:600;font-size:11px;background:var(--bg-main);color:var(--text-muted);cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='var(--primary-light)';this.style.color='var(--primary)'" onmouseout="this.style.background='var(--bg-main)';this.style.color='var(--text-muted)'">All Dates</button>
+                    </div>
+                </div>
+                <div id="empTaskList"></div>
+            </div>
+
+            <!-- ── Recent Attendance ── -->
+            <div style="margin-top:20px;background:var(--card-bg);border:1px solid var(--border-color);border-radius:var(--radius);padding:20px;">
+                <div style="font-size:13px;font-weight:800;color:var(--text-main);margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+                    <i class="fas fa-calendar-check" style="color:var(--primary);"></i> Attendance History (Last 14 Days)
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                    ${(attRecords || []).slice(-14).reverse().map(r => {
+                        const isP = r.status === 'Present';
+                        return `<div style="padding:8px 12px;border-radius:8px;font-size:11px;font-weight:800;background:${isP?'#d1fae5':'#fee2e2'};color:${isP?'#065f46':'#dc2626'};display:flex;align-items:center;gap:5px;"><i class="fas fa-${isP?'check':'times'}"></i> ${r.date}</div>`;
+                    }).join('')}
+                    ${(!attRecords || attRecords.length === 0) ? '<div style="font-size:12px;color:var(--text-muted);font-weight:600;">No attendance records found.</div>' : ''}
+                </div>
+            </div>`;
+
+            // Store tasks data for JS-side filtering
+            window._empAllTasks = allTasks;
+            window._empTaskFilterStatus = 'All';
+            window._empTaskFilterDate = '';
+            renderEmpTaskList();
+
+            // Draw Week-wise Chart
+            if (_empPerfWeekChart) _empPerfWeekChart.destroy();
+            const wctx = document.getElementById('empWeekChart');
+            if (wctx) {
+                _empPerfWeekChart = new Chart(wctx.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: weekDayLabels,
+                        datasets: [
+                            {
+                                label: 'Task Completion %',
+                                data: weekTaskData,
+                                backgroundColor: 'rgba(99,102,241,0.25)',
+                                borderColor: '#6366f1',
+                                borderWidth: 2, 
+                                borderRadius: 6,
+                                barPercentage: 0.6
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        scales: {
+                            y: { beginAtZero: true, max: 100, grid: { color: '#f1f5f9' }, ticks: { font: { family: 'Outfit', weight: '600' }, callback: v => v + '%' } },
+                            x: { grid: { display: false }, ticks: { font: { family: 'Outfit', weight: '700', size: 10 }, maxRotation: 30 } }
+                        },
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            }
+
+            // Draw Section Output Chart
+            if (_empSectionChart) _empSectionChart.destroy();
+            const sctx = document.getElementById('empSectionChart');
+            
+            // Build employee-specific section performance
+            const empSectionMap = {};
+            const standardSections = sectionPerf && sectionPerf.length > 0 ? sectionPerf.map(s => s.section) : ['Yarn Preparation', 'Knitting', 'Packaging', 'Dispatch'];
+            standardSections.forEach(sec => empSectionMap[sec] = { total: 0, done: 0 });
+            
+            allTasks.forEach(t => {
+                const sec = t.section;
+                if (!sec) return;
+                if (!empSectionMap[sec]) empSectionMap[sec] = { total: 0, done: 0 };
+                empSectionMap[sec].total++;
+                if (t.status === 'Completed') empSectionMap[sec].done++;
+            });
+            
+            const empSectionLabels = Object.keys(empSectionMap);
+            const empSectionData = empSectionLabels.map(sec => {
+                const sData = empSectionMap[sec];
+                return sData.total > 0 ? Math.round((sData.done / sData.total) * 100) : 0;
+            });
+
+            if (sctx && empSectionLabels.length > 0) {
+                const sColors = ['#6366f1','#10b981','#f59e0b','#3b82f6','#ec4899','#8b5cf6'];
+                _empSectionChart = new Chart(sctx.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: empSectionLabels,
+                        datasets: [{
+                            label: 'Output %',
+                            data: empSectionData,
+                            backgroundColor: empSectionLabels.map((_, i) => sColors[i % sColors.length] + '30'),
+                            borderColor: empSectionLabels.map((_, i) => sColors[i % sColors.length]),
+                            borderWidth: 2, borderRadius: 6, barPercentage: 0.65
+                        }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        scales: {
+                            y: { beginAtZero: true, max: 100, grid: { color: '#f1f5f9' }, ticks: { font: { family: 'Outfit', weight: '600' }, callback: v => v + '%' } },
+                            x: { grid: { display: false }, ticks: { font: { family: 'Outfit', weight: '700', size: 10 }, maxRotation: 30 } }
+                        },
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            } else if (sctx) {
+                sctx.parentElement.innerHTML = '<div class="empty-state" style="height:200px;"><i class="fas fa-chart-bar"></i> No section data.</div>';
+            }
+
+        } catch(e) {
+            console.error('Profile load error:', e);
+            content.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-triangle"></i> Error loading profile for ${username}. Please try again.</div>`;
+        }
+    }
+
+    // ─── Task list renderer for employee modal ───
+    function renderEmpTaskList() {
+        const container = document.getElementById('empTaskList');
+        if (!container) return;
+        const allTasks = window._empAllTasks || [];
+        const statusF = window._empTaskFilterStatus || 'All';
+        const dateF = window._empTaskFilterDate || '';
+
+        let filtered = allTasks.filter(t => {
+            if (statusF === 'Completed' && t.status !== 'Completed') return false;
+            if (statusF === 'Ongoing' && t.status !== 'In Progress' && t.status !== 'Started') return false;
+            if (statusF === 'Pending' && (t.status === 'Completed' || t.status === 'In Progress' || t.status === 'Started')) return false;
+            if (dateF) {
+                const tDate = t.completedDate || t.date || t.deadline || '';
+                if (tDate !== dateF) return false;
+            }
+            return true;
+        });
+
+        if (filtered.length === 0) {
+            container.innerHTML = '<div class="empty-state" style="padding:24px;"><i class="fas fa-inbox"></i> No tasks match the selected filters.</div>';
+            return;
+        }
+
+        const statusColorMap = {
+            'Completed': { color: 'var(--success)', bg: 'var(--success-light)', border: '#10b981' },
+            'In Progress': { color: 'var(--primary)', bg: 'var(--primary-light)', border: '#6366f1' },
+            'Started': { color: 'var(--primary)', bg: 'var(--primary-light)', border: '#6366f1' },
+            'Pending': { color: 'var(--warning)', bg: 'var(--warning-light)', border: '#f59e0b' }
+        };
+
+        container.innerHTML = `
+        <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:separate;border-spacing:0 8px;">
+            <thead>
+                <tr>
+                    <th style="text-align:left;font-size:10px;text-transform:uppercase;color:#94a3b8;font-weight:800;padding:0 12px 8px;letter-spacing:0.5px;">Task</th>
+                    <th style="text-align:left;font-size:10px;text-transform:uppercase;color:#94a3b8;font-weight:800;padding:0 12px 8px;letter-spacing:0.5px;">Section</th>
+                    <th style="text-align:center;font-size:10px;text-transform:uppercase;color:#94a3b8;font-weight:800;padding:0 12px 8px;letter-spacing:0.5px;">Priority</th>
+                    <th style="text-align:center;font-size:10px;text-transform:uppercase;color:#94a3b8;font-weight:800;padding:0 12px 8px;letter-spacing:0.5px;">Deadline</th>
+                    <th style="text-align:center;font-size:10px;text-transform:uppercase;color:#94a3b8;font-weight:800;padding:0 12px 8px;letter-spacing:0.5px;">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${filtered.map(t => {
+                    const st = t.status || 'Pending';
+                    const sc = statusColorMap[st] || statusColorMap['Pending'];
+                    return `
+                    <tr>
+                        <td style="padding:10px 12px;background:#f8fafc;border-radius:8px 0 0 8px;font-size:13px;font-weight:800;color:var(--text-main);">${t.taskName || 'Untitled'}</td>
+                        <td style="padding:10px 12px;background:#f8fafc;font-size:12px;font-weight:600;color:var(--text-muted);">${t.section || '—'}</td>
+                        <td style="padding:10px 12px;background:#f8fafc;text-align:center;">
+                            <span style="font-size:10px;font-weight:800;padding:3px 8px;border-radius:4px;background:${t.priority==='High'?'#fee2e2':t.priority==='Low'?'#d1fae5':'#fef3c7'};color:${t.priority==='High'?'#ef4444':t.priority==='Low'?'#10b981':'#f59e0b'};">${t.priority||'Med'}</span>
+                        </td>
+                        <td style="padding:10px 12px;background:#f8fafc;text-align:center;font-size:12px;font-weight:700;color:var(--text-muted);">${t.deadline||t.date||'—'}</td>
+                        <td style="padding:10px 12px;background:#f8fafc;border-radius:0 8px 8px 0;text-align:center;">
+                            <span style="font-size:10px;font-weight:800;padding:4px 10px;border-radius:6px;background:${sc.bg};color:${sc.color};border:1px solid ${sc.border}30;">${st}</span>
+                        </td>
+                    </tr>`;
+                }).join('')}
+            </tbody>
+        </table>
+        </div>`;
+    }
+
+    // ─── Task filter handler for employee modal ───
+    function filterEmpTasks(status) {
+        if (status !== undefined) {
+            window._empTaskFilterStatus = status;
+            // Update active chip styles
+            document.querySelectorAll('.emp-task-chip').forEach(btn => {
+                btn.style.opacity = '0.6';
+                btn.style.transform = 'none';
+            });
+            const activeBtn = document.getElementById('empTaskFilter-' + status);
+            if (activeBtn) { activeBtn.style.opacity = '1'; activeBtn.style.transform = 'scale(1.04)'; }
+        }
+        const dateEl = document.getElementById('empTaskDateFilter');
+        window._empTaskFilterDate = dateEl ? dateEl.value : '';
+        renderEmpTaskList();
+    }
+
+    function closeEmpProfile() {
+        const overlay = document.getElementById('empProfileOverlay');
+        if (overlay) overlay.style.display = 'none';
+        document.body.style.overflow = '';
+        if (_empPerfWeekChart) { _empPerfWeekChart.destroy(); _empPerfWeekChart = null; }
+        if (_empSectionChart) { _empSectionChart.destroy(); _empSectionChart = null; }
+    }
+
+    function filterEmployeeDirectory() {
+        const q = (document.getElementById('supEmpSearch')?.value || '').toLowerCase();
+        const roleF = (document.getElementById('dirRoleFilter')?.value || '').toLowerCase();
+        const filtered = _empCache.filter(e =>
+            ((e.username || '').toLowerCase().includes(q) ||
+             (e.employeeId || '').toLowerCase().includes(q) ||
+             (e.role || '').toLowerCase().includes(q)) &&
+            (!roleF || (e.role || '').toLowerCase() === roleF)
+        );
+        renderEmployeeCards(filtered);
+    }
+
+    // ─── Add Employee Modal ───
+    let _addEmpSections = [];
+    let _addEmpSkills = [];
+
+    async function openAddEmployeeModal() {
+        document.getElementById('addEmpModal').style.display = 'flex';
+        document.getElementById('addEmpMsg').textContent = '';
+        document.getElementById('addEmpForm').reset();
+
+        // Load sections & skills for the form
+        try {
+            const [sections, skills] = await Promise.all([
+                fetchJSON('/api/sections'),
+                fetchJSON('/api/skills')
+            ]);
+            _addEmpSections = sections || [];
+            _addEmpSkills = skills || [];
+
+            const deptSel = document.getElementById('addEmpDepartment');
+            deptSel.innerHTML = '<option value="">Select Section...</option>' +
+                _addEmpSections.map(s => `<option value="${s.name}">${s.name}</option>`).join('');
+
+            const pGrid = document.getElementById('addEmpPrimarySkills');
+            const sGrid = document.getElementById('addEmpSecondarySkills');
+            const skillCardHtml = (skill, name) => `
+                <label class="skill-option" style="background:var(--bg-main);border:1px solid var(--border-color);border-radius:var(--radius-sm);padding:10px 12px;display:flex;align-items:center;gap:8px;cursor:pointer;transition:all 0.2s;">
+                    <input type="checkbox" name="${name}" value="${skill.name}" style="accent-color:var(--primary);" onchange="this.closest('label').style.background=this.checked?'var(--primary-light)':'var(--bg-main)';this.closest('label').style.borderColor=this.checked?'var(--primary)':'var(--border-color)';">
+                    <span style="font-size:12px;font-weight:700;color:var(--text-muted);">${skill.name}</span>
+                </label>`;
+            pGrid.innerHTML = _addEmpSkills.map(s => skillCardHtml(s, 'addEmpPrimary')).join('');
+            sGrid.innerHTML = _addEmpSkills.map(s => skillCardHtml(s, 'addEmpSecondary')).join('');
+        } catch(e) {
+            document.getElementById('addEmpMsg').textContent = 'Error loading form data. Please retry.';
+        }
+    }
+
+    function closeAddEmployeeModal() {
+        document.getElementById('addEmpModal').style.display = 'none';
+    }
+
+    async function submitAddEmployee() {
+        const username = document.getElementById('addEmpUsername').value.trim();
+        const password = document.getElementById('addEmpPassword').value.trim();
+        const employeeId = document.getElementById('addEmpId').value.trim();
+        const phoneNumber = document.getElementById('addEmpPhone').value.trim();
+        const role = document.getElementById('addEmpRole').value;
+        const department = document.getElementById('addEmpDepartment').value;
+        const msg = document.getElementById('addEmpMsg');
+
+        const primarySkills = [...document.querySelectorAll('input[name="addEmpPrimary"]:checked')].map(c => c.value);
+        const secondarySkills = [...document.querySelectorAll('input[name="addEmpSecondary"]:checked')].map(c => c.value);
+
+        if (!username || !password) { msg.style.color = 'var(--danger)'; msg.textContent = 'Name and password are required.'; return; }
+        if (primarySkills.length === 0) { msg.style.color = 'var(--danger)'; msg.textContent = 'At least one primary skill is required.'; return; }
+
+        msg.style.color = 'var(--text-muted)'; msg.textContent = 'Registering employee...';
+
+        try {
+            const res = await fetch(api('/api/addEmployee'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password, role, employeeId, phoneNumber, department, primarySkills, secondarySkills })
+            });
+            const data = await res.text();
+            if (res.ok) {
+                msg.style.color = 'var(--success)';
+                msg.textContent = '✓ Employee added successfully!';
+                setTimeout(() => { closeAddEmployeeModal(); loadEmployeeDirectory(); }, 1200);
+            } else {
+                msg.style.color = 'var(--danger)';
+                msg.textContent = data || 'Error adding employee.';
+            }
+        } catch(e) {
+            msg.style.color = 'var(--danger)';
+            msg.textContent = 'Network error. Please try again.';
+        }
+    }
+
+    // ─── Utilities ───
+    function setText(id, val) { const e = document.getElementById(id); if (e) e.textContent = val; }
+    function setWidth(id, val) { const e = document.getElementById(id); if (e) e.style.width = val; }
+    function fetchJSON(url) { return fetch(api(url)).then(r => r.json()); }
+    </script>
+
+    <!-- ═══ ADD EMPLOYEE MODAL ═══ -->
+    <div id="addEmpModal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.65); backdrop-filter:blur(8px); z-index:2000; justify-content:center; align-items:center; padding:20px;">
+        <div style="background:var(--card-bg); border-radius:var(--radius); width:100%; max-width:680px; max-height:90vh; overflow-y:auto; box-shadow:0 25px 60px rgba(0,0,0,0.2);">
+            <!-- Header -->
+            <div style="padding:24px 28px; border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center; background:var(--bg-main); border-radius:var(--radius) var(--radius) 0 0;">
+                <div style="display:flex; align-items:center; gap:14px;">
+                    <div style="width:44px;height:44px;border-radius:12px;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-size:18px;"><i class="fas fa-user-plus"></i></div>
+                    <div>
+                        <div style="font-size:18px;font-weight:800;color:var(--text-main);">Add Workforce Member</div>
+                        <div style="font-size:12px;font-weight:600;color:var(--text-muted);">Onboard a new employee to the system</div>
+                    </div>
+                </div>
+                <button onclick="closeAddEmployeeModal()" style="background:var(--bg-main);border:1px solid var(--border-color);width:36px;height:36px;border-radius:var(--radius-sm);cursor:pointer;font-size:18px;color:var(--text-muted);">×</button>
+            </div>
+
+            <!-- Body -->
+            <form id="addEmpForm" onsubmit="event.preventDefault(); submitAddEmployee();" style="padding:28px; display:flex; flex-direction:column; gap:20px;">
+                <!-- Basic Info -->
+                <div style="font-size:11px;font-weight:800;color:var(--primary);text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;gap:8px;"><i class="fas fa-id-card"></i> Basic Information</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                    <div>
+                        <label style="display:block;font-size:11px;font-weight:800;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;">Full Name *</label>
+                        <input id="addEmpUsername" type="text" placeholder="e.g. John Doe" required style="width:100%;padding:11px 14px;border:1px solid var(--border-color);border-radius:var(--radius-sm);font-family:Outfit;font-weight:600;font-size:13px;">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:11px;font-weight:800;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;">Employee ID</label>
+                        <input id="addEmpId" type="text" placeholder="e.g. EMP-101" style="width:100%;padding:11px 14px;border:1px solid var(--border-color);border-radius:var(--radius-sm);font-family:Outfit;font-weight:600;font-size:13px;">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:11px;font-weight:800;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;">Phone Number</label>
+                        <input id="addEmpPhone" type="text" placeholder="+1 234 567 890" style="width:100%;padding:11px 14px;border:1px solid var(--border-color);border-radius:var(--radius-sm);font-family:Outfit;font-weight:600;font-size:13px;">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:11px;font-weight:800;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;">Password *</label>
+                        <input id="addEmpPassword" type="password" placeholder="••••••••" required style="width:100%;padding:11px 14px;border:1px solid var(--border-color);border-radius:var(--radius-sm);font-family:Outfit;font-weight:600;font-size:13px;">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:11px;font-weight:800;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;">Access Role</label>
+                        <select id="addEmpRole" style="width:100%;padding:11px 14px;border:1px solid var(--border-color);border-radius:var(--radius-sm);font-family:Outfit;font-weight:600;font-size:13px;">
+                            <option value="employee">Standard Employee</option>
+                            <option value="supervisor">Supervisor</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:11px;font-weight:800;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;">Primary Section</label>
+                        <select id="addEmpDepartment" style="width:100%;padding:11px 14px;border:1px solid var(--border-color);border-radius:var(--radius-sm);font-family:Outfit;font-weight:600;font-size:13px;">
+                            <option value="">Select Section...</option>
+                        </select>
+                    </div>
                 </div>
 
-                <!-- Dynamic Sub-task List -->
-                <div id="subTasksList"></div>
+                <!-- Primary Skills -->
+                <div style="font-size:11px;font-weight:800;color:var(--primary);text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;gap:8px;"><i class="fas fa-star"></i> Primary Skills <span style="color:var(--danger);">*</span></div>
+                <div id="addEmpPrimarySkills" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(140px,1fr));gap:10px;"><p style="color:var(--text-muted);font-size:12px;">Loading skills...</p></div>
 
-                <!-- Submit -->
-                <button onclick="confirmMultiTaskCreation()" 
-                        style="background: linear-gradient(to right, #6366f1, #a855f7); color: white; border: none; width: 100%; height: 50px; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 10px; transition: opacity 0.2s;"
-                        onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
-                    âœ“ Create All Tasks from This Order
-                </button>
-            </div>
+                <!-- Secondary Skills -->
+                <div style="font-size:11px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;gap:8px;"><i class="fas fa-plus-circle"></i> Secondary Skills <span style="font-weight:600;">(Optional)</span></div>
+                <div id="addEmpSecondarySkills" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(140px,1fr));gap:10px;"></div>
+
+                <!-- Message + Submit -->
+                <div id="addEmpMsg" style="font-size:13px;font-weight:700;min-height:18px;"></div>
+                <div style="display:flex;gap:12px;">
+                    <button type="submit" class="btn-create" style="flex:1;justify-content:center;padding:13px;font-size:14px;"><i class="fas fa-user-check"></i> Confirm &amp; Add Member</button>
+                    <button type="button" onclick="closeAddEmployeeModal()" class="btn-create" style="background:var(--bg-main);color:var(--text-main);border:1px solid var(--border-color);padding:13px 20px;">Cancel</button>
+                </div>
+            </form>
         </div>
     </div>
 
-    <style>
-        .subtask-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 12px; position: relative; transition: box-shadow 0.2s; }
-        .subtask-card:hover { box-shadow: 0 4px 15px rgba(99,102,241,0.1); border-color: #c7d2fe; }
-        .subtask-input { width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 13px; box-sizing: border-box; transition: border-color 0.2s; }
-        .subtask-input:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
-        .subtask-label { display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.3px; }
-    </style>
-
-    <script src="script.js?v=2"></script>
 </body>
-
 </html>

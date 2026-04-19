@@ -9,7 +9,7 @@ import com.workforce.backend.model.Attendance;
 
 public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
 
-    Attendance findByEmployeeNameAndDate(String employeeName, LocalDate date);
+    List<Attendance> findByEmployeeNameAndDate(String employeeName, LocalDate date);
 
     List<Attendance> findByDate(LocalDate date);
 

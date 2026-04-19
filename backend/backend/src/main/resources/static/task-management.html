@@ -376,11 +376,16 @@
         loadTasks();
     }
   </script>
-  <div class="container">
+  <div class="back-container">
+    <a href="supervisor-dashboard.html" class="back-btn-unified">
+        <i class="fas fa-arrow-left"></i> Back to Dashboard
+    </a>
+  </div>
+
+  <div class="container" style="padding-top: 80px;">
     <div class="premium-card">
       <div class="header-section">
         <h2>Production Task Management</h2>
-        <button onclick="goSupervisor()" class="btn-premium btn-secondary">Dashboard</button>
       </div>
 
       <div class="section-title">1. Create New Task</div>
@@ -434,42 +439,63 @@
         Task</button>
     </div>
 
-    <div class="grid-layout">
-      <div class="premium-card">
+    <div class="grid-layout" style="grid-template-columns: 1fr; align-items: start; margin-bottom: 25px;">
+      <!-- COLUMN 1: PENDING ASSIGNMENT -->
+      <div class="premium-card" style="margin-bottom: 0;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid var(--primary); padding-bottom: 10px;">
-          <h3 class="section-title" style="margin: 0; border: none;">2. Task Audit</h3>
           <div style="display: flex; align-items: center; gap: 10px;">
-            <label for="taskFilterDate" style="font-size: 13px; font-weight: 600; color: var(--secondary);">View Date:</label>
-            <input type="date" id="taskFilterDate" class="form-control" style="width: auto; padding: 6px 12px; font-size: 13px;" onchange="loadTasks()">
+            <div style="background: var(--primary); color: white; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold;">2</div>
+            <h3 class="section-title" style="margin: 0; border: none; padding: 0;">Needs Assignment</h3>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <label for="taskFilterDate" style="font-size: 13px; font-weight: 600; color: var(--secondary);">Schedule Date:</label>
+            <input type="date" id="taskFilterDate" class="form-control" style="width: auto; padding: 8px 16px; font-size: 14px; border-radius: 8px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);" onchange="loadTasks()">
           </div>
         </div>
-        <div id="taskList" class="task-list-container">
-          <!-- Tasks will be injected here -->
+        <div id="taskListAssignment" class="task-list-container" style="max-height: 350px; display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 15px;">
+          <!-- Unassigned Tasks will be injected here -->
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-layout" style="grid-template-columns: 1fr 1fr; align-items: start;">
+      <!-- COLUMN 2: WORKFORCE MATCHING -->
+      <div class="premium-card" style="display: flex; flex-direction: column; background: linear-gradient(145deg, #ffffff, #f8fafc); border: 1px solid #e2e8f0; border-top: 4px solid #6366f1;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #e2e8f0; padding-bottom: 15px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="background: #e0e7ff; color: #4f46e5; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold;">3</div>
+            <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: #1e293b;">Employee Suggestion</h3>
+          </div>
+          <div id="selectionCounter" style="display: none; background: #6366f1; color: white; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.2);">
+            0 Selected
+          </div>
+        </div>
+
+        <p id="selectionHint" class="hint-text" style="background: #f1f5f9; border-radius: 8px; padding: 12px; border-left: 4px solid #94a3b8; font-weight: 500; font-size: 13px;">Select a pending task from above to discover matching staff members.</p>
+        <div id="suggestedEmployees" style="flex: 1; min-height: 300px; max-height: 500px; overflow-y: auto; padding-right: 5px;"></div>
+
+        <!-- Assignment Actions -->
+        <div id="assignmentActions" style="display: none; padding-top: 20px; border-top: 1px dashed #cbd5e1; margin-top: 20px;">
+          <button onclick="confirmTaskAssignment()" class="btn-premium btn-primary" style="width: 100%; justify-content: center; font-size: 16px; padding: 14px; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-right: 8px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+            Confirm Assignment
+          </button>
         </div>
       </div>
 
-      <div class="premium-card">
-        <div class="premium-card" style="padding: 25px; min-height: 400px; display: flex; flex-direction: column;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h3 class="section-title" style="margin: 0;">3. Workforce Suggestions</h3>
-            <div id="selectionCounter"
-              style="display: none; background: #6366f1; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">
-              0 Selected
-            </div>
-          </div>
-
-          <p id="selectionHint" class="hint-text">Select a task on the left to see matching staff members.</p>
-          <div id="suggestedEmployees" style="flex: 1;"></div>
-
-          <!-- Assignment Actions -->
-          <div id="assignmentActions"
-            style="display: none; padding-top: 20px; border-top: 1px dashed #e2e8f0; margin-top: 20px;">
-            <button onclick="confirmTaskAssignment()" class="btn-premium" style="width: 100%; justify-content: center;">
-              Confirm Assignment
-            </button>
+      <!-- COLUMN 3: TASK EXECUTION / STATUS TO MARK COMPLETE -->
+      <div class="premium-card" style="display: flex; flex-direction: column; background: linear-gradient(145deg, #ffffff, #f8fafc); border: 1px solid #e2e8f0; border-top: 4px solid #10b981;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #e2e8f0; padding-bottom: 15px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="background: #d1fae5; color: #059669; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold;">4</div>
+            <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: #1e293b;">Task Status & Completion</h3>
           </div>
         </div>
+        <div id="taskListExecution" class="task-list-container" style="flex: 1; min-height: 300px; max-height: 500px; padding-right: 5px;">
+          <!-- Assigned Tasks will be injected here -->
+        </div>
       </div>
+    </div>
       <!-- Task Detail Modal -->
       <div id="taskModal" class="modal-overlay" onclick="handleOutsideClick(event)">
         <div class="modal-content">

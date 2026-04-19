@@ -1,31 +1,256 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Socks Production Workforce System</title>
-    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workforce AI — Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: #f1f5f9;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 44px 40px;
+            width: 380px;
+            box-shadow: 0 4px 40px rgba(0,0,0,0.08);
+            border: 1px solid #e2e8f0;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        .logo-icon {
+            width: 52px; height: 52px;
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            border-radius: 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            color: white;
+            margin-bottom: 14px;
+        }
+        .logo-title {
+            font-size: 20px;
+            font-weight: 900;
+            color: #0f172a;
+            letter-spacing: -0.3px;
+        }
+        .logo-sub {
+            font-size: 13px;
+            font-weight: 500;
+            color: #94a3b8;
+            margin-top: 3px;
+        }
+
+        .form-group { margin-bottom: 18px; }
+
+        label {
+            display: block;
+            font-size: 12px;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            margin-bottom: 7px;
+        }
+
+        .input-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .input-wrap i.fi {
+            position: absolute;
+            left: 13px;
+            color: #cbd5e1;
+            font-size: 14px;
+            pointer-events: none;
+            transition: color 0.2s;
+        }
+        .input-wrap:focus-within i.fi { color: #6366f1; }
+
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 12px 13px 12px 40px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 11px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            color: #0f172a;
+            background: #f8fafc;
+            outline: none;
+            transition: all 0.2s;
+        }
+        input:focus {
+            border-color: #6366f1;
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+        }
+        input::placeholder { color: #cbd5e1; font-weight: 500; }
+
+        .eye-btn {
+            position: absolute;
+            right: 12px;
+            background: none;
+            border: none;
+            color: #cbd5e1;
+            font-size: 14px;
+            cursor: pointer;
+            padding: 4px;
+            transition: color 0.2s;
+        }
+        .eye-btn:hover { color: #6366f1; }
+
+        .login-btn {
+            width: 100%;
+            padding: 13px;
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            border: none;
+            border-radius: 11px;
+            color: white;
+            font-family: 'Outfit', sans-serif;
+            font-size: 15px;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(99,102,241,0.3);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 6px;
+        }
+        .login-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(99,102,241,0.4); }
+        .login-btn:active { transform: translateY(1px); }
+        .login-btn.loading { opacity: 0.7; pointer-events: none; }
+
+        .error-msg {
+            margin-top: 14px;
+            padding: 10px 13px;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 9px;
+            color: #dc2626;
+            font-size: 13px;
+            font-weight: 600;
+            display: none;
+            align-items: center;
+            gap: 7px;
+        }
+        .error-msg.show { display: flex; }
+
+        @keyframes shake {
+            0%,100% { transform: translateX(0); }
+            20% { transform: translateX(-7px); }
+            40% { transform: translateX(7px); }
+            60% { transform: translateX(-4px); }
+            80% { transform: translateX(4px); }
+        }
+        .shake { animation: shake 0.35s ease; }
+    </style>
 </head>
 <body>
-    <div class="page">
-        <div class="card">
-            <h1>Socks Production Workforce System</h1>
-            <p class="subtitle">Select your role</p>
-            <div class="role-container">
-                <div class="role-card" onclick="goEmployee()">
-                    <div class="icon">👤</div>
-                    <p>Employee</p>
-                </div>
-                <div class="role-card" onclick="goSupervisor()">
-                    <div class="icon">👨‍💼</div>
-                    <p>Supervisor</p>
-                </div>
-                <div class="role-card" onclick="window.location='manager-dashboard.html'">
-                    <div class="icon">💼</div>
-                    <p>Manager</p>
-                </div>
+<div class="card" id="loginCard">
+    <div class="logo">
+        <div class="logo-icon"><i class="fas fa-bolt"></i></div>
+        <div class="logo-title">Workforce AI</div>
+        <div class="logo-sub">Sign in to continue</div>
+    </div>
+
+    <form onsubmit="handleLogin(event)">
+        <div class="form-group">
+            <label>Username</label>
+            <div class="input-wrap">
+                <input type="text" id="username" placeholder="Enter username" autocomplete="username" required>
+                <i class="fas fa-user fi"></i>
             </div>
         </div>
+
+        <div class="form-group">
+            <label>Password</label>
+            <div class="input-wrap">
+                <input type="password" id="password" placeholder="Enter password" autocomplete="current-password" required>
+                <i class="fas fa-lock fi"></i>
+                <button type="button" class="eye-btn" tabindex="-1" onclick="togglePw()">
+                    <i class="fas fa-eye" id="eyeIcon"></i>
+                </button>
+            </div>
+        </div>
+
+        <button type="submit" class="login-btn" id="loginBtn">
+            <i class="fas fa-sign-in-alt"></i> Sign In
+        </button>
+    </form>
+
+    <div class="error-msg" id="errMsg">
+        <i class="fas fa-exclamation-circle"></i>
+        <span id="errText">Invalid username or password.</span>
     </div>
-    <script src="script.js"></script>
+</div>
+
+<script>
+function togglePw() {
+    const pw = document.getElementById('password');
+    const ic = document.getElementById('eyeIcon');
+    pw.type = pw.type === 'password' ? 'text' : 'password';
+    ic.classList.toggle('fa-eye');
+    ic.classList.toggle('fa-eye-slash');
+}
+
+function handleLogin(e) {
+    e.preventDefault();
+    const user = document.getElementById('username').value.trim().toLowerCase();
+    const pass = document.getElementById('password').value.trim();
+    const btn  = document.getElementById('loginBtn');
+    const err  = document.getElementById('errMsg');
+    const card = document.getElementById('loginCard');
+
+    err.classList.remove('show');
+    btn.classList.add('loading');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
+
+    setTimeout(() => {
+        if (pass !== '123') {
+            document.getElementById('errText').textContent = 'Invalid username or password.';
+            err.classList.add('show');
+            card.classList.remove('shake');
+            void card.offsetWidth;
+            card.classList.add('shake');
+            btn.classList.remove('loading');
+            btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In';
+            return;
+        }
+        if (user === 'spr') {
+            localStorage.setItem('username', 'spr');
+            localStorage.setItem('userRole', 'supervisor');
+            window.location.href = 'supervisor-dashboard.html';
+        } else if (user === 'mgr') {
+            localStorage.setItem('username', 'mgr');
+            localStorage.setItem('userRole', 'manager');
+            window.location.href = 'manager-dashboard.html';
+        } else {
+            localStorage.setItem('username', user);
+            localStorage.setItem('userRole', 'employee');
+            window.location.href = 'employee-dashboard.html';
+        }
+    }, 500);
+}
+
+document.addEventListener('DOMContentLoaded', () => document.getElementById('username').focus());
+</script>
 </body>
 </html>

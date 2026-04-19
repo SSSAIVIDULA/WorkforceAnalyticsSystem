@@ -121,11 +121,12 @@ public class LoginController {
     @PostMapping("/markAttendance")
     public Attendance markAttendance(@RequestBody Attendance attendance) {
 
-        Attendance existing = attendanceRepository.findByEmployeeNameAndDate(
+        List<Attendance> existingRecords = attendanceRepository.findByEmployeeNameAndDate(
                 attendance.getEmployeeName(),
                 attendance.getDate());
 
-        if (existing != null) {
+        if (existingRecords != null && !existingRecords.isEmpty()) {
+            Attendance existing = existingRecords.get(0);
             existing.setStatus(attendance.getStatus());
             return attendanceRepository.save(existing);
         }
@@ -550,10 +551,22 @@ public class LoginController {
         long totalTasks = allTasks.size();
         long completedTasks = allTasks.stream().filter(t -> "Completed".equalsIgnoreCase(t.getStatus())).count();
         long pendingTasks = allTasks.stream().filter(t -> "Pending".equalsIgnoreCase(t.getStatus())).count();
+        long verificationPending = allTasks.stream().filter(t -> "Waiting Verification".equalsIgnoreCase(t.getStatus())).count();
 
         stats.put("totalTasks", totalTasks);
         stats.put("completedTasks", completedTasks);
         stats.put("pendingTasks", pendingTasks);
+        stats.put("verificationPending", verificationPending);
+
+        // Efficiency: Completed tasks on or before deadline / Total Completed
+        long onTime = allTasks.stream()
+            .filter(t -> "Completed".equalsIgnoreCase(t.getStatus()))
+            .filter(t -> {
+                if (t.getDeadline() == null || t.getCompletedDate() == null) return true;
+                return !t.getCompletedDate().isAfter(t.getDeadline());
+            }).count();
+        int efficiency = completedTasks > 0 ? (int)((onTime * 100) / completedTasks) : 0;
+        stats.put("teamEfficiency", efficiency);
 
         // Calculate most demanded skills
         Map<String, Integer> skillsDemand = new HashMap<>();
@@ -573,6 +586,7 @@ public class LoginController {
         long present = todayAttendance.stream().filter(a -> "Present".equalsIgnoreCase(a.getStatus())).count();
         long absent = todayAttendance.stream().filter(a -> "Absent".equalsIgnoreCase(a.getStatus())).count();
 
+        stats.put("totalEmployees", userRepository.findAll().stream().filter(u -> "Employee".equalsIgnoreCase(u.getRole())).count());
         stats.put("presentEmployees", present);
         stats.put("absentEmployees", absent);
 

@@ -1,66 +1,60 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
-<title>Attendance</title>
-<link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Tracking | Workforce Analytics</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 
 <body>
+    <div class="back-container">
+        <a href="supervisor-dashboard.html" class="back-btn-unified">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
 
-<div class="attendance-wrapper">
+    <div class="page" style="padding-top: 100px;">
+        <div class="attendance-card">
+            <h2>Workforce Attendance</h2>
 
-<div class="attendance-card">
+            <div style="display: flex; gap: 20px; align-items: flex-end; margin-bottom: 25px;">
+                <div style="flex: 1;">
+                    <label>Attendance Date</label>
+                    <input type="date" id="selectedDate" onchange="loadEmployees()">
+                </div>
+            </div>
 
-<h2>Attendance</h2>
+            <div class="summary-box">
+                <div>
+                    <span id="todayDate" style="font-weight: 700; color: #6366f1;"></span>
+                </div>
+                <div style="display: flex; gap: 20px;">
+                    <span><b>Present:</b> <span id="presentCount" style="color: #10b981;">0</span></span>
+                    <span><b>Absent:</b> <span id="absentCount" style="color: #ef4444;">0</span></span>
+                </div>
+            </div>
 
-<div class="date-section">
+            <div class="employee-table">
+                <div id="employeeList">
+                    <!-- Loaded dynamically -->
+                </div>
+            </div>
 
-<label>Attendance Date</label>
+            <p id="attMsg" style="text-align: center; margin-top: 20px; font-weight: 600;"></p>
+        </div>
+    </div>
 
-<input 
-type="date"
-id="selectedDate"
-onchange="loadEmployees()">
-
-</div>
-
-<div class="summary-box">
-
-<p id="todayDate"></p>
-
-<b>Total Present:</b>
-<span id="presentCount">0</span>
-
-&nbsp;&nbsp;&nbsp;
-
-<b>Total Absent:</b>
-<span id="absentCount">0</span>
-
-</div>
-
-<div class="employee-table">
-
-<div id="employeeList"></div>
-
-</div>
-
-<br>
-
-<button onclick="goSupervisor()">Back</button>
-
-<p id="attMsg"></p>
-
-</div>
-
-</div>
-
-<script src="script.js"></script>
-
-<script>
-loadEmployees();
-</script>
-
+    <script src="script.js"></script>
+    <script>
+        // Set default date to today
+        document.getElementById('selectedDate').value = new Date().toISOString().split('T')[0];
+        document.getElementById('todayDate').innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        
+        window.onload = loadEmployees;
+    </script>
 </body>
 
 </html>

@@ -133,6 +133,53 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
             border-color: #cbd5e1;
         }
+
+        .skills-grid-modern {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .skill-option {
+            background: #f8fafc;
+            border: 2px solid #eef2ff;
+            padding: 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+        }
+
+        .skill-option:hover {
+            border-color: #d1d5db;
+            background: #fff;
+            transform: translateY(-2px);
+        }
+
+        .skill-option input {
+            width: 16px;
+            height: 16px;
+            accent-color: #6366f1;
+        }
+
+        .skill-option span {
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+        }
+
+        .skill-option.selected {
+            background: #eef2ff;
+            border-color: #6366f1;
+        }
+
+        .skill-option.selected span {
+            color: #4338ca;
+        }
     </style>
 </head>
 
@@ -182,13 +229,24 @@
                 </div>
             </div>
 
-            <div class="input-group">
-                <label for="role">Access Role</label>
-                <select id="role">
-                    <option value="employee">Standard Employee</option>
-                    <option value="supervisor">Supervisor</option>
-                </select>
-                <i class="fas fa-shield-halved"></i>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="input-group">
+                    <label for="role">Access Role</label>
+                    <select id="role">
+                        <option value="employee">Standard Employee</option>
+                        <option value="supervisor">Supervisor</option>
+                    </select>
+                    <i class="fas fa-shield-halved"></i>
+                </div>
+
+                <div class="input-group">
+                    <label for="department">Primary Section</label>
+                    <select id="department">
+                        <option value="">Select Section...</option>
+                        <!-- Loaded dynamically -->
+                    </select>
+                    <i class="fas fa-industry"></i>
+                </div>
             </div>
 
             <div class="form-section-title">
@@ -258,38 +316,70 @@
             });
         }
 
-        async function fetchSystemSkills() {
+        async function fetchSystemData() {
             try {
-                const res = await fetch('http://localhost:8080/api/settings/skills');
-                const skills = await res.json();
+                // Fetch sections first
+                const secRes = await fetch(api('/api/sections'));
+                const sections = await secRes.json();
+                const deptSelect = document.getElementById('department');
+                deptSelect.innerHTML = '<option value="">Select Section...</option>';
+                sections.forEach(sec => {
+                    deptSelect.innerHTML += `<option value="${sec.name}">${sec.name}</option>`;
+                });
+
+                // Fetch skills
+                const skillRes = await fetch(api('/api/skills'));
+                const skills = await skillRes.json();
                 
                 const pGrid = document.getElementById('primarySkillsGrid');
                 const sGrid = document.getElementById('secondarySkillsGrid');
                 pGrid.innerHTML = '';
                 sGrid.innerHTML = '';
                 
+                // Fetch section-skill mappings for highlighting
+                const mappingData = {};
+                for (const sec of sections) {
+                    const skRes = await fetch(api(`/api/sections/${sec.id}/skills`));
+                    const sks = await skRes.json();
+                    mappingData[sec.name] = sks.map(s => s.name);
+                }
+
                 skills.forEach(skill => {
-                    pGrid.innerHTML += `
-                        <label class="skill-option">
-                            <input type="checkbox" name="primarySkill" value="${skill.name}">
+                    const cardHtml = (name) => `
+                        <label class="skill-option" data-skill="${skill.name}">
+                            <input type="checkbox" name="${name}" value="${skill.name}">
                             <span>${skill.name}</span>
                         </label>`;
-                    sGrid.innerHTML += `
-                        <label class="skill-option">
-                            <input type="checkbox" name="secondarySkill" value="${skill.name}">
-                            <span>${skill.name}</span>
-                        </label>`;
+                    
+                    pGrid.innerHTML += cardHtml('primarySkill');
+                    sGrid.innerHTML += cardHtml('secondarySkill');
+                });
+
+                // Add change listener to Department to highlight mapped skills
+                deptSelect.addEventListener('change', function() {
+                    const selectedSec = this.value;
+                    const mappedSkills = mappingData[selectedSec] || [];
+                    
+                    document.querySelectorAll('.skill-option').forEach(opt => {
+                        const skillName = opt.getAttribute('data-skill');
+                        if (mappedSkills.includes(skillName)) {
+                            opt.style.borderColor = '#6366f1';
+                            opt.style.background = 'rgba(99, 102, 241, 0.05)';
+                        } else {
+                            opt.style.borderColor = '#e2e8f0';
+                            opt.style.background = 'white';
+                        }
+                    });
                 });
                 
                 setTimeout(setupExclusivityAndListeners, 100);
             } catch (err) {
-                console.error('Error fetching skills:', err);
-                document.getElementById('primarySkillsGrid').innerHTML = '<p>Error loading skills</p>';
-                document.getElementById('secondarySkillsGrid').innerHTML = '<p>Error loading skills</p>';
+                console.error('Error fetching system data:', err);
+                document.getElementById('primarySkillsGrid').innerHTML = '<p>Error loading content</p>';
             }
         }
         
-        window.addEventListener('load', fetchSystemSkills);
+        window.addEventListener('load', fetchSystemData);
     </script>
 
 </body>

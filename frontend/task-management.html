@@ -168,14 +168,14 @@
       border: 2px dashed #e2e8f0;
       border-radius: 15px;
       padding: 20px;
-      min-height: 300px;
+      min-height: 150px; /* Reduced from 300px */
     }
 
     .hint-text {
       color: #64748b;
       font-size: 14px;
       text-align: center;
-      margin-top: 50px;
+      margin-top: 30px; /* Reduced from 50px */
     }
 
     .badge {
@@ -370,7 +370,19 @@
   </style>
 </head>
 
-<body onload="loadTasks()">
+<body onload="initTaskPage()">
+  <script>
+    function initTaskPage() {
+        // Populate Task Names from FACTORY_TASKS in script.js
+        const dropdown = document.getElementById("taskName");
+        if(dropdown && typeof FACTORY_TASKS !== 'undefined') {
+            Object.keys(FACTORY_TASKS).forEach(name => {
+                dropdown.innerHTML += `<option value="${name}">${name}</option>`;
+            });
+        }
+        loadTasks();
+    }
+  </script>
   <div class="container">
     <div class="premium-card">
       <div class="header-section">
@@ -414,6 +426,13 @@
         <div class="form-group">
           <label>Required Skills (Auto-filled)</label>
           <input type="text" id="taskSkill" class="form-control" readonly style="background: #f1f5f9;">
+        </div>
+        <div class="form-group">
+          <label>Session (Shift)</label>
+          <select id="taskSessionFilter" class="form-control">
+            <option value="">Any Session</option>
+            <!-- Loaded dynamically in window.onload -->
+          </select>
         </div>
       </div>
       <button onclick="createTask()" class="btn-premium btn-primary" style="width: 100%; margin-top: 10px;">Create

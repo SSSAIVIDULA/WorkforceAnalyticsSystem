@@ -49,6 +49,7 @@ public class DataCleaner implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
+        /*
         System.out.println(">>> TARGETED DATA WIPE INITIATED <<<");
         
         // 1. Clear transactional data
@@ -65,5 +66,7 @@ public class DataCleaner implements CommandLineRunner {
         
         System.out.println(">>> EMPLOYEE DATABASE CLEARED | CONFIGURATION PRESERVED <<<");
         System.out.println("IMPORTANT: Remove this logic from DataCleaner.java after restart to prevent future wipes.");
+        */
+        System.out.println(">>> DATA PERSISTENCE ACTIVE - NO WIPE PERFORMED <<<");
     }
 }

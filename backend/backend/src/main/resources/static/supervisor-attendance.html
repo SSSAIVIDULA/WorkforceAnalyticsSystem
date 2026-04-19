@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workforce Attendance Registry | Supervisor Command</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-light: #eef2ff;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --text-dark: #1e293b;
+            --text-muted: #64748b;
+            --bg-light: #f8fafc;
+            --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .sticky-top-section {
+            padding: 30px 40px 10px;
+            background: var(--bg-light);
+            z-index: 100;
+        }
+
+        .attendance-container {
+            flex: 1;
+            padding: 10px 40px 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+            overflow-y: auto; /* This part scrolls */
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        /* ... rest of existing styles ... */
+        .back-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 700;
+            transition: 0.3s;
+            background: white;
+            padding: 10px 20px;
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+        }
+
+        .back-btn:hover {
+            color: var(--primary);
+            transform: translateX(-5px);
+        }
+
+        .control-card {
+            background: white;
+            border-radius: 24px;
+            padding: 20px 30px;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #f1f5f9;
+        }
+
+        .registry-card {
+            background: white;
+            border-radius: 24px;
+            padding: 30px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid #f1f5f9;
+            flex: 1;
+            /* Remove fixed height to let it fill container */
+        }
+
+        .table-registry {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 12px;
+        }
+
+        .table-registry thead th {
+            position: sticky;
+            top: -30px; /* Offset for padding */
+            background: white;
+            z-index: 10;
+            padding: 10px 20px;
+        }
+
+        .table-registry th {
+            text-align: left;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            font-weight: 800;
+        }
+
+        .table-registry tr {
+            transition: 0.2s;
+        }
+
+        .table-registry td {
+            padding: 20px;
+            background: #f8fafc;
+            border-top: 1px solid #f1f5f9;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .table-registry td:first-child {
+            border-left: 1px solid #f1f5f9;
+            border-radius: 16px 0 0 16px;
+        }
+
+        .table-registry td:last-child {
+            border-right: 1px solid #f1f5f9;
+            border-radius: 0 16px 16px 0;
+        }
+
+        .status-badge {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .status-not-marked { background: #f1f5f9; color: #94a3b8; }
+        .status-present { background: #ecfdf5; color: #10b981; border: 1px solid #10b98130; }
+        .status-absent { background: #fff1f2; color: #ef4444; border: 1px solid #ef444430; }
+
+        .btn-action {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .btn-present { background: #ecfdf5; color: #10b981; }
+        .btn-present:hover { background: #10b981; color: white; transform: translateY(-2px); }
+        .btn-absent { background: #fff1f2; color: #ef4444; }
+        .btn-absent:hover { background: #ef4444; color: white; transform: translateY(-2px); }
+
+        .bulk-actions {
+            display: flex;
+            gap: 15px;
+        }
+
+        .btn-bulk {
+            padding: 10px 20px;
+            border-radius: 12px;
+            border: none;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-bulk-present { background: var(--success); color: white; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2); }
+        .btn-bulk-absent { background: var(--danger); color: white; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.2); }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .input-modern {
+            padding: 12px 20px;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            font-family: inherit;
+            font-weight: 600;
+            color: var(--text-dark);
+            outline: none;
+            transition: 0.3s;
+        }
+
+        .input-modern:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px var(--primary-light);
+        }
+    </style>
+</head>
+<body>
+    <div class="sticky-top-section">
+        <div class="header-section" style="max-width: 1200px; margin: 0 auto; width: 100%;">
+            <div>
+                <a href="supervisor-dashboard.html" class="back-btn">
+                    <i class="fas fa-arrow-left"></i> Return to Dashboard
+                </a>
+                <h1 style="font-size: 32px; font-weight: 800; margin: 25px 0 10px; color: #0f172a;">Workforce Attendance Registry</h1>
+                <p style="color: var(--text-muted); font-size: 16px; font-weight: 500;">Manage daily shift presence and employee availability.</p>
+            </div>
+            <div class="bulk-actions">
+                <button onclick="bulkMarkAttendance('Present')" class="btn-bulk btn-bulk-present">
+                    <i class="fas fa-check-circle"></i> Mark All Present
+                </button>
+                <button onclick="bulkMarkAttendance('Absent')" class="btn-bulk btn-bulk-absent">
+                    <i class="fas fa-times-circle"></i> Mark All Absent
+                </button>
+            </div>
+        </div>
+
+        <div class="control-card" style="max-width: 1200px; margin: 0 auto; width: 100%;">
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <div style="background: var(--primary-light); color: var(--primary); width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                    <i class="fas fa-calendar-alt"></i>
+                </div>
+                <div>
+                    <label style="display: block; font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px;">Active Shift Date</label>
+                    <input type="date" id="attMarkingDate" class="input-modern" onchange="loadAttendanceMarkingPage()">
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 15px; align-items: center;">
+                <div style="text-align: right;">
+                    <div id="liveSyncStatus" style="font-size: 12px; font-weight: 700; color: var(--success);">
+                        <i class="fas fa-circle-notch fa-spin"></i> Live Sync Active
+                    </div>
+                </div>
+                <button onclick="loadAttendanceMarkingPage()" class="btn-action" style="background: var(--primary-light); color: var(--primary); width: auto; padding: 0 20px;">
+                    <i class="fas fa-sync-alt" style="margin-right: 8px;"></i> Refresh Data
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="attendance-container">
+        <div class="registry-card">
+            <table class="table-registry">
+                <thead>
+                    <tr>
+                        <th style="padding: 15px 15px 15px 0;">Employee Details</th>
+                        <th style="padding: 15px 0 15px 15px; text-align: right;">Operational Action</th>
+                    </tr>
+                </thead>
+                <tbody id="attendanceMarkingList">
+                    <!-- Dynamic Rows -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Page level initialization
+        document.addEventListener('DOMContentLoaded', () => {
+            const dateInput = document.getElementById("attMarkingDate");
+            if (dateInput) {
+                dateInput.value = new Date().toISOString().split('T')[0];
+            }
+            if (typeof loadAttendanceMarkingPage === 'function') {
+                loadAttendanceMarkingPage();
+            }
+        });
+    </script>
+</body>
+</html>
